@@ -1,0 +1,27 @@
+.labeldiv {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+.label  {
+    margin:0px;
+}
+.formdiv {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-top: 15px;
+}
+.rememberdiv{
+    margin-top: 15px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    margin-right: auto;
+}
+.textinput{
+    width: 800px;
+    margin-top: 15px;
+}
