@@ -1,16 +1,22 @@
-# React + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+board-game-project/
+├── backend/                # Node.js + Express
+│   ├── src/
+│   │   ├── controllers/    # Game logic (move validation, win conditions)
+│   │   ├── models/         # Database schemas (Players, Game State)
+│   │   ├── routes/         # API Paths (/api/play, /api/auth)
+│   │   └── server.js       # Main entry point
+│   └── package.json
+├── frontend/               # Vite + React
+│   ├── public/             # Icons, manifest, robots.txt
+│   ├── src/
+│   │   ├── assets/         # Board textures, game piece images
+│   │   ├── components/     # UI pieces (Square, Piece, ScoreBoard)
+│   │   ├── hooks/          # Custom logic (useBoardState, useSocket)
+│   │   ├── pages/          # Home, GameBoard, Profile
+│   │   ├── services/       # API calls (axios/fetch helper functions)
+│   │   ├── App.jsx         # Routing and Global Providers
+│   │   └── main.jsx        # Entry point (Vite default)
+│   ├── index.html          # Vite root HTML
+│   ├── package.json
+│   └── vite.config.js      # Vite configuration
+└── .gitignore              # Ignore node_modules & .env
