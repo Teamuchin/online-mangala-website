@@ -5,9 +5,9 @@ export default function Login(){
         
     }
     return(
-        <Fragment>
+        <div className={styles.container}>
             <div className={styles.labeldiv} >
-                <img alt="websitelogo"></img>
+                <img className={styles.logolabel} src="../public/logo.svg" alt="websitelogo"></img>
                 <h1 className={styles.label}>Mangala</h1>
             </div>
             <form className={styles.formdiv} action={signUp}>
@@ -17,8 +17,10 @@ export default function Login(){
                     <label htmlFor="rememberme">Remember me</label>
                     <input id="rememberme" type="checkbox" defaultChecked={false} name="rememberme"/>
                 </div>
+                <input type="submit" value="Log in" className={styles.submitbtn}/>
+                <input type="button" value="Sign Up" className={styles.signupbtn}/>
             </form>
-        </Fragment>
+        </div>
     )
 }
 
