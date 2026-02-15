@@ -1,0 +1,86 @@
+.logo {
+    width: 80px;
+    height: 80px;
+}
+.banner {
+    display: flex;
+    flex-direction: column;
+    justify-content:start;
+    align-items: center;
+    width: 100%;
+    min-height: 100vh;
+    background-color: #E6C8C8;
+    flex-direction: start;
+}
+.bannerheader {
+    margin-top: 0px;
+    background-color: #D5A6A6;
+    width: 100%;
+    flex-direction: row;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    height: 100px;
+    padding: 0 40px;
+    position: relative;
+}
+.headerlogo {
+    font-family: "SN Pro", sans-serif;
+    color: #A33939;
+    margin-left: 20px;
+    margin-right: 20px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap:10px;
+    font-size: 25px;
+    flex: 0 0 auto;
+}
+.headerlinks {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    font-family: "SN Pro", sans-serif;
+    color: #A33939;
+    font-size: 30px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    a {
+        text-decoration: none;
+        color: #A33939;
+    }
+}
+.headerbuttons {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    flex: 0 0 auto;
+    margin-left: auto;
+    margin-right: 40px;
+}
+.bodyslogan {
+    font-family: "SN Pro", sans-serif;
+    font-size: 50px;
+    margin-top: 100px;
+    padding-bottom: 50px;
+}
+.bodybuttons {
+    display: flex;
+    flex-direction: row;
+    gap: 75px;
+        button{
+        width: 250px;
+        height: 100px;
+        margin-top: 15px;
+        background-color: #D7A9A9;
+        border: 2px solid #A33939;
+        border-radius: 10px;
+        font-size: 35px;
+        font-weight: bold;
+        font-family: "SN Pro", sans-serif;
+        color: #A33939;
+        cursor: pointer;
+    }
+}
