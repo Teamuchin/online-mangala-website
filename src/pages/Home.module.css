@@ -1,0 +1,106 @@
+.home {
+    display: flex;
+    flex-direction: column;
+    justify-content:start;
+    align-items: center;
+    width: 100%;
+    min-height: 100vh;
+    background-color: #FFE8E8;
+    flex-direction: start;
+}
+.logo {
+    width: 80px;
+    height: 80px;
+}
+.headerlogo {
+    font-family: "SN Pro", sans-serif;
+    color: #A33939;
+    margin-left: 20px;
+    margin-right: 20px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap:10px;
+    font-size: 25px;
+    flex: 0 0 auto;
+}
+.headerbuttons {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    flex: 0 0 auto;
+    margin-left: auto;
+    margin-right: 40px;
+}
+.homeheader {
+    margin-top: 0px;
+    background-color: none;
+    width: 100%;
+    flex-direction: row;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    height: 100px;
+    padding: 0 40px;
+    position: relative;
+}
+.homebody {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: calc(100vh - 100px);
+    padding-bottom: 5%;
+}
+.homebody h1 {
+    font-size: 50px;
+    font-weight: bold;
+    font-family: "SN Pro", sans-serif;
+    color: #A33939;
+    text-align: center;
+}
+.homebuttons {
+    display: flex;
+    flex-direction: column;
+    gap: 50px;
+    margin-top: 40px;
+}
+.homebuttonupper {
+    display: flex;
+    flex-direction: row;
+    gap: 50px;
+            button{
+        width: 500px;
+        height: 200px;
+        margin-top: 15px;
+        background-color: #D7A9A9;
+        border-radius: 10px;
+        font-size:40px;
+        font-weight: bold;
+        font-family: "SN Pro", sans-serif;
+        color: #A33939;
+        cursor: pointer;
+        border: none;
+        box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+    }
+}
+.homebuttonlower {
+    display: flex;
+    flex-direction: row;
+    gap: 50px;
+            button{
+        width: 100%;
+        height: 200px;
+        background-color: #D7A9A9;
+        border: 2px solid #A33939;
+        border-radius: 10px;
+        font-size:40px;
+        font-weight: bold;
+        font-family: "SN Pro", sans-serif;
+        color: #A33939;
+        cursor: pointer;
+        border: none;
+        box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+    }
+}
