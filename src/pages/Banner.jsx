@@ -7,7 +7,7 @@ export default function Banner(){
             <div className={styles.banner}>
                 <div className={styles.bannerheader}>
                     <div className={styles.headerlogo}>
-                        <img src="../public/logo.svg" alt="logo" className={styles.logo}/>
+                        <img src="/logo.svg" alt="logo" className={styles.logo}/>
                         <h1>Mangala</h1>
                     </div>
                     <div className={styles.headerlinks}>
@@ -16,9 +16,9 @@ export default function Banner(){
                         <a href="#">About</a>
                     </div>
                     <div className={styles.headerbuttons}>
-                        <button className={styles.accountbtn}><img src="../public/accountbtn.svg" alt="account"/></button>
-                        <button className={styles.langbtn}><img src="../public/languagebtn.svg" alt="language"/></button>
-                        <button className={styles.settingbtn}><img src="../public/settingsbtn.png" alt="settings"/></button>
+                        <button className={styles.accountbtn}><img src="/accountbtn.svg" alt="account"/></button>
+                        <button className={styles.langbtn}><img src="/languagebtn.svg" alt="language"/></button>
+                        <button className={styles.settingbtn}><img src="/settingsbtn.png" alt="settings"/></button>
                     </div>
                 </div>
                 <div className={styles.bannerbody}>

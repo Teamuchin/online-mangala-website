@@ -6,7 +6,7 @@ export default function Login(){
     return(
         <div className={styles.container}>
             <div className={styles.labeldiv} >
-                <img className={styles.logolabel} src="../public/logo.svg" alt="websitelogo"></img>
+                <img className={styles.logolabel} src="/logo.svg" alt="websitelogo"></img>
                 <h1 className={styles.label}>Mangala</h1>
             </div>
             <form className={styles.formdiv} action={signUp}>
@@ -22,4 +22,3 @@ export default function Login(){
         </div>
     )
 }
-
