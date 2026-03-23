@@ -1,7 +1,38 @@
 import { PLAYER_CONFIG } from './gameLogic'
 import styles from './MangalaGame.module.css'
 
+const MAX_VISIBLE_STONES = 12
+const ROW_ORDER = [0, 1, 2, 3, 2.5, 1.5]
+const MAX_STONES_PER_ROW = 2
+const ROW_GAP_PERCENT = 15
+
+function getStoneRows(count) {
+  const rowCount = Math.ceil(count / MAX_STONES_PER_ROW)
+  const rowPositions = ROW_ORDER.slice(0, rowCount)
+  const minPosition = Math.min(...rowPositions)
+  const maxPosition = Math.max(...rowPositions)
+  const centerPosition = (minPosition + maxPosition) / 2
+
+  return Array.from({ length: rowCount }, (_, rowIndex) => {
+    const stonesInRow = Math.min(
+      MAX_STONES_PER_ROW,
+      count - rowIndex * MAX_STONES_PER_ROW,
+    )
+    const visualPosition = rowPositions[rowIndex]
+    const top = 50 + (visualPosition - centerPosition) * ROW_GAP_PERCENT
+
+    return {
+      id: `row-${rowIndex}`,
+      top: `${top}%`,
+      stonesInRow,
+    }
+  })
+}
+
 function Pit({ count, disabled, isSelected, onClick }) {
+  const shouldUseOverflowCount = count > MAX_VISIBLE_STONES
+  const rows = shouldUseOverflowCount ? [] : getStoneRows(count)
+
   return (
     <button
       type="button"
@@ -9,7 +40,29 @@ function Pit({ count, disabled, isSelected, onClick }) {
       onClick={onClick}
       disabled={disabled}
     >
-      <span className={styles.pitCount}>{count}</span>
+      <span className={styles.pitSurface}>
+        {shouldUseOverflowCount ? (
+          <span className={styles.pitCount}>{count}</span>
+        ) : (
+          rows.map((row) => (
+            <span
+              key={row.id}
+              className={styles.stoneRow}
+              style={{ top: row.top }}
+            >
+              {Array.from({ length: row.stonesInRow }, (_, stoneIndex) => (
+                <span
+                  key={`${row.id}-${stoneIndex}`}
+                  className={styles.stone}
+                />
+              ))}
+            </span>
+          ))
+        )}
+      </span>
+      {shouldUseOverflowCount && (
+        <span className={styles.pitOverflowCount}>{count} stones</span>
+      )}
     </button>
   )
 }
