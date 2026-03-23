@@ -4,7 +4,6 @@ import styles from './MangalaGame.module.css'
 const MAX_VISIBLE_STONES = 12
 const ROW_ORDER = [0, 1, 2, 3, 2.5, 1.5]
 const MAX_STONES_PER_ROW = 2
-const ROW_GAP_PERCENT = 15
 
 function getStoneRows(count) {
   const rowCount = Math.ceil(count / MAX_STONES_PER_ROW)
@@ -19,11 +18,10 @@ function getStoneRows(count) {
       count - rowIndex * MAX_STONES_PER_ROW,
     )
     const visualPosition = rowPositions[rowIndex]
-    const top = 50 + (visualPosition - centerPosition) * ROW_GAP_PERCENT
 
     return {
       id: `row-${rowIndex}`,
-      top: `${top}%`,
+      offset: visualPosition - centerPosition,
       stonesInRow,
     }
   })
@@ -48,7 +46,7 @@ function Pit({ count, disabled, isSelected, onClick }) {
             <span
               key={row.id}
               className={styles.stoneRow}
-              style={{ top: row.top }}
+              style={{ '--row-offset': row.offset }}
             >
               {Array.from({ length: row.stonesInRow }, (_, stoneIndex) => (
                 <span
