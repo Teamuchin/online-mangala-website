@@ -1,0 +1,224 @@
+export const PLAYER_ORDER = ['bottom', 'top']
+
+export const PLAYER_CONFIG = {
+  bottom: {
+    pitIndexes: [0, 1, 2, 3, 4, 5],
+    storeIndex: 6,
+    opponentStoreIndex: 13,
+  },
+  top: {
+    pitIndexes: [7, 8, 9, 10, 11, 12],
+    storeIndex: 13,
+    opponentStoreIndex: 6,
+  },
+}
+
+export const INITIAL_BOARD = [4, 4, 4, 4, 4, 4, 0, 4, 4, 4, 4, 4, 4, 0]
+
+export const INITIAL_PLAYERS = {
+  bottom: { id: 'p1', name: 'Emre', rating: 1485, timeLeft: 300 },
+  top: { id: 'p2', name: 'Ayse', rating: 1520, timeLeft: 300 },
+}
+
+export function getOpponent(player) {
+  return player === 'bottom' ? 'top' : 'bottom'
+}
+
+export function isPlayersPit(index, player) {
+  return PLAYER_CONFIG[player].pitIndexes.includes(index)
+}
+
+export function isStore(index) {
+  return index === 6 || index === 13
+}
+
+export function isSideEmpty(board, player) {
+  return PLAYER_CONFIG[player].pitIndexes.every((index) => board[index] === 0)
+}
+
+function getOppositePitIndex(index) {
+  if (isStore(index)) {
+    return null
+  }
+
+  return 12 - index
+}
+
+export function formatTime(totalSeconds) {
+  const safeValue = Math.max(totalSeconds, 0)
+  const minutes = Math.floor(safeValue / 60)
+  const seconds = safeValue % 60
+
+  return `${minutes}:${String(seconds).padStart(2, '0')}`
+}
+
+function collectRemainingStones(board, player) {
+  const nextBoard = [...board]
+  const { pitIndexes, storeIndex } = PLAYER_CONFIG[player]
+  const remaining = pitIndexes.reduce((sum, index) => sum + nextBoard[index], 0)
+
+  pitIndexes.forEach((index) => {
+    nextBoard[index] = 0
+  })
+  nextBoard[storeIndex] += remaining
+
+  return nextBoard
+}
+
+function collectOpponentStonesForCurrentPlayer(board, currentPlayer) {
+  const nextBoard = [...board]
+  const opponent = getOpponent(currentPlayer)
+  const opponentPitIndexes = PLAYER_CONFIG[opponent].pitIndexes
+  const captured = opponentPitIndexes.reduce(
+    (sum, index) => sum + nextBoard[index],
+    0,
+  )
+
+  opponentPitIndexes.forEach((index) => {
+    nextBoard[index] = 0
+  })
+  nextBoard[PLAYER_CONFIG[currentPlayer].storeIndex] += captured
+
+  return nextBoard
+}
+
+function getWinnerFromStores(board) {
+  const bottomScore = nextBoardScore(board, 'bottom')
+  const topScore = nextBoardScore(board, 'top')
+
+  return bottomScore === topScore
+    ? 'draw'
+    : bottomScore > topScore
+      ? 'bottom'
+      : 'top'
+}
+
+function nextBoardScore(board, player) {
+  return board[PLAYER_CONFIG[player].storeIndex]
+}
+
+function finalizeGame(board, currentPlayer) {
+  let nextBoard = [...board]
+  const currentSideEmpty = isSideEmpty(nextBoard, currentPlayer)
+  const opponent = getOpponent(currentPlayer)
+  const opponentSideEmpty = isSideEmpty(nextBoard, opponent)
+
+  if (currentSideEmpty) {
+    nextBoard = collectOpponentStonesForCurrentPlayer(nextBoard, currentPlayer)
+
+    return {
+      board: nextBoard,
+      winner: getWinnerFromStores(nextBoard),
+    }
+  }
+
+  if (opponentSideEmpty) {
+    nextBoard = collectRemainingStones(nextBoard, currentPlayer)
+
+    return {
+      board: nextBoard,
+      winner: getWinnerFromStores(nextBoard),
+    }
+  }
+
+  const bottomScore = nextBoardScore(nextBoard, 'bottom')
+  const topScore = nextBoardScore(nextBoard, 'top')
+
+  if (bottomScore > 24 || topScore > 24) {
+    return {
+      board: nextBoard,
+      winner: bottomScore > topScore ? 'bottom' : 'top',
+    }
+  }
+
+  return null
+}
+
+export function createInitialState() {
+  return {
+    board: [...INITIAL_BOARD],
+    currentPlayer: 'bottom',
+    selectedPit: null,
+    moveInProgress: false,
+    gameStatus: 'playing',
+    winner: null,
+    turnMessage: `${INITIAL_PLAYERS.bottom.name} to move`,
+    lastMove: null,
+    players: structuredClone(INITIAL_PLAYERS),
+    moveHistory: [],
+  }
+}
+
+export function getLegalMoves(board, player) {
+  return PLAYER_CONFIG[player].pitIndexes.filter((index) => board[index] > 0)
+}
+
+export function applyMove(board, currentPlayer, pitIndex) {
+  if (!isPlayersPit(pitIndex, currentPlayer) || board[pitIndex] === 0) {
+    return null
+  }
+
+  const nextBoard = [...board]
+  let stonesInHand = nextBoard[pitIndex]
+  let cursor = pitIndex
+
+  nextBoard[pitIndex] = 0
+
+  if (stonesInHand > 1) {
+    // Mangala sowing starts from the selected pit unless it contained exactly one stone.
+    nextBoard[pitIndex] = 1
+    stonesInHand -= 1
+  }
+
+  while (stonesInHand > 0) {
+    cursor = (cursor + 1) % nextBoard.length
+
+    if (cursor === PLAYER_CONFIG[currentPlayer].opponentStoreIndex) {
+      continue
+    }
+
+    nextBoard[cursor] += 1
+    stonesInHand -= 1
+  }
+
+  const extraTurn = cursor === PLAYER_CONFIG[currentPlayer].storeIndex
+  let captured = 0
+
+  if (
+    !extraTurn &&
+    isPlayersPit(cursor, currentPlayer) &&
+    nextBoard[cursor] === 1
+  ) {
+    const oppositePitIndex = getOppositePitIndex(cursor)
+    const oppositePitStones =
+      oppositePitIndex === null ? 0 : nextBoard[oppositePitIndex]
+
+    if (oppositePitStones > 0) {
+      captured = oppositePitStones + nextBoard[cursor]
+      nextBoard[cursor] = 0
+      nextBoard[oppositePitIndex] = 0
+      nextBoard[PLAYER_CONFIG[currentPlayer].storeIndex] += captured
+    }
+  } else if (
+    isPlayersPit(cursor, getOpponent(currentPlayer)) &&
+    nextBoard[cursor] % 2 === 0
+  ) {
+    captured = nextBoard[cursor]
+    nextBoard[cursor] = 0
+    nextBoard[PLAYER_CONFIG[currentPlayer].storeIndex] += captured
+  }
+
+  const completedGame = finalizeGame(nextBoard, currentPlayer)
+  const nextPlayer = extraTurn ? currentPlayer : getOpponent(currentPlayer)
+
+  return {
+    board: completedGame?.board ?? nextBoard,
+    currentPlayer: completedGame ? currentPlayer : nextPlayer,
+    captured,
+    extraTurn,
+    fromPit: pitIndex,
+    lastLandingIndex: cursor,
+    gameStatus: completedGame ? 'finished' : 'playing',
+    winner: completedGame?.winner ?? null,
+  }
+}

@@ -1,6 +1,6 @@
 import styles from "./Register.module.css"
 export default function Register(){
-    function signUp(registerData){
+    function signUp(){
         
     }
     return(

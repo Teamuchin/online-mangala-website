@@ -85,6 +85,28 @@
         box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
     }
 }
+
+.primaryLink {
+    text-decoration: none;
+}
+
+.primaryAction {
+    width: 500px;
+    height: 200px;
+    margin-top: 15px;
+    background-color: #D7A9A9;
+    border-radius: 10px;
+    font-size: 40px;
+    font-weight: bold;
+    font-family: "SN Pro", sans-serif;
+    color: #A33939;
+    cursor: pointer;
+    border: none;
+    box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 .homebuttonlower {
     display: flex;
     flex-direction: row;

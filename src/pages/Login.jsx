@@ -1,6 +1,6 @@
 import styles from "./Login.module.css"
 export default function Login(){
-    function signUp(loginData){
+    function signUp(){
         
     }
     return(

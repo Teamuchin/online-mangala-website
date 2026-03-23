@@ -1,4 +1,6 @@
 import styles from "./Home.module.css"
+import { Link } from 'react-router-dom'
+
 export default function Home(){
     return(
         <div className={styles.home}>
@@ -17,7 +19,9 @@ export default function Home(){
                 <h1>Welcome Username!</h1>
                 <div className={styles.homebuttons}>
                     <div className={styles.homebuttonupper}>
-                        <button className={styles.playbtn}>Play Online</button>
+                        <Link to="/game/local" className={`${styles.primaryLink} ${styles.primaryAction}`}>
+                            Local Match
+                        </Link>
                         <button className={styles.learnbtn}>Play Againist Bots</button>
                     </div>
                     <div className={styles.homebuttonlower}>
