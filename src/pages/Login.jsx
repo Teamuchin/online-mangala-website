@@ -1,4 +1,6 @@
 import styles from "./Login.module.css"
+import { Link } from 'react-router-dom'
+
 export default function Login(){
     function signUp(){
         
@@ -16,8 +18,14 @@ export default function Login(){
                     <label htmlFor="rememberme">Remember me</label>
                     <input id="rememberme" type="checkbox" defaultChecked={false} name="rememberme"/>
                 </div>
-                <input type="submit" value="Log in" className={styles.submitbtn}/>
-                <input type="button" value="Sign Up" className={styles.signupbtn}/>
+                <Link to="/" className={styles.submitbtn}>
+                Log in
+                </Link>
+                <Link to="/register" className={styles.signupbtn}>
+                Sign Up
+                </Link>
+                {/* <input type="submit" value="Log in" className={styles.submitbtn}/> */}
+                {/* <input type="button" value="Sign Up" className={styles.signupbtn}/> */}
             </form>
         </div>
     )
