@@ -1,7 +1,10 @@
+import { useState } from "react"
 import styles from "./Home.module.css"
 import { Link } from 'react-router-dom'
 
 export default function Home(){
+    const [isAccountModalOpen, setIsAccountModalOpen] = useState(false)
+
     return(
 
         <div className={styles.home}>
@@ -11,10 +14,20 @@ export default function Home(){
                     <h1>Mangala</h1>
                 </div>
                 <div className={styles.headerbuttons}>
-                    <div>
-                        <Link to="/login" className={styles.account}>
-                        <img src="/accountbtn.svg" alt="account"/>
+                    <div
+                        className={styles.accountWrapper}
+                        onMouseEnter={() => setIsAccountModalOpen(true)}
+                        onMouseLeave={() => setIsAccountModalOpen(false)}
+                    >
+                        <Link to="/account" className={styles.account}>
+                            <img src="/accountbtn.svg" alt="account"/>
                         </Link>
+                        {isAccountModalOpen && <div className={styles.accountModal}>
+                            <img src="/accountbtn.svg" alt="profilepic" className={styles.accountModalIcon}/>
+                            <p className={styles.accountModalUsername}>Username</p>
+                            <p className={styles.accountModalElo}>Elo: 1200</p>
+                            <Link to="/login" className={styles.modallogout}>Log out</Link>
+                            </div>}
                     </div>
                     <button className={styles.langbtn}><img src="/languagebtn.svg" alt="language"/></button>
                     <button className={styles.settingbtn}><img src="/settingsbtn.png" alt="settings"/></button>
@@ -32,7 +45,7 @@ export default function Home(){
                         </Link>
                     </div>
                     <div className={styles.homebuttonlower}>
-                        <Link to="/game/local" className={styles.learnbtn}>
+                        <Link to="/banner" className={styles.learnbtn}>
                         Learn & Train
                         </Link>
                         <Link to="/game/local" className={styles.watchbtn}>

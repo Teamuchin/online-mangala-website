@@ -23,9 +23,9 @@ export default function Banner(){
                 </div>
                 <div className={styles.bannerbody}>
                     <div className={styles.bodyslogan}>
-                        <h1><span style={{color: "#A33939"}}>Play</span> Mangala</h1>
-                        <h1 style={{marginLeft: "150px"}} ><span style={{color: "#A33939"}}>Wherever</span> you like</h1>
-                        <h1><span style={{color: "#A33939"}}>However</span> you want</h1>
+                        <h1><span style={{color: "#5a2f12"}}>Play</span> Mangala</h1>
+                        <h1 style={{marginLeft: "150px"}} ><span style={{color: "#5a2f12"}}>Wherever</span> you like</h1>
+                        <h1><span style={{color: "#5a2f12"}}>However</span> you want</h1>
                     </div>
                     <div className={styles.bodybuttons}>
                         <button className={styles.loginbtn}>Log in</button>
