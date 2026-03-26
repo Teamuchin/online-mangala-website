@@ -1,4 +1,5 @@
 import styles from "./Banner.module.css"
+import { Link } from 'react-router-dom'
 
 export default function Banner(){
 
@@ -16,9 +17,7 @@ export default function Banner(){
                         <a href="#">About</a>
                     </div>
                     <div className={styles.headerbuttons}>
-                        <button className={styles.accountbtn}><img src="/accountbtn.svg" alt="account"/></button>
                         <button className={styles.langbtn}><img src="/languagebtn.svg" alt="language"/></button>
-                        <button className={styles.settingbtn}><img src="/settingsbtn.png" alt="settings"/></button>
                     </div>
                 </div>
                 <div className={styles.bannerbody}>
@@ -28,9 +27,9 @@ export default function Banner(){
                         <h1><span style={{color: "#5a2f12"}}>However</span> you want</h1>
                     </div>
                     <div className={styles.bodybuttons}>
-                        <button className={styles.loginbtn}>Log in</button>
-                        <button className={styles.signupbtn}>Sign up</button>
-                        <button className={styles.guestbtn}>Play as guest</button>
+                        <Link to="/login" className={styles.loginbtn}>Log in</Link>
+                        <Link to="/register" className={styles.signupbtn}>Sign up</Link>
+                        <Link to="/register" className={styles.signupbtn}>Play as Guest</Link>
                     </div>
                 </div>
             </div>

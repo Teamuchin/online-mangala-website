@@ -68,11 +68,15 @@
     margin-top: 100px;
     padding-bottom: 50px;
 }
-.bodybuttons {
+.bodybuttons{
     display: flex;
     flex-direction: row;
     gap: 75px;
-        button{
+        a{
+        display:flex;        
+        justify-content:center;
+        align-items:center;
+        text-decoration: none;
         width: 250px;
         height: 100px;
         margin-top: 15px;
