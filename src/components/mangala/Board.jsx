@@ -67,9 +67,72 @@ function getStoreStoneRows(count) {
   })
 }
 
-function Pit({ count, disabled, isSelected, onClick, showVisualStones }) {
+function buildStoneStates(count, movedCount, isFinalTarget) {
+  return Array.from({ length: count }, (_, stoneIndex) => {
+    const isMovedStone = stoneIndex >= count - movedCount
+    const isFinalStone = isFinalTarget && stoneIndex === count - 1
+
+    return {
+      id: `stone-${stoneIndex}`,
+      isMovedStone,
+      isFinalStone,
+    }
+  })
+}
+
+function renderStoneRows(rows, stoneStates, rowClassName, extraStoneClassName = '') {
+  let stoneOffset = 0
+
+  return rows.map((row) => {
+    const rowStates = stoneStates.slice(stoneOffset, stoneOffset + row.stonesInRow)
+    stoneOffset += row.stonesInRow
+
+    return (
+      <span
+        key={row.id}
+        className={rowClassName}
+        style={{ '--row-offset': row.offset }}
+      >
+        {rowStates.map((stoneState) => (
+          <span
+            key={stoneState.id}
+            className={`${styles.stone} ${extraStoneClassName} ${
+              stoneState.isMovedStone ? styles.movedStone : ''
+            } ${stoneState.isFinalStone ? styles.finalStone : ''}`}
+          />
+        ))}
+      </span>
+    )
+  })
+}
+
+function Pit({
+  count,
+  disabled,
+  isSelected,
+  movedCount,
+  isFinalTarget,
+  capturedCount,
+  onClick,
+  showVisualStones,
+}) {
   const shouldUseOverflowCount = count > MAX_VISIBLE_STONES
   const rows = shouldUseOverflowCount ? [] : getStoneRows(count)
+  const stoneStates = shouldUseOverflowCount
+    ? []
+    : buildStoneStates(count, movedCount, isFinalTarget)
+  const capturedRows =
+    capturedCount > 0 && capturedCount <= MAX_VISIBLE_STONES
+      ? getStoneRows(capturedCount)
+      : []
+  const capturedStoneStates =
+    capturedRows.length > 0
+      ? Array.from({ length: capturedCount }, (_, stoneIndex) => ({
+          id: `captured-${stoneIndex}`,
+          isMovedStone: false,
+          isFinalStone: false,
+        }))
+      : []
 
   return (
     <button
@@ -78,24 +141,24 @@ function Pit({ count, disabled, isSelected, onClick, showVisualStones }) {
       onClick={onClick}
       disabled={disabled}
     >
-      <span className={styles.pitSurface}>
+      <span
+        className={`${styles.pitSurface} ${
+          isFinalTarget ? styles.finalTargetSurface : ''
+        }`}
+      >
         {!showVisualStones || shouldUseOverflowCount ? (
           <span className={styles.pitCount}>{count}</span>
         ) : (
-          rows.map((row) => (
-            <span
-              key={row.id}
-              className={styles.stoneRow}
-              style={{ '--row-offset': row.offset }}
-            >
-              {Array.from({ length: row.stonesInRow }, (_, stoneIndex) => (
-                <span
-                  key={`${row.id}-${stoneIndex}`}
-                  className={styles.stone}
-                />
-              ))}
-            </span>
-          ))
+          <>
+            {renderStoneRows(rows, stoneStates, styles.stoneRow)}
+            {capturedRows.length > 0 &&
+              renderStoneRows(
+                capturedRows,
+                capturedStoneStates,
+                styles.stoneRow,
+                styles.capturedStone,
+              )}
+          </>
         )}
       </span>
       {shouldUseOverflowCount && (
@@ -105,28 +168,16 @@ function Pit({ count, disabled, isSelected, onClick, showVisualStones }) {
   )
 }
 
-function Store({ count, label, showVisualStones }) {
+function Store({ count, label, showVisualStones, movedCount, isFinalTarget }) {
   const rows = getStoreStoneRows(count)
+  const stoneStates = buildStoneStates(count, movedCount, isFinalTarget)
 
   return (
-    <div className={styles.store}>
+    <div className={`${styles.store} ${isFinalTarget ? styles.finalStore : ''}`}>
       <span className={styles.storeLabel}>{label}</span>
       {showVisualStones ? (
         <div className={styles.storeSurface}>
-          {rows.map((row) => (
-            <span
-              key={row.id}
-              className={styles.storeRow}
-              style={{ '--row-offset': row.offset }}
-            >
-              {Array.from({ length: row.stonesInRow }, (_, stoneIndex) => (
-                <span
-                  key={`${row.id}-${stoneIndex}`}
-                  className={`${styles.stone} ${styles.storeStone}`}
-                />
-              ))}
-            </span>
-          ))}
+          {renderStoneRows(rows, stoneStates, styles.storeRow, styles.storeStone)}
         </div>
       ) : (
         <div className={`${styles.storeSurface} ${styles.storeSurfaceHidden}`}>
@@ -145,10 +196,20 @@ export default function Board({
   gameStatus,
   players,
   showVisualStones,
+  lastMove,
   onPitClick,
 }) {
   const topRow = [...PLAYER_CONFIG.top.pitIndexes].reverse()
   const bottomRow = PLAYER_CONFIG.bottom.pitIndexes
+  const finalTarget = lastMove?.lastLandingIndex ?? null
+  const dropCounts = lastMove?.dropCounts ?? {}
+  const capturedCounts = (lastMove?.capturedStones ?? []).reduce(
+    (accumulator, item) => {
+      accumulator[item.index] = (accumulator[item.index] ?? 0) + item.count
+      return accumulator
+    },
+    {},
+  )
 
   return (
     <section className={styles.boardShell}>
@@ -156,6 +217,8 @@ export default function Board({
         count={board[13]}
         label={`${players.top.name} Store`}
         showVisualStones={showVisualStones}
+        movedCount={dropCounts[13] ?? 0}
+        isFinalTarget={finalTarget === 13}
       />
       <div className={styles.boardCenter}>
         <div className={styles.pitRow}>
@@ -164,6 +227,9 @@ export default function Board({
               key={index}
               count={board[index]}
               showVisualStones={showVisualStones}
+              movedCount={dropCounts[index] ?? 0}
+              isFinalTarget={finalTarget === index}
+              capturedCount={capturedCounts[index] ?? 0}
               disabled={
                 gameStatus === 'finished' ||
                 currentPlayer !== 'top' ||
@@ -180,6 +246,9 @@ export default function Board({
               key={index}
               count={board[index]}
               showVisualStones={showVisualStones}
+              movedCount={dropCounts[index] ?? 0}
+              isFinalTarget={finalTarget === index}
+              capturedCount={capturedCounts[index] ?? 0}
               disabled={
                 gameStatus === 'finished' ||
                 currentPlayer !== 'bottom' ||
@@ -195,6 +264,8 @@ export default function Board({
         count={board[6]}
         label={`${players.bottom.name} Store`}
         showVisualStones={showVisualStones}
+        movedCount={dropCounts[6] ?? 0}
+        isFinalTarget={finalTarget === 6}
       />
     </section>
   )

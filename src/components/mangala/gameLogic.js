@@ -161,6 +161,9 @@ export function applyMove(board, currentPlayer, pitIndex) {
   const nextBoard = [...board]
   let stonesInHand = nextBoard[pitIndex]
   let cursor = pitIndex
+  const dropSequence = []
+  const dropCounts = {}
+  const capturedStones = []
 
   nextBoard[pitIndex] = 0
 
@@ -168,6 +171,8 @@ export function applyMove(board, currentPlayer, pitIndex) {
     // Mangala sowing starts from the selected pit unless it contained exactly one stone.
     nextBoard[pitIndex] = 1
     stonesInHand -= 1
+    dropSequence.push(pitIndex)
+    dropCounts[pitIndex] = (dropCounts[pitIndex] ?? 0) + 1
   }
 
   while (stonesInHand > 0) {
@@ -179,6 +184,8 @@ export function applyMove(board, currentPlayer, pitIndex) {
 
     nextBoard[cursor] += 1
     stonesInHand -= 1
+    dropSequence.push(cursor)
+    dropCounts[cursor] = (dropCounts[cursor] ?? 0) + 1
   }
 
   const extraTurn = cursor === PLAYER_CONFIG[currentPlayer].storeIndex
@@ -194,18 +201,25 @@ export function applyMove(board, currentPlayer, pitIndex) {
       oppositePitIndex === null ? 0 : nextBoard[oppositePitIndex]
 
     if (oppositePitStones > 0) {
+      capturedStones.push({ index: cursor, count: nextBoard[cursor] })
+      capturedStones.push({ index: oppositePitIndex, count: oppositePitStones })
       captured = oppositePitStones + nextBoard[cursor]
       nextBoard[cursor] = 0
       nextBoard[oppositePitIndex] = 0
       nextBoard[PLAYER_CONFIG[currentPlayer].storeIndex] += captured
+      dropCounts[PLAYER_CONFIG[currentPlayer].storeIndex] =
+        (dropCounts[PLAYER_CONFIG[currentPlayer].storeIndex] ?? 0) + captured
     }
   } else if (
     isPlayersPit(cursor, getOpponent(currentPlayer)) &&
     nextBoard[cursor] % 2 === 0
   ) {
+    capturedStones.push({ index: cursor, count: nextBoard[cursor] })
     captured = nextBoard[cursor]
     nextBoard[cursor] = 0
     nextBoard[PLAYER_CONFIG[currentPlayer].storeIndex] += captured
+    dropCounts[PLAYER_CONFIG[currentPlayer].storeIndex] =
+      (dropCounts[PLAYER_CONFIG[currentPlayer].storeIndex] ?? 0) + captured
   }
 
   const completedGame = finalizeGame(nextBoard, currentPlayer)
@@ -217,6 +231,9 @@ export function applyMove(board, currentPlayer, pitIndex) {
     captured,
     extraTurn,
     fromPit: pitIndex,
+    dropCounts,
+    dropSequence,
+    capturedStones,
     lastLandingIndex: cursor,
     gameStatus: completedGame ? 'finished' : 'playing',
     winner: completedGame?.winner ?? null,

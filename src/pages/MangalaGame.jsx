@@ -121,6 +121,9 @@ export default function MangalaGame() {
         turnMessage,
         lastMove: {
           fromPit: moveResult.fromPit,
+          dropCounts: moveResult.dropCounts,
+          dropSequence: moveResult.dropSequence,
+          capturedStones: moveResult.capturedStones,
           lastLandingIndex: moveResult.lastLandingIndex,
           captured: moveResult.captured,
           extraTurn: moveResult.extraTurn,
@@ -189,6 +192,7 @@ export default function MangalaGame() {
           gameStatus={game.gameStatus}
           players={game.players}
           showVisualStones={showVisualStones}
+          lastMove={game.lastMove}
           onPitClick={handlePitClick}
         />
 

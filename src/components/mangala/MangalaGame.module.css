@@ -25,7 +25,7 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .titleBlock h1 {
@@ -43,11 +43,15 @@
 .secondaryButton {
   border: none;
   border-radius: 999px;
-  padding: 14px 20px;
+  padding: 10px 16px;
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
 }
 
 .homeLink {
@@ -186,6 +190,15 @@
   outline: 4px solid #fff0c2;
 }
 
+.finalTargetSurface {
+  outline: 4px solid #ff8a3d;
+}
+
+.finalStore {
+  outline: 4px solid #ff8a3d;
+  outline-offset: 0;
+}
+
 .stoneRow {
   position: absolute;
   top: 50%;
@@ -203,6 +216,26 @@
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #fff8ef 0%, #f7d8b5 35%, #8a4a22 100%);
   box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.45), 0 1px 3px rgba(55, 24, 8, 0.28);
+}
+
+.movedStone {
+  box-shadow:
+    inset 0 0 0 2px rgba(120, 196, 120, 0.92),
+    inset 0 1px 2px rgba(255, 255, 255, 0.45),
+    0 1px 3px rgba(55, 24, 8, 0.28);
+}
+
+.finalStone {
+  box-shadow:
+    inset 0 0 0 2px rgba(120, 196, 120, 0.92),
+    inset 0 1px 2px rgba(255, 255, 255, 0.45),
+    0 1px 3px rgba(55, 24, 8, 0.28);
+}
+
+.capturedStone {
+  opacity: 0.48;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 248, 239, 0.82) 0%, rgba(247, 216, 181, 0.68) 35%, rgba(138, 74, 34, 0.52) 100%);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.35), 0 1px 3px rgba(55, 24, 8, 0.22);
 }
 
 .pitCount {
@@ -348,6 +381,11 @@
   .topBar {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .actions {
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
   .pitRow {
