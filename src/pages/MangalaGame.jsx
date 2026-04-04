@@ -21,6 +21,7 @@ const RULES = [
 
 export default function MangalaGame() {
   const [game, setGame] = useState(createInitialState)
+  const [showVisualStones, setShowVisualStones] = useState(true)
 
   useEffect(() => {
     if (game.gameStatus !== 'playing') {
@@ -65,6 +66,10 @@ export default function MangalaGame() {
 
   const handleReset = () => {
     setGame(createInitialState())
+  }
+
+  const handleStoneToggle = () => {
+    setShowVisualStones((currentValue) => !currentValue)
   }
 
   const handlePitClick = (pitIndex) => {
@@ -146,6 +151,13 @@ export default function MangalaGame() {
             </p>
           </div>
           <div className={styles.actions}>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={handleStoneToggle}
+            >
+              Visual Stones: {showVisualStones ? 'On' : 'Off'}
+            </button>
             <Link to="/" className={styles.homeLink}>
               Back Home
             </Link>
@@ -176,6 +188,7 @@ export default function MangalaGame() {
           selectedPit={game.selectedPit}
           gameStatus={game.gameStatus}
           players={game.players}
+          showVisualStones={showVisualStones}
           onPitClick={handlePitClick}
         />
 

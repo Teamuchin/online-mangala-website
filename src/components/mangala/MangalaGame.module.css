@@ -39,7 +39,8 @@
 }
 
 .homeLink,
-.resetButton {
+.resetButton,
+.secondaryButton {
   border: none;
   border-radius: 999px;
   padding: 14px 20px;
@@ -57,6 +58,11 @@
 .resetButton {
   color: #fff7ee;
   background: #8a4020;
+}
+
+.secondaryButton {
+  color: #5a2f12;
+  background: rgba(255, 248, 235, 0.9);
 }
 
 .playerGrid {
@@ -223,7 +229,7 @@
   border-radius: 28px;
   background: radial-gradient(circle at 30% 25%, #ffe9cf, #e0b37b 70%, #a76030 100%);
   box-shadow: inset 0 -8px 18px rgba(108, 54, 22, 0.25), 0 10px 18px rgba(38, 16, 6, 0.28);
-  padding: 20px 12px;
+  padding: 18px 12px 16px;
   text-align: center;
   color: #5a2f12;
 }
@@ -236,10 +242,49 @@
   opacity: 0.82;
 }
 
-.storeCount {
-  font-size: clamp(2rem, 4vw, 3rem);
+.storeSurface {
+  position: relative;
+  width: 100%;
+  min-height: 220px;
+  flex: 1;
+  --store-stone-size: 18px;
+  --store-stone-gap: 2px;
+  --store-stone-step: calc(var(--store-stone-size) + var(--store-stone-gap));
+}
+
+.storeRow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateY(calc(var(--row-offset) * var(--store-stone-step)));
+  display: inline-flex;
+  justify-content: center;
+  gap: var(--store-stone-gap);
+  width: 100%;
+}
+
+.storeSurfaceHidden {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.storeStone {
+  width: var(--store-stone-size);
+  height: var(--store-stone-size);
+}
+
+.storeCountOnly {
+  font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 800;
+  line-height: 1;
+}
+
+.storeTotal {
   margin-top: 10px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .statusCard,
@@ -289,6 +334,10 @@
   .store {
     min-height: 110px;
   }
+
+  .storeSurface {
+    min-height: 160px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -313,6 +362,13 @@
     --stone-size: 15px;
     --stone-gap: 2px;
     --stone-step: calc(var(--stone-size) + var(--stone-gap));
+  }
+
+  .storeSurface {
+    --store-stone-size: 15px;
+    --store-stone-gap: 2px;
+    --store-stone-step: calc(var(--store-stone-size) + var(--store-stone-gap));
+    min-height: 140px;
   }
 
 }
