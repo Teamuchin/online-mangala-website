@@ -1,15 +1,18 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Board from '../components/mangala/Board'
 import GameStatus from '../components/mangala/GameStatus'
 import PlayerPanel from '../components/mangala/PlayerPanel'
 import {
   applyMove,
+  buildMoveAnimationFrames,
   createInitialState,
   getLegalMoves,
   PLAYER_CONFIG,
 } from '../components/mangala/gameLogic'
 import styles from '../components/mangala/MangalaGame.module.css'
+
+const MOVE_ANIMATION_DELAY_MS = 260
 
 const RULES = [
   'Each side begins with 4 stones in all 6 pits.',
@@ -22,6 +25,34 @@ const RULES = [
 export default function MangalaGame() {
   const [game, setGame] = useState(createInitialState)
   const [showVisualStones, setShowVisualStones] = useState(true)
+  const [animateMoves, setAnimateMoves] = useState(false)
+  const animationTimeoutsRef = useRef([])
+
+  const clearAnimationTimeouts = () => {
+    animationTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
+    animationTimeoutsRef.current = []
+  }
+
+  const buildTurnMessage = (currentGame, moveResult) => {
+    const activeName = currentGame.players[currentGame.currentPlayer].name
+    const nextName = currentGame.players[moveResult.currentPlayer].name
+
+    if (moveResult.gameStatus === 'finished') {
+      return moveResult.winner === 'draw'
+        ? 'The match ends in a draw.'
+        : `${currentGame.players[moveResult.winner].name} collects more stones and wins.`
+    }
+
+    if (moveResult.extraTurn) {
+      return `${activeName} landed in the store and plays again.`
+    }
+
+    if (moveResult.captured > 0) {
+      return `${activeName} captured ${moveResult.captured} stones. ${nextName} is up next.`
+    }
+
+    return `${nextName} to move`
+  }
 
   useEffect(() => {
     if (game.gameStatus !== 'playing') {
@@ -64,12 +95,19 @@ export default function MangalaGame() {
     return () => window.clearInterval(timerId)
   }, [game.gameStatus])
 
+  useEffect(() => () => clearAnimationTimeouts(), [])
+
   const handleReset = () => {
+    clearAnimationTimeouts()
     setGame(createInitialState())
   }
 
   const handleStoneToggle = () => {
     setShowVisualStones((currentValue) => !currentValue)
+  }
+
+  const handleAnimationToggle = () => {
+    setAnimateMoves((currentValue) => !currentValue)
   }
 
   const handlePitClick = (pitIndex) => {
@@ -94,20 +132,70 @@ export default function MangalaGame() {
         return currentGame
       }
 
-      const activeName = currentGame.players[currentGame.currentPlayer].name
-      const nextName = currentGame.players[moveResult.currentPlayer].name
+      if (animateMoves) {
+        clearAnimationTimeouts()
 
-      let turnMessage = `${nextName} to move`
+        const frames = buildMoveAnimationFrames(
+          currentGame.board,
+          currentGame.currentPlayer,
+          pitIndex,
+        )
+        const activeName = currentGame.players[currentGame.currentPlayer].name
 
-      if (moveResult.gameStatus === 'finished') {
-        turnMessage =
-          moveResult.winner === 'draw'
-            ? 'The match ends in a draw.'
-            : `${currentGame.players[moveResult.winner].name} collects more stones and wins.`
-      } else if (moveResult.extraTurn) {
-        turnMessage = `${activeName} landed in the store and plays again.`
-      } else if (moveResult.captured > 0) {
-        turnMessage = `${activeName} captured ${moveResult.captured} stones. ${nextName} is up next.`
+        frames.forEach((frame, frameIndex) => {
+          const timeoutId = window.setTimeout(() => {
+            setGame((liveGame) => ({
+              ...liveGame,
+              board: frame,
+            }))
+          }, frameIndex * MOVE_ANIMATION_DELAY_MS)
+
+          animationTimeoutsRef.current.push(timeoutId)
+        })
+
+        const finalizeTimeoutId = window.setTimeout(() => {
+          setGame((liveGame) => ({
+            ...liveGame,
+            board: moveResult.board,
+            currentPlayer: moveResult.currentPlayer,
+            selectedPit: pitIndex,
+            moveInProgress: false,
+            gameStatus: moveResult.gameStatus,
+            winner: moveResult.winner,
+            turnMessage: buildTurnMessage(currentGame, moveResult),
+            lastMove: {
+              fromPit: moveResult.fromPit,
+              dropCounts: moveResult.dropCounts,
+              dropSequence: moveResult.dropSequence,
+              capturedStones: moveResult.capturedStones,
+              lastLandingIndex: moveResult.lastLandingIndex,
+              captured: moveResult.captured,
+              extraTurn: moveResult.extraTurn,
+            },
+            moveHistory: [
+              ...liveGame.moveHistory,
+              {
+                player: currentGame.currentPlayer,
+                fromPit: moveResult.fromPit,
+                landedAt: moveResult.lastLandingIndex,
+                captured: moveResult.captured,
+                extraTurn: moveResult.extraTurn,
+              },
+            ],
+          }))
+          clearAnimationTimeouts()
+        }, frames.length * MOVE_ANIMATION_DELAY_MS)
+
+        animationTimeoutsRef.current.push(finalizeTimeoutId)
+
+        return {
+          ...currentGame,
+          board: frames[0] ?? currentGame.board,
+          selectedPit: pitIndex,
+          moveInProgress: true,
+          turnMessage: `${activeName} is sowing stones...`,
+          lastMove: null,
+        }
       }
 
       return {
@@ -118,7 +206,7 @@ export default function MangalaGame() {
         moveInProgress: false,
         gameStatus: moveResult.gameStatus,
         winner: moveResult.winner,
-        turnMessage,
+        turnMessage: buildTurnMessage(currentGame, moveResult),
         lastMove: {
           fromPit: moveResult.fromPit,
           dropCounts: moveResult.dropCounts,
@@ -160,6 +248,13 @@ export default function MangalaGame() {
               onClick={handleStoneToggle}
             >
               Visual Stones: {showVisualStones ? 'On' : 'Off'}
+            </button>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={handleAnimationToggle}
+            >
+              Move Animation: {animateMoves ? 'On' : 'Off'}
             </button>
             <Link to="/" className={styles.homeLink}>
               Back Home

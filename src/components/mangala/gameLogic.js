@@ -153,6 +153,39 @@ export function getLegalMoves(board, player) {
   return PLAYER_CONFIG[player].pitIndexes.filter((index) => board[index] > 0)
 }
 
+export function buildMoveAnimationFrames(board, currentPlayer, pitIndex) {
+  if (!isPlayersPit(pitIndex, currentPlayer) || board[pitIndex] === 0) {
+    return []
+  }
+
+  const nextBoard = [...board]
+  let stonesInHand = nextBoard[pitIndex]
+  let cursor = pitIndex
+  const frames = []
+
+  nextBoard[pitIndex] = 0
+
+  if (stonesInHand > 1) {
+    nextBoard[pitIndex] = 1
+    stonesInHand -= 1
+    frames.push([...nextBoard])
+  }
+
+  while (stonesInHand > 0) {
+    cursor = (cursor + 1) % nextBoard.length
+
+    if (cursor === PLAYER_CONFIG[currentPlayer].opponentStoreIndex) {
+      continue
+    }
+
+    nextBoard[cursor] += 1
+    stonesInHand -= 1
+    frames.push([...nextBoard])
+  }
+
+  return frames
+}
+
 export function applyMove(board, currentPlayer, pitIndex) {
   if (!isPlayersPit(pitIndex, currentPlayer) || board[pitIndex] === 0) {
     return null
