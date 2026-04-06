@@ -264,6 +264,7 @@ export function applyMove(board, currentPlayer, pitIndex) {
     captured,
     extraTurn,
     fromPit: pitIndex,
+    initialPitCount: board[pitIndex],
     dropCounts,
     dropSequence,
     capturedStones,

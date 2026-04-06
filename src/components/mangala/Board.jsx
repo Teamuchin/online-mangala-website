@@ -113,6 +113,7 @@ function Pit({
   movedCount,
   isFinalTarget,
   capturedCount,
+  sourceSilhouetteCount,
   onClick,
   showVisualStones,
 }) {
@@ -129,6 +130,18 @@ function Pit({
     capturedRows.length > 0
       ? Array.from({ length: capturedCount }, (_, stoneIndex) => ({
           id: `captured-${stoneIndex}`,
+          isMovedStone: false,
+          isFinalStone: false,
+        }))
+      : []
+  const sourceSilhouetteRows =
+    sourceSilhouetteCount > 0 && sourceSilhouetteCount <= MAX_VISIBLE_STONES
+      ? getStoneRows(sourceSilhouetteCount)
+      : []
+  const sourceSilhouetteStates =
+    sourceSilhouetteRows.length > 0
+      ? Array.from({ length: sourceSilhouetteCount }, (_, stoneIndex) => ({
+          id: `source-${stoneIndex}`,
           isMovedStone: false,
           isFinalStone: false,
         }))
@@ -150,7 +163,14 @@ function Pit({
           <span className={styles.pitCount}>{count}</span>
         ) : (
           <>
-            {renderStoneRows(rows, stoneStates, styles.stoneRow)}
+            {sourceSilhouetteRows.length > 0
+              ? renderStoneRows(
+                  sourceSilhouetteRows,
+                  sourceSilhouetteStates,
+                  styles.stoneRow,
+                  styles.departedStone,
+                )
+              : renderStoneRows(rows, stoneStates, styles.stoneRow)}
             {capturedRows.length > 0 &&
               renderStoneRows(
                 capturedRows,
@@ -203,6 +223,10 @@ export default function Board({
   const bottomRow = PLAYER_CONFIG.bottom.pitIndexes
   const finalTarget = lastMove?.lastLandingIndex ?? null
   const dropCounts = lastMove?.dropCounts ?? {}
+  const sourceSilhouetteCounts =
+    lastMove?.preMoveSourceCount && lastMove?.fromPit !== undefined
+      ? { [lastMove.fromPit]: lastMove.preMoveSourceCount }
+      : {}
   const capturedCounts = (lastMove?.capturedStones ?? []).reduce(
     (accumulator, item) => {
       accumulator[item.index] = (accumulator[item.index] ?? 0) + item.count
@@ -230,6 +254,7 @@ export default function Board({
               movedCount={dropCounts[index] ?? 0}
               isFinalTarget={finalTarget === index}
               capturedCount={capturedCounts[index] ?? 0}
+              sourceSilhouetteCount={sourceSilhouetteCounts[index] ?? 0}
               disabled={
                 gameStatus === 'finished' ||
                 currentPlayer !== 'top' ||
@@ -249,6 +274,7 @@ export default function Board({
               movedCount={dropCounts[index] ?? 0}
               isFinalTarget={finalTarget === index}
               capturedCount={capturedCounts[index] ?? 0}
+              sourceSilhouetteCount={sourceSilhouetteCounts[index] ?? 0}
               disabled={
                 gameStatus === 'finished' ||
                 currentPlayer !== 'bottom' ||

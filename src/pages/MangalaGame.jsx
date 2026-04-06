@@ -63,6 +63,7 @@ export default function MangalaGame() {
 
     return {
       fromPit: moveResult.fromPit,
+      initialPitCount: moveResult.initialPitCount,
       dropCounts,
       dropSequence: visibleSequence,
       capturedStones: [],
@@ -74,6 +75,18 @@ export default function MangalaGame() {
       extraTurn: false,
     }
   }
+
+  const buildPreMoveLastMove = (currentGame, pitIndex) => ({
+    fromPit: pitIndex,
+    initialPitCount: currentGame.board[pitIndex],
+    preMoveSourceCount: currentGame.board[pitIndex],
+    dropCounts: {},
+    dropSequence: [],
+    capturedStones: [],
+    lastLandingIndex: null,
+    captured: 0,
+    extraTurn: false,
+  })
 
   useEffect(() => {
     if (game.gameStatus !== 'playing') {
@@ -170,7 +183,7 @@ export default function MangalaGame() {
               board: frame,
               lastMove: buildAnimatedLastMove(moveResult, frameIndex),
             }))
-          }, frameIndex * MOVE_ANIMATION_DELAY_MS)
+          }, (frameIndex + 1) * MOVE_ANIMATION_DELAY_MS)
 
           animationTimeoutsRef.current.push(timeoutId)
         })
@@ -187,6 +200,7 @@ export default function MangalaGame() {
             turnMessage: buildTurnMessage(currentGame, moveResult),
             lastMove: {
               fromPit: moveResult.fromPit,
+              initialPitCount: moveResult.initialPitCount,
               dropCounts: moveResult.dropCounts,
               dropSequence: moveResult.dropSequence,
               capturedStones: moveResult.capturedStones,
@@ -206,17 +220,17 @@ export default function MangalaGame() {
             ],
           }))
           clearAnimationTimeouts()
-        }, frames.length * MOVE_ANIMATION_DELAY_MS)
+        }, (frames.length + 1) * MOVE_ANIMATION_DELAY_MS)
 
         animationTimeoutsRef.current.push(finalizeTimeoutId)
 
         return {
           ...currentGame,
-          board: frames[0] ?? currentGame.board,
+          board: currentGame.board,
           selectedPit: pitIndex,
           moveInProgress: true,
           turnMessage: `${activeName} is sowing stones...`,
-          lastMove: null,
+          lastMove: buildPreMoveLastMove(currentGame, pitIndex),
         }
       }
 
@@ -231,6 +245,7 @@ export default function MangalaGame() {
         turnMessage: buildTurnMessage(currentGame, moveResult),
         lastMove: {
           fromPit: moveResult.fromPit,
+          initialPitCount: moveResult.initialPitCount,
           dropCounts: moveResult.dropCounts,
           dropSequence: moveResult.dropSequence,
           capturedStones: moveResult.capturedStones,
