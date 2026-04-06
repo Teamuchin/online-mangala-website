@@ -12,7 +12,7 @@ import {
 } from '../components/mangala/gameLogic'
 import styles from '../components/mangala/MangalaGame.module.css'
 
-const MOVE_ANIMATION_DELAY_MS = 260
+const MOVE_ANIMATION_DELAY_MS = 420
 
 const RULES = [
   'Each side begins with 4 stones in all 6 pits.',
@@ -52,6 +52,27 @@ export default function MangalaGame() {
     }
 
     return `${nextName} to move`
+  }
+
+  const buildAnimatedLastMove = (moveResult, frameIndex) => {
+    const visibleSequence = moveResult.dropSequence.slice(0, frameIndex + 1)
+    const dropCounts = visibleSequence.reduce((accumulator, index) => {
+      accumulator[index] = (accumulator[index] ?? 0) + 1
+      return accumulator
+    }, {})
+
+    return {
+      fromPit: moveResult.fromPit,
+      dropCounts,
+      dropSequence: visibleSequence,
+      capturedStones: [],
+      lastLandingIndex:
+        visibleSequence.length > 0
+          ? visibleSequence[visibleSequence.length - 1]
+          : null,
+      captured: 0,
+      extraTurn: false,
+    }
   }
 
   useEffect(() => {
@@ -147,6 +168,7 @@ export default function MangalaGame() {
             setGame((liveGame) => ({
               ...liveGame,
               board: frame,
+              lastMove: buildAnimatedLastMove(moveResult, frameIndex),
             }))
           }, frameIndex * MOVE_ANIMATION_DELAY_MS)
 
