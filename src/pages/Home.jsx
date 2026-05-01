@@ -1,21 +1,24 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAppData } from '../app/useAppData.js'
 import styles from './Home.module.css'
-import {
-  HOME_ACCOUNT_SUMMARY,
-  HOME_PRIMARY_ACTIONS,
-  HOME_SECONDARY_ACTIONS,
-} from './pageContent'
 
 export default function Home() {
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false)
+  const {
+    assets,
+    brandName,
+    homePrimaryActions,
+    homeSecondaryActions,
+    mockAccount,
+  } = useAppData()
 
   return (
     <div className={styles.home}>
       <div className={styles.homeheader}>
         <div className={styles.headerlogo}>
-          <img src="/logo.svg" alt="logo" className={styles.logo} />
-          <h1>Mangala</h1>
+          <img src={assets.logo} alt="logo" className={styles.logo} />
+          <h1>{brandName}</h1>
         </div>
         <div className={styles.headerbuttons}>
           <div
@@ -24,21 +27,17 @@ export default function Home() {
             onMouseLeave={() => setIsAccountModalOpen(false)}
           >
             <Link to="/account" className={styles.account}>
-              <img src="/accountbtn.svg" alt="account" />
+              <img src={assets.accountIcon} alt="account" />
             </Link>
             {isAccountModalOpen && (
               <div className={styles.accountModal}>
                 <img
-                  src="/accountbtn.svg"
+                  src={assets.accountIcon}
                   alt="profilepic"
                   className={styles.accountModalIcon}
                 />
-                <p className={styles.accountModalUsername}>
-                  {HOME_ACCOUNT_SUMMARY.username}
-                </p>
-                <p className={styles.accountModalElo}>
-                  {HOME_ACCOUNT_SUMMARY.eloLabel}
-                </p>
+                <p className={styles.accountModalUsername}>{mockAccount.username}</p>
+                <p className={styles.accountModalElo}>Elo: {mockAccount.elo}</p>
                 <Link to="/login" className={styles.modallogout}>
                   Log out
                 </Link>
@@ -46,32 +45,32 @@ export default function Home() {
             )}
           </div>
           <button className={styles.langbtn}>
-            <img src="/languagebtn.svg" alt="language" />
+            <img src={assets.languageIcon} alt="language" />
           </button>
           <button className={styles.settingbtn}>
-            <img src="/settingsbtn.png" alt="settings" />
+            <img src={assets.settingsIcon} alt="settings" />
           </button>
         </div>
       </div>
       <div className={styles.homebody}>
-        <h1>Welcome Username!</h1>
+        <h1>{mockAccount.welcomeMessage}</h1>
         <div className={styles.homebuttons}>
           <div className={styles.homebuttonupper}>
-            {HOME_PRIMARY_ACTIONS.map((action) => (
+            {homePrimaryActions.map((action) => (
               <Link key={action.label} to={action.to} className={styles[action.className]}>
                 {action.label}
               </Link>
             ))}
           </div>
           <div className={styles.homebuttonlower}>
-            {HOME_SECONDARY_ACTIONS.map((action) => (
+            {homeSecondaryActions.map((action) => (
               <Link key={action.label} to={action.to} className={styles[action.className]}>
                 {action.label}
               </Link>
             ))}
           </div>
           <img
-            src="/decorationboard.png"
+            src={assets.decorationBoard}
             alt="decorationboard"
             className={styles.decorationboard}
           />

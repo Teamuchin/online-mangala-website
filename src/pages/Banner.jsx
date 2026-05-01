@@ -1,17 +1,19 @@
 import styles from './Banner.module.css'
 import { Link } from 'react-router-dom'
-import { BANNER_NAV_LINKS, BANNER_SLOGAN_LINES } from './pageContent'
+import { useAppData } from '../app/useAppData.js'
 
 export default function Banner() {
+  const { assets, bannerActions, bannerNavLinks, bannerSloganLines, brandName } = useAppData()
+
   return (
     <div className={styles.banner}>
       <div className={styles.bannerheader}>
         <div className={styles.headerlogo}>
-          <img src="/logo.svg" alt="logo" className={styles.logo} />
-          <h1>Mangala</h1>
+          <img src={assets.logo} alt="logo" className={styles.logo} />
+          <h1>{brandName}</h1>
         </div>
         <div className={styles.headerlinks}>
-          {BANNER_NAV_LINKS.map((linkLabel) => (
+          {bannerNavLinks.map((linkLabel) => (
             <a key={linkLabel} href="#">
               {linkLabel}
             </a>
@@ -19,13 +21,13 @@ export default function Banner() {
         </div>
         <div className={styles.headerbuttons}>
           <button className={styles.langbtn}>
-            <img src="/languagebtn.svg" alt="language" />
+            <img src={assets.languageIcon} alt="language" />
           </button>
         </div>
       </div>
       <div className={styles.bannerbody}>
         <div className={styles.bodyslogan}>
-          {BANNER_SLOGAN_LINES.map((line) => (
+          {bannerSloganLines.map((line) => (
             <h1
               key={`${line.accent}-${line.text}`}
               className={line.className ? styles[line.className] : undefined}
@@ -35,15 +37,11 @@ export default function Banner() {
           ))}
         </div>
         <div className={styles.bodybuttons}>
-          <Link to="/login" className={styles.loginbtn}>
-            Log in
-          </Link>
-          <Link to="/register" className={styles.signupbtn}>
-            Sign up
-          </Link>
-          <Link to="/register" className={styles.signupbtn}>
-            Play as Guest
-          </Link>
+          {bannerActions.map((action) => (
+            <Link key={action.label} to={action.to} className={styles[action.className]}>
+              {action.label}
+            </Link>
+          ))}
         </div>
       </div>
     </div>

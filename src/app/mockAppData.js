@@ -1,6 +1,23 @@
-export const HOME_ACCOUNT_SUMMARY = {
+export const APP_BRAND_NAME = 'Mangala'
+
+export const APP_ASSETS = {
+  logo: '/logo.svg',
+  accountIcon: '/accountbtn.svg',
+  languageIcon: '/languagebtn.svg',
+  settingsIcon: '/settingsbtn.png',
+  decorationBoard: '/decorationboard.png',
+  profilePicturePlaceholder: '/assets/profile-picture-placeholder.png',
+}
+
+export const MOCK_ACCOUNT = {
   username: 'Username',
-  eloLabel: 'Elo: 1200',
+  elo: 1200,
+  welcomeMessage: 'Welcome Username!',
+}
+
+export const LOCAL_MATCH_PLAYERS = {
+  bottom: { id: 'p1', name: 'Emre', rating: 1485, timeLeft: 300 },
+  top: { id: 'p2', name: 'Ayse', rating: 1520, timeLeft: 300 },
 }
 
 export const HOME_PRIMARY_ACTIONS = [
@@ -17,9 +34,15 @@ export const HOME_SECONDARY_ACTIONS = [
 export const BANNER_NAV_LINKS = ['Play', 'Learn', 'About']
 
 export const BANNER_SLOGAN_LINES = [
-  { accent: 'Play', text: 'Mangala' },
+  { accent: 'Play', text: APP_BRAND_NAME },
   { accent: 'Wherever', text: 'you like', className: 'shiftedLine' },
   { accent: 'However', text: 'you want' },
+]
+
+export const BANNER_ACTIONS = [
+  { to: '/login', className: 'loginbtn', label: 'Log in' },
+  { to: '/register', className: 'signupbtn', label: 'Sign up' },
+  { to: '/register', className: 'signupbtn', label: 'Play as Guest' },
 ]
 
 export const ACCOUNT_SETTINGS_FIELDS = [

@@ -1,3 +1,5 @@
+import { LOCAL_MATCH_PLAYERS } from '../../app/mockAppData.js'
+
 export const PLAYER_ORDER = ['bottom', 'top']
 
 export const PLAYER_CONFIG = {
@@ -15,10 +17,7 @@ export const PLAYER_CONFIG = {
 
 export const INITIAL_BOARD = [4, 4, 4, 4, 4, 4, 0, 4, 4, 4, 4, 4, 4, 0]
 
-export const INITIAL_PLAYERS = {
-  bottom: { id: 'p1', name: 'Emre', rating: 1485, timeLeft: 300 },
-  top: { id: 'p2', name: 'Ayse', rating: 1520, timeLeft: 300 },
-}
+export const INITIAL_PLAYERS = LOCAL_MATCH_PLAYERS
 
 export function getOpponent(player) {
   return player === 'bottom' ? 'top' : 'bottom'
