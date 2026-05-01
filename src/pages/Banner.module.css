@@ -68,6 +68,15 @@
     margin-top: 100px;
     padding-bottom: 50px;
 }
+
+.accentWord {
+    color: #5a2f12;
+}
+
+.shiftedLine {
+    margin-left: 150px;
+}
+
 .bodybuttons{
     display: flex;
     flex-direction: row;
