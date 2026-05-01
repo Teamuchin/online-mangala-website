@@ -1,84 +1,13 @@
 import { PLAYER_CONFIG } from './gameLogic'
+import {
+  buildStaticStoneStates,
+  buildStoneStates,
+  getStoneRows,
+  getStoreStoneRows,
+  shouldRenderInlinePitStones,
+  shouldUseOverflowCount,
+} from './boardVisuals'
 import styles from './MangalaGame.module.css'
-
-const MAX_VISIBLE_STONES = 12
-const ROW_ORDER = [0, 1, 2, 3, 2.5, 1.5]
-const MAX_STONES_PER_ROW = 2
-const STORE_MAX_STONES_PER_ROW = 3
-const STORE_BASE_ROW_COUNT = 8
-
-function getStoreRowOrder(rowCount) {
-  const positions = Array.from({ length: STORE_BASE_ROW_COUNT }, (_, index) => index)
-
-  if (rowCount <= positions.length) {
-    return positions.slice(0, rowCount)
-  }
-
-  const interleavedPositions = []
-
-  for (let index = positions.length - 2; index >= 0; index -= 1) {
-    interleavedPositions.push(index + 0.5)
-  }
-  interleavedPositions.push(positions.length - 0.5)
-
-  return [...positions, ...interleavedPositions].slice(0, rowCount)
-}
-
-function getStoneRows(count) {
-  const rowCount = Math.ceil(count / MAX_STONES_PER_ROW)
-  const rowPositions = ROW_ORDER.slice(0, rowCount)
-  const minPosition = Math.min(...rowPositions)
-  const maxPosition = Math.max(...rowPositions)
-  const centerPosition = (minPosition + maxPosition) / 2
-
-  return Array.from({ length: rowCount }, (_, rowIndex) => {
-    const stonesInRow = Math.min(
-      MAX_STONES_PER_ROW,
-      count - rowIndex * MAX_STONES_PER_ROW,
-    )
-    const visualPosition = rowPositions[rowIndex]
-
-    return {
-      id: `row-${rowIndex}`,
-      offset: visualPosition - centerPosition,
-      stonesInRow,
-    }
-  })
-}
-
-function getStoreStoneRows(count) {
-  const rowCount = Math.ceil(count / STORE_MAX_STONES_PER_ROW)
-  const rowPositions = getStoreRowOrder(rowCount)
-  const minPosition = Math.min(...rowPositions)
-  const maxPosition = Math.max(...rowPositions)
-  const centerPosition = (minPosition + maxPosition) / 2
-
-  return Array.from({ length: rowCount }, (_, rowIndex) => {
-    const stonesInRow = Math.min(
-      STORE_MAX_STONES_PER_ROW,
-      count - rowIndex * STORE_MAX_STONES_PER_ROW,
-    )
-
-    return {
-      id: `store-row-${rowIndex}`,
-      offset: rowPositions[rowIndex] - centerPosition,
-      stonesInRow,
-    }
-  })
-}
-
-function buildStoneStates(count, movedCount, isFinalTarget) {
-  return Array.from({ length: count }, (_, stoneIndex) => {
-    const isMovedStone = stoneIndex >= count - movedCount
-    const isFinalStone = isFinalTarget && stoneIndex === count - 1
-
-    return {
-      id: `stone-${stoneIndex}`,
-      isMovedStone,
-      isFinalStone,
-    }
-  })
-}
 
 function renderStoneRows(rows, stoneStates, rowClassName, extraStoneClassName = '') {
   let stoneOffset = 0
@@ -117,34 +46,26 @@ function Pit({
   onClick,
   showVisualStones,
 }) {
-  const shouldUseOverflowCount = count > MAX_VISIBLE_STONES
-  const rows = shouldUseOverflowCount ? [] : getStoneRows(count)
-  const stoneStates = shouldUseOverflowCount
+  const useOverflowCount = shouldUseOverflowCount(count)
+  const rows = useOverflowCount ? [] : getStoneRows(count)
+  const stoneStates = useOverflowCount
     ? []
     : buildStoneStates(count, movedCount, isFinalTarget)
   const capturedRows =
-    capturedCount > 0 && capturedCount <= MAX_VISIBLE_STONES
+    shouldRenderInlinePitStones(capturedCount)
       ? getStoneRows(capturedCount)
       : []
   const capturedStoneStates =
     capturedRows.length > 0
-      ? Array.from({ length: capturedCount }, (_, stoneIndex) => ({
-          id: `captured-${stoneIndex}`,
-          isMovedStone: false,
-          isFinalStone: false,
-        }))
+      ? buildStaticStoneStates(capturedCount, 'captured')
       : []
   const sourceSilhouetteRows =
-    sourceSilhouetteCount > 0 && sourceSilhouetteCount <= MAX_VISIBLE_STONES
+    shouldRenderInlinePitStones(sourceSilhouetteCount)
       ? getStoneRows(sourceSilhouetteCount)
       : []
   const sourceSilhouetteStates =
     sourceSilhouetteRows.length > 0
-      ? Array.from({ length: sourceSilhouetteCount }, (_, stoneIndex) => ({
-          id: `source-${stoneIndex}`,
-          isMovedStone: false,
-          isFinalStone: false,
-        }))
+      ? buildStaticStoneStates(sourceSilhouetteCount, 'source')
       : []
 
   return (
@@ -159,7 +80,7 @@ function Pit({
           isFinalTarget ? styles.finalTargetSurface : ''
         }`}
       >
-        {!showVisualStones || shouldUseOverflowCount ? (
+        {!showVisualStones || useOverflowCount ? (
           <span className={styles.pitCount}>{count}</span>
         ) : (
           <>
@@ -181,7 +102,7 @@ function Pit({
           </>
         )}
       </span>
-      {shouldUseOverflowCount && (
+      {useOverflowCount && (
         <span className={styles.pitOverflowCount}>{count} stones</span>
       )}
     </button>
