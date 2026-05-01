@@ -8,11 +8,12 @@ import {
 import { MOVE_ANIMATION_DELAY_MS } from './constants'
 import {
   buildAnimatedLastMove,
-  buildMoveHistoryEntry,
-  buildPreMoveLastMove,
-  buildResolvedLastMove,
-  buildTurnMessage,
 } from './movePresentation'
+import {
+  buildAnimatingMoveState,
+  finalizeMoveState,
+  tickGameClock,
+} from './gameState.js'
 
 export function useMangalaGame() {
   const [game, setGame] = useState(createInitialState)
@@ -31,58 +32,13 @@ export function useMangalaGame() {
     }
 
     const timerId = window.setInterval(() => {
-      setGame((currentGame) => {
-        if (currentGame.gameStatus !== 'playing') {
-          return currentGame
-        }
-
-        const activePlayer = currentGame.currentPlayer
-        const currentTime = currentGame.players[activePlayer].timeLeft
-
-        if (currentTime <= 0) {
-          const winner = activePlayer === 'bottom' ? 'top' : 'bottom'
-
-          return {
-            ...currentGame,
-            gameStatus: 'finished',
-            winner,
-            turnMessage: `${currentGame.players[winner].name} wins on time.`,
-          }
-        }
-
-        return {
-          ...currentGame,
-          players: {
-            ...currentGame.players,
-            [activePlayer]: {
-              ...currentGame.players[activePlayer],
-              timeLeft: currentTime - 1,
-            },
-          },
-        }
-      })
+      setGame(tickGameClock)
     }, 1000)
 
     return () => window.clearInterval(timerId)
   }, [game.gameStatus])
 
   useEffect(() => () => clearAnimationTimeouts(), [])
-
-  const finalizeMove = (liveGame, currentGame, pitIndex, moveResult) => ({
-    ...liveGame,
-    board: moveResult.board,
-    currentPlayer: moveResult.currentPlayer,
-    selectedPit: pitIndex,
-    moveInProgress: false,
-    gameStatus: moveResult.gameStatus,
-    winner: moveResult.winner,
-    turnMessage: buildTurnMessage(currentGame, moveResult),
-    lastMove: buildResolvedLastMove(moveResult),
-    moveHistory: [
-      ...liveGame.moveHistory,
-      buildMoveHistoryEntry(currentGame.currentPlayer, moveResult),
-    ],
-  })
 
   const scheduleAnimatedMove = (currentGame, pitIndex, moveResult) => {
     clearAnimationTimeouts()
@@ -106,7 +62,9 @@ export function useMangalaGame() {
     })
 
     const finalizeTimeoutId = window.setTimeout(() => {
-      setGame((liveGame) => finalizeMove(liveGame, currentGame, pitIndex, moveResult))
+      setGame((liveGame) =>
+        finalizeMoveState(liveGame, currentGame, pitIndex, moveResult),
+      )
       clearAnimationTimeouts()
     }, (frames.length + 1) * MOVE_ANIMATION_DELAY_MS)
 
@@ -151,17 +109,10 @@ export function useMangalaGame() {
       if (animateMoves) {
         scheduleAnimatedMove(currentGame, pitIndex, moveResult)
 
-        return {
-          ...currentGame,
-          board: currentGame.board,
-          selectedPit: pitIndex,
-          moveInProgress: true,
-          turnMessage: `${currentGame.players[currentGame.currentPlayer].name} is sowing stones...`,
-          lastMove: buildPreMoveLastMove(currentGame, pitIndex),
-        }
+        return buildAnimatingMoveState(currentGame, pitIndex)
       }
 
-      return finalizeMove(currentGame, currentGame, pitIndex, moveResult)
+      return finalizeMoveState(currentGame, currentGame, pitIndex, moveResult)
     })
   }
 
