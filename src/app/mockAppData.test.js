@@ -8,15 +8,16 @@ import {
   BANNER_SLOGAN_LINES,
   HOME_PRIMARY_ACTIONS,
   HOME_SECONDARY_ACTIONS,
+  INITIAL_CURRENT_USER,
   LOCAL_MATCH_PLAYERS,
-  MOCK_ACCOUNT,
 } from './mockAppData.js'
 
-test('app brand and account placeholders stay aligned with the current UI copy', () => {
+test('app brand and seeded current user stay aligned with the current UI copy', () => {
   assert.equal(APP_BRAND_NAME, 'Mangala')
-  assert.equal(MOCK_ACCOUNT.username, 'Username')
-  assert.equal(MOCK_ACCOUNT.elo, 1200)
-  assert.equal(MOCK_ACCOUNT.welcomeMessage, 'Welcome Username!')
+  assert.equal(INITIAL_CURRENT_USER.username, 'Username')
+  assert.equal(INITIAL_CURRENT_USER.elo, 1200)
+  assert.equal(INITIAL_CURRENT_USER.email, 'username@example.com')
+  assert.equal(INITIAL_CURRENT_USER.profilePicture, '/assets/profile-picture-placeholder.png')
 })
 
 test('asset paths expose the static files referenced by the UI', () => {

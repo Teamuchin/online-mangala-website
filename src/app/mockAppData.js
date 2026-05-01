@@ -9,10 +9,12 @@ export const APP_ASSETS = {
   profilePicturePlaceholder: '/assets/profile-picture-placeholder.png',
 }
 
-export const MOCK_ACCOUNT = {
+export const INITIAL_CURRENT_USER = {
   username: 'Username',
   elo: 1200,
-  welcomeMessage: 'Welcome Username!',
+  email: 'username@example.com',
+  bio: '',
+  profilePicture: '/assets/profile-picture-placeholder.png',
 }
 
 export const LOCAL_MATCH_PLAYERS = {

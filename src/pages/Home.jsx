@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { buildWelcomeMessage } from '../app/appState.js'
 import { useAppData } from '../app/useAppData.js'
 import styles from './Home.module.css'
 
@@ -8,9 +9,9 @@ export default function Home() {
   const {
     assets,
     brandName,
+    currentUser,
     homePrimaryActions,
     homeSecondaryActions,
-    mockAccount,
   } = useAppData()
 
   return (
@@ -36,8 +37,8 @@ export default function Home() {
                   alt="profilepic"
                   className={styles.accountModalIcon}
                 />
-                <p className={styles.accountModalUsername}>{mockAccount.username}</p>
-                <p className={styles.accountModalElo}>Elo: {mockAccount.elo}</p>
+                <p className={styles.accountModalUsername}>{currentUser.username}</p>
+                <p className={styles.accountModalElo}>Elo: {currentUser.elo}</p>
                 <Link to="/login" className={styles.modallogout}>
                   Log out
                 </Link>
@@ -53,7 +54,7 @@ export default function Home() {
         </div>
       </div>
       <div className={styles.homebody}>
-        <h1>{mockAccount.welcomeMessage}</h1>
+        <h1>{buildWelcomeMessage(currentUser)}</h1>
         <div className={styles.homebuttons}>
           <div className={styles.homebuttonupper}>
             {homePrimaryActions.map((action) => (
