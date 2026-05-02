@@ -6,6 +6,7 @@ import {
   buildLoggedOutSessionUpdates,
   buildProfileUpdatesFromForm,
   buildWelcomeMessage,
+  isGuestUser,
   mergeStoredAuthState,
   mergeStoredUser,
   updateUserProfile,
@@ -119,4 +120,9 @@ test('buildAuthenticatedSessionUpdates marks the session authenticated and updat
 
 test('buildLoggedOutSessionUpdates marks the session logged out', () => {
   assert.deepEqual(buildLoggedOutSessionUpdates(), { isAuthenticated: false })
+})
+
+test('isGuestUser detects the guest session profile', () => {
+  assert.equal(isGuestUser({ email: 'guest@example.com' }), true)
+  assert.equal(isGuestUser({ email: 'username@example.com' }), false)
 })

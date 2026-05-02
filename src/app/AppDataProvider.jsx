@@ -71,11 +71,7 @@ export function AppDataProvider({ children }) {
   }
 
   const continueAsGuest = () => {
-    logIn({
-      username: 'Guest',
-      email: 'guest@example.com',
-      bio: 'Playing as guest',
-    })
+    logIn(staticAppData.guestCurrentUser)
   }
 
   const logOut = () => {

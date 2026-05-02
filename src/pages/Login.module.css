@@ -30,6 +30,7 @@
     width: 100px;
     height: 100px;
 }
+
 .formdiv {
     display: flex;
     flex-direction: column;

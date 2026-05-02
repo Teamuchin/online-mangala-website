@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { buildWelcomeMessage } from '../app/appState.js'
+import { buildWelcomeMessage, isGuestUser } from '../app/appState.js'
 import { useAppData } from '../app/useAppData.js'
 import styles from './Home.module.css'
 
@@ -15,6 +15,7 @@ export default function Home() {
     homePrimaryActions,
     homeSecondaryActions,
   } = useAppData()
+  const guestMode = isGuestUser(currentUser)
 
   if (!isAuthenticated) {
     return (
@@ -65,9 +66,15 @@ export default function Home() {
             onMouseEnter={() => setIsAccountModalOpen(true)}
             onMouseLeave={() => setIsAccountModalOpen(false)}
           >
-            <Link to="/account" className={styles.account}>
-              <img src={assets.accountIcon} alt="account" />
-            </Link>
+            {guestMode ? (
+              <span className={styles.accountDisabled}>
+                <img src={assets.accountIcon} alt="account" />
+              </span>
+            ) : (
+              <Link to="/account" className={styles.account}>
+                <img src={assets.accountIcon} alt="account" />
+              </Link>
+            )}
             {isAccountModalOpen && (
               <div className={styles.accountModal}>
                 <img

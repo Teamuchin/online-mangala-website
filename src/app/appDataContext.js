@@ -6,6 +6,7 @@ import {
   BANNER_ACTIONS,
   BANNER_NAV_LINKS,
   BANNER_SLOGAN_LINES,
+  GUEST_CURRENT_USER,
   HOME_PRIMARY_ACTIONS,
   HOME_SECONDARY_ACTIONS,
   INITIAL_CURRENT_USER,
@@ -21,6 +22,7 @@ export const staticAppData = {
   brandName: APP_BRAND_NAME,
   homePrimaryActions: HOME_PRIMARY_ACTIONS,
   homeSecondaryActions: HOME_SECONDARY_ACTIONS,
+  guestCurrentUser: GUEST_CURRENT_USER,
   initialCurrentUser: INITIAL_CURRENT_USER,
   localMatchPlayers: LOCAL_MATCH_PLAYERS,
 }

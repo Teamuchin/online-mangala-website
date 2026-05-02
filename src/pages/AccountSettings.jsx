@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import {
   buildAccountFormState,
   buildProfileUpdatesFromForm,
+  isGuestUser,
 } from '../app/appState.js'
+import { Navigate } from 'react-router-dom'
 import PageBackLink from '../components/PageBackLink.jsx'
 import styles from './AccountSettings.module.css'
 import { useAppData } from '../app/useAppData.js'
@@ -11,6 +13,7 @@ export default function AccountSettings() {
   const { accountSettingsFields, assets, currentUser, updateCurrentUser } = useAppData()
   const [formState, setFormState] = useState(() => buildAccountFormState(currentUser))
   const [saveMessage, setSaveMessage] = useState('')
+  const guestMode = isGuestUser(currentUser)
 
   useEffect(() => {
     setFormState(buildAccountFormState(currentUser))
@@ -37,6 +40,10 @@ export default function AccountSettings() {
       profilePicture: null,
     }))
     setSaveMessage('Profile details saved.')
+  }
+
+  if (guestMode) {
+    return <Navigate to="/" replace />
   }
 
   return (

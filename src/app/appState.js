@@ -2,6 +2,10 @@ export function buildWelcomeMessage(currentUser) {
   return `Welcome ${currentUser.username}!`
 }
 
+export function isGuestUser(currentUser) {
+  return currentUser.email === 'guest@example.com'
+}
+
 export function mergeStoredAuthState(defaultAuthState, storedAuthState) {
   if (!storedAuthState) {
     return defaultAuthState

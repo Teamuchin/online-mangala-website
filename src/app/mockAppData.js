@@ -17,6 +17,14 @@ export const INITIAL_CURRENT_USER = {
   profilePicture: '/assets/profile-picture-placeholder.png',
 }
 
+export const GUEST_CURRENT_USER = {
+  username: 'Guest',
+  elo: 1200,
+  email: 'guest@example.com',
+  bio: 'Playing as guest',
+  profilePicture: '/assets/profile-picture-placeholder.png',
+}
+
 export const LOCAL_MATCH_PLAYERS = {
   bottom: { id: 'p1', name: 'Emre', rating: 1485, timeLeft: 300 },
   top: { id: 'p2', name: 'Ayse', rating: 1520, timeLeft: 300 },

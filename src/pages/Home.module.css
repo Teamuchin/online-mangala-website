@@ -67,6 +67,7 @@
     color: #5a2f12;
     text-align: center;
 }
+
 .homebuttons {
     display: flex;
     flex-direction: column;
@@ -143,6 +144,13 @@
     width: 120%;
 }
 
+.accountDisabled {
+    display: flex;
+    align-items: center;
+    opacity: 0.78;
+    cursor: default;
+}
+
 .accountModal {
     position: absolute;
     top: 100%;
@@ -164,6 +172,7 @@
 .accountModalIcon{
     padding:40px;
 }
+
 .modallogout{
     font-size: 13px;
 }
