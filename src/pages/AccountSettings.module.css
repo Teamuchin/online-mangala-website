@@ -96,3 +96,12 @@
 .submitbtn:hover {
     background-color: #4a2a12;
 }
+
+.saveMessage {
+    margin: 0;
+    border-radius: 8px;
+    padding: 12px;
+    font-weight: 700;
+    color: #2f5a12;
+    background-color: rgba(255, 248, 239, 0.72);
+}
