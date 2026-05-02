@@ -3,6 +3,7 @@ import {
   buildAccountFormState,
   buildProfileUpdatesFromForm,
 } from '../app/appState.js'
+import PageBackLink from '../components/PageBackLink.jsx'
 import styles from './AccountSettings.module.css'
 import { useAppData } from '../app/useAppData.js'
 
@@ -40,6 +41,9 @@ export default function AccountSettings() {
 
   return (
     <div className={styles.accountsettings}>
+      <div className={styles.topBar}>
+        <PageBackLink />
+      </div>
       <h1>Account Settings</h1>
       <form className={styles.infochangediv} onSubmit={handleSubmit}>
         {saveMessage && <p className={styles.saveMessage}>{saveMessage}</p>}

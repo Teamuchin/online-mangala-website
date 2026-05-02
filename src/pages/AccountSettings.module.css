@@ -1,11 +1,17 @@
 .accountsettings {
     min-height: 100vh;
-    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     background: linear-gradient(180deg, #f8d9b6 0%, #efc093 45%, #c98856 100%);
-    padding-top: 10px;
+    padding: 24px 20px 32px;
+}
+
+.topBar {
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    justify-content: flex-start;
 }
 
 .accountsettings h1 {
@@ -13,13 +19,12 @@
     color: #5a2f12;
     font-family: "SN Pro", sans-serif;
     font-size: 42px;
-    padding: 20px;
+    padding: 12px 0 0;
 }
 
 .infochangediv {
     width: 100%;
     max-width: 480px;
-    height: 100%;
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -27,11 +32,10 @@
     border: #4a2a12 solid 0.5px;
     border-radius: 10px;
     padding: 24px;
-    margin: 40px;
+    margin-top: 24px;
 }
 
 .nonButtonInput {
-    height: 100%;
     width: 100%;
     display: flex;
     flex-direction: column;

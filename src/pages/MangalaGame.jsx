@@ -1,7 +1,7 @@
-import { Link } from 'react-router-dom'
 import Board from '../components/mangala/Board'
 import GameStatus from '../components/mangala/GameStatus'
 import PlayerPanel from '../components/mangala/PlayerPanel'
+import PageBackLink from '../components/PageBackLink.jsx'
 import { PLAYER_CONFIG } from '../components/mangala/gameLogic'
 import { RULES } from '../components/mangala/constants'
 import { useMangalaGame } from '../components/mangala/useMangalaGame'
@@ -44,9 +44,7 @@ export default function MangalaGame() {
             >
               Move Animation: {animateMoves ? 'On' : 'Off'}
             </button>
-            <Link to="/" className={styles.homeLink}>
-              Back Home
-            </Link>
+            <PageBackLink className={styles.homeLink} />
             <button type="button" className={styles.resetButton} onClick={handleReset}>
               Restart Match
             </button>
