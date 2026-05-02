@@ -10,9 +10,47 @@ export default function Home() {
     assets,
     brandName,
     currentUser,
+    isAuthenticated,
+    logOut,
     homePrimaryActions,
     homeSecondaryActions,
   } = useAppData()
+
+  if (!isAuthenticated) {
+    return (
+      <div className={styles.home}>
+        <div className={styles.homeheader}>
+          <div className={styles.headerlogo}>
+            <img src={assets.logo} alt="logo" className={styles.logo} />
+            <h1>{brandName}</h1>
+          </div>
+        </div>
+        <div className={styles.homebody}>
+          <h1>Please log in to continue.</h1>
+          <div className={styles.homebuttons}>
+            <div className={styles.homebuttonupper}>
+              <Link to="/login" className={styles.localbtn}>
+                Log in
+              </Link>
+              <Link to="/register" className={styles.offlinebtn}>
+                Sign Up
+              </Link>
+            </div>
+            <div className={styles.homebuttonlower}>
+              <Link to="/banner" className={styles.learnbtn}>
+                Learn & Train
+              </Link>
+            </div>
+            <img
+              src={assets.decorationBoard}
+              alt="decorationboard"
+              className={styles.decorationboard}
+            />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={styles.home}>
@@ -39,7 +77,7 @@ export default function Home() {
                 />
                 <p className={styles.accountModalUsername}>{currentUser.username}</p>
                 <p className={styles.accountModalElo}>Elo: {currentUser.elo}</p>
-                <Link to="/login" className={styles.modallogout}>
+                <Link to="/login" className={styles.modallogout} onClick={logOut}>
                   Log out
                 </Link>
               </div>

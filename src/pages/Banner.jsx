@@ -1,9 +1,27 @@
 import styles from './Banner.module.css'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAppData } from '../app/useAppData.js'
 
 export default function Banner() {
-  const { assets, bannerActions, bannerNavLinks, bannerSloganLines, brandName } = useAppData()
+  const navigate = useNavigate()
+  const {
+    assets,
+    bannerActions,
+    bannerNavLinks,
+    bannerSloganLines,
+    brandName,
+    continueAsGuest,
+    isAuthenticated,
+  } = useAppData()
+
+  const visibleActions = isAuthenticated
+    ? [{ to: '/', className: 'loginbtn', label: 'Go Home' }]
+    : bannerActions
+
+  const handleGuestStart = () => {
+    continueAsGuest()
+    navigate('/')
+  }
 
   return (
     <div className={styles.banner}>
@@ -37,11 +55,22 @@ export default function Banner() {
           ))}
         </div>
         <div className={styles.bodybuttons}>
-          {bannerActions.map((action) => (
-            <Link key={action.label} to={action.to} className={styles[action.className]}>
-              {action.label}
-            </Link>
-          ))}
+          {visibleActions.map((action) =>
+            action.label === 'Play as Guest' ? (
+              <button
+                key={action.label}
+                type="button"
+                className={styles[action.className]}
+                onClick={handleGuestStart}
+              >
+                {action.label}
+              </button>
+            ) : (
+              <Link key={action.label} to={action.to} className={styles[action.className]}>
+                {action.label}
+              </Link>
+            ),
+          )}
         </div>
       </div>
     </div>

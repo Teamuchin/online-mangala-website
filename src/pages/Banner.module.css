@@ -81,7 +81,8 @@
     display: flex;
     flex-direction: row;
     gap: 75px;
-        a{
+        a,
+        button{
         display:flex;        
         justify-content:center;
         align-items:center;
@@ -97,5 +98,6 @@
         font-family: "SN Pro", sans-serif;
         color: #5a2f12;
         cursor: pointer;
+        padding: 0;
     }
 }

@@ -1,8 +1,23 @@
 import AuthBrand from '../components/AuthBrand'
 import styles from './Login.module.css'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAppData } from '../app/useAppData.js'
 
 export default function Login() {
+  const navigate = useNavigate()
+  const { continueAsGuest, logIn } = useAppData()
+
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    logIn()
+    navigate('/')
+  }
+
+  const handleGuestLogin = () => {
+    continueAsGuest()
+    navigate('/')
+  }
+
   return (
     <div className={styles.container}>
       <AuthBrand
@@ -10,7 +25,7 @@ export default function Login() {
         logoClassName={styles.logolabel}
         titleClassName={styles.label}
       />
-      <form className={styles.formdiv}>
+      <form className={styles.formdiv} onSubmit={handleSubmit}>
         <input
           id="usercredential"
           defaultValue=""
@@ -36,12 +51,15 @@ export default function Login() {
             name="rememberme"
           />
         </div>
-        <Link to="/" className={styles.submitbtn}>
+        <button type="submit" className={styles.submitbtn}>
           Log in
-        </Link>
+        </button>
         <Link to="/register" className={styles.signupbtn}>
           Sign Up
         </Link>
+        <button type="button" className={styles.signupbtn} onClick={handleGuestLogin}>
+          Play as Guest
+        </button>
       </form>
     </div>
   )

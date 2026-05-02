@@ -2,6 +2,17 @@ export function buildWelcomeMessage(currentUser) {
   return `Welcome ${currentUser.username}!`
 }
 
+export function mergeStoredAuthState(defaultAuthState, storedAuthState) {
+  if (!storedAuthState) {
+    return defaultAuthState
+  }
+
+  return {
+    ...defaultAuthState,
+    ...storedAuthState,
+  }
+}
+
 export function mergeStoredUser(initialCurrentUser, storedCurrentUser) {
   if (!storedCurrentUser) {
     return initialCurrentUser
@@ -37,5 +48,18 @@ export function buildProfileUpdatesFromForm(formState) {
     username: formState.username,
     email: formState.email,
     bio: formState.bio,
+  }
+}
+
+export function buildAuthenticatedSessionUpdates(currentUser, userOverrides = {}) {
+  return {
+    isAuthenticated: true,
+    currentUser: updateUserProfile(currentUser, userOverrides),
+  }
+}
+
+export function buildLoggedOutSessionUpdates() {
+  return {
+    isAuthenticated: false,
   }
 }

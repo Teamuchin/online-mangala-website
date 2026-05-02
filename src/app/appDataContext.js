@@ -29,6 +29,10 @@ export const AppDataContext = createContext({
   ...staticAppData,
   currentUser: INITIAL_CURRENT_USER,
   isAuthenticated: true,
+  continueAsGuest: () => {},
+  logIn: () => {},
+  logOut: () => {},
+  registerUser: () => {},
   setIsAuthenticated: () => {},
   updateCurrentUser: () => {},
 })

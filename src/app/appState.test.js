@@ -2,8 +2,11 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   buildAccountFormState,
+  buildAuthenticatedSessionUpdates,
+  buildLoggedOutSessionUpdates,
   buildProfileUpdatesFromForm,
   buildWelcomeMessage,
+  mergeStoredAuthState,
   mergeStoredUser,
   updateUserProfile,
 } from './appState.js'
@@ -49,6 +52,16 @@ test('mergeStoredUser overlays stored profile values onto the seeded user shape'
   )
 })
 
+test('mergeStoredAuthState overlays stored auth values onto the default session shape', () => {
+  assert.deepEqual(
+    mergeStoredAuthState(
+      { isAuthenticated: true, hasSeenBanner: false },
+      { isAuthenticated: false },
+    ),
+    { isAuthenticated: false, hasSeenBanner: false },
+  )
+})
+
 test('buildAccountFormState derives an editable draft from the current user', () => {
   assert.deepEqual(
     buildAccountFormState({
@@ -85,4 +98,25 @@ test('buildProfileUpdatesFromForm only keeps supported profile fields', () => {
       bio: 'Updated bio',
     },
   )
+})
+
+test('buildAuthenticatedSessionUpdates marks the session authenticated and updates the user', () => {
+  assert.deepEqual(
+    buildAuthenticatedSessionUpdates(
+      { username: 'Username', email: 'username@example.com' },
+      { username: 'Guest', bio: 'Playing as guest' },
+    ),
+    {
+      isAuthenticated: true,
+      currentUser: {
+        username: 'Guest',
+        email: 'username@example.com',
+        bio: 'Playing as guest',
+      },
+    },
+  )
+})
+
+test('buildLoggedOutSessionUpdates marks the session logged out', () => {
+  assert.deepEqual(buildLoggedOutSessionUpdates(), { isAuthenticated: false })
 })
