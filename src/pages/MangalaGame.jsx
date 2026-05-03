@@ -1,10 +1,11 @@
 import Board from '../components/mangala/Board'
 import GameStatus from '../components/mangala/GameStatus'
-import PlayerPanel from '../components/mangala/PlayerPanel'
+import MatchSidebar from '../components/mangala/MatchSidebar.jsx'
 import PageBackLink from '../components/PageBackLink.jsx'
 import { useLocation } from 'react-router-dom'
 import { PLAYER_CONFIG, createInitialState } from '../components/mangala/gameLogic'
 import { RULES } from '../components/mangala/constants'
+import { buildReplayDescription } from '../components/mangala/matchRecord.js'
 import { useMangalaGame } from '../components/mangala/useMangalaGame'
 import styles from '../components/mangala/MangalaGame.module.css'
 
@@ -29,13 +30,25 @@ export default function MangalaGame() {
     : undefined
   const {
     game,
+    displayedGame,
     animateMoves,
+    activePositionIndex,
+    isReviewing,
     showVisualStones,
     handleAnimationToggle,
     handlePitClick,
+    handleReplayFirst,
+    handleReplayLast,
+    handleReplayNext,
+    handleReplayPrevious,
     handleReset,
     handleStoneToggle,
   } = useMangalaGame(initialConfig)
+  const replayDescription = buildReplayDescription(
+    game.matchRecord,
+    activePositionIndex,
+    displayedGame.players,
+  )
 
   return (
     <main className={styles.page}>
@@ -66,38 +79,44 @@ export default function MangalaGame() {
           </div>
         </section>
 
-        <section className={styles.playerGrid}>
-          <PlayerPanel
-            player={game.players.top}
-            side="top"
-            isActive={game.currentPlayer === 'top' && game.gameStatus === 'playing'}
-            storeCount={game.board[PLAYER_CONFIG.top.storeIndex]}
+        <section className={styles.matchArena}>
+          <Board
+            board={displayedGame.board}
+            currentPlayer={displayedGame.currentPlayer}
+            selectedPit={displayedGame.selectedPit}
+            gameStatus={displayedGame.gameStatus}
+            players={displayedGame.players}
+            showVisualStones={showVisualStones}
+            lastMove={displayedGame.lastMove}
+            disableInteraction={isReviewing}
+            onPitClick={handlePitClick}
           />
-          <PlayerPanel
-            player={game.players.bottom}
-            side="bottom"
-            isActive={game.currentPlayer === 'bottom' && game.gameStatus === 'playing'}
-            storeCount={game.board[PLAYER_CONFIG.bottom.storeIndex]}
+          <MatchSidebar
+            activePositionIndex={activePositionIndex}
+            currentPlayer={game.currentPlayer}
+            description={replayDescription}
+            gameStatus={game.gameStatus}
+            hasMoves={game.matchRecord.moves.length > 0}
+            isReviewing={isReviewing}
+            onFirst={handleReplayFirst}
+            onLast={handleReplayLast}
+            onNext={handleReplayNext}
+            onPrevious={handleReplayPrevious}
+            players={displayedGame.players}
+            totalMoves={game.matchRecord.moves.length}
+            topStoreCount={displayedGame.board[PLAYER_CONFIG.top.storeIndex]}
+            bottomStoreCount={displayedGame.board[PLAYER_CONFIG.bottom.storeIndex]}
           />
         </section>
 
-        <Board
-          board={game.board}
-          currentPlayer={game.currentPlayer}
-          selectedPit={game.selectedPit}
-          gameStatus={game.gameStatus}
-          players={game.players}
-          showVisualStones={showVisualStones}
-          lastMove={game.lastMove}
-          onPitClick={handlePitClick}
-        />
-
         <section className={styles.footerGrid}>
           <GameStatus
-            gameStatus={game.gameStatus}
-            winner={game.winner}
-            turnMessage={game.turnMessage}
-            players={game.players}
+            gameStatus={displayedGame.gameStatus}
+            winner={displayedGame.winner}
+            turnMessage={displayedGame.turnMessage}
+            players={displayedGame.players}
+            statusLabelOverride={isReviewing ? 'Replay mode' : undefined}
+            messageOverride={isReviewing ? replayDescription : undefined}
           />
 
           <details className={styles.accordionCard}>

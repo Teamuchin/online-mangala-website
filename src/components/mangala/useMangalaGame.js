@@ -60,9 +60,37 @@ export function useMangalaGame(initialConfig) {
   const [game, setGame] = useState(() => createInitialState(initialConfig))
   const [showVisualStones, setShowVisualStones] = useState(true)
   const [animateMoves, setAnimateMoves] = useState(false)
+  const [reviewIndex, setReviewIndex] = useState(null)
   const animationTimeoutsRef = useRef([])
   const botTurnTimeoutRef = useRef(null)
   const botSettings = initialConfig?.botSettings ?? null
+  const latestPositionIndex = game.matchRecord.positions.length - 1
+  const activePositionIndex = reviewIndex ?? latestPositionIndex
+  const activePosition = game.matchRecord.positions[activePositionIndex]
+  const isReviewing = reviewIndex !== null
+  const displayedGame = isReviewing
+    ? {
+        ...game,
+        board: activePosition.board,
+        currentPlayer: activePosition.currentPlayer,
+        gameStatus: activePosition.gameStatus,
+        winner: activePosition.winner,
+        players: {
+          ...activePosition.players,
+          bottom: {
+            ...activePosition.players.bottom,
+            timeLeft: game.players.bottom.timeLeft,
+          },
+          top: {
+            ...activePosition.players.top,
+            timeLeft: game.players.top.timeLeft,
+          },
+        },
+        selectedPit: null,
+        moveInProgress: false,
+        lastMove: null,
+      }
+    : game
 
   const clearAnimationTimeouts = () => {
     animationTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
@@ -99,6 +127,7 @@ export function useMangalaGame(initialConfig) {
   const handleReset = () => {
     clearAnimationTimeouts()
     clearBotTurnTimeout()
+    setReviewIndex(null)
     setGame(createInitialState(initialConfig))
   }
 
@@ -112,7 +141,7 @@ export function useMangalaGame(initialConfig) {
 
   const handlePitClick = (pitIndex) => {
     setGame((currentGame) => {
-      if (currentGame.moveInProgress || currentGame.gameStatus !== 'playing') {
+      if (reviewIndex !== null || currentGame.moveInProgress || currentGame.gameStatus !== 'playing') {
         return currentGame
       }
 
@@ -147,6 +176,44 @@ export function useMangalaGame(initialConfig) {
 
       return finalizeMoveState(currentGame, currentGame, pitIndex, moveResult)
     })
+  }
+
+  const handleReplayFirst = () => {
+    if (latestPositionIndex > 0) {
+      setReviewIndex(0)
+    }
+  }
+
+  const handleReplayPrevious = () => {
+    if (latestPositionIndex === 0) {
+      return
+    }
+
+    setReviewIndex((currentValue) => {
+      if (currentValue === null) {
+        return latestPositionIndex - 1
+      }
+
+      return Math.max(0, currentValue - 1)
+    })
+  }
+
+  const handleReplayNext = () => {
+    setReviewIndex((currentValue) => {
+      if (currentValue === null) {
+        return null
+      }
+
+      if (currentValue >= latestPositionIndex - 1) {
+        return null
+      }
+
+      return currentValue + 1
+    })
+  }
+
+  const handleReplayLast = () => {
+    setReviewIndex(null)
   }
 
   useEffect(() => {
@@ -214,10 +281,17 @@ export function useMangalaGame(initialConfig) {
 
   return {
     game,
+    displayedGame,
     animateMoves,
+    activePositionIndex,
+    isReviewing,
     showVisualStones,
     handleAnimationToggle,
     handlePitClick,
+    handleReplayFirst,
+    handleReplayLast,
+    handleReplayNext,
+    handleReplayPrevious,
     handleReset,
     handleStoneToggle,
   }

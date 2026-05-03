@@ -12,6 +12,7 @@ export default function Board({
   players,
   showVisualStones,
   lastMove,
+  disableInteraction = false,
   onPitClick,
 }) {
   const topRow = [...PLAYER_CONFIG.top.pitIndexes].reverse()
@@ -41,6 +42,7 @@ export default function Board({
               sourceSilhouetteCount={sourceSilhouetteCounts[index] ?? 0}
               disabled={isPitDisabled({
                 board,
+                disableInteraction,
                 index,
                 currentPlayer,
                 gameStatus,
@@ -63,6 +65,7 @@ export default function Board({
               sourceSilhouetteCount={sourceSilhouetteCounts[index] ?? 0}
               disabled={isPitDisabled({
                 board,
+                disableInteraction,
                 index,
                 currentPlayer,
                 gameStatus,

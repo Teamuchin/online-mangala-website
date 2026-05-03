@@ -22,6 +22,18 @@ export function buildBoardPresentation(lastMove) {
   }
 }
 
-export function isPitDisabled({ board, index, currentPlayer, gameStatus, side }) {
-  return gameStatus === 'finished' || currentPlayer !== side || board[index] === 0
+export function isPitDisabled({
+  board,
+  disableInteraction = false,
+  index,
+  currentPlayer,
+  gameStatus,
+  side,
+}) {
+  return (
+    disableInteraction ||
+    gameStatus === 'finished' ||
+    currentPlayer !== side ||
+    board[index] === 0
+  )
 }

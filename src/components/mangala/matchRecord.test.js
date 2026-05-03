@@ -3,7 +3,9 @@ import assert from 'node:assert/strict'
 import {
   appendMatchRecord,
   buildPositionSnapshot,
+  buildReplayDescription,
   createMatchRecord,
+  formatPitLabel,
 } from './matchRecord.js'
 
 const players = {
@@ -89,4 +91,46 @@ test('appendMatchRecord stores move metadata and the resulting position', () => 
   assert.equal(record.positions.length, 2)
   assert.deepEqual(record.positions[1].board, moveResult.board)
   assert.equal(record.positions[1].currentPlayer, 'top')
+})
+
+test('formatPitLabel maps each side to a simple one-to-six pit label', () => {
+  assert.equal(formatPitLabel('bottom', 0), 1)
+  assert.equal(formatPitLabel('bottom', 5), 6)
+  assert.equal(formatPitLabel('top', 12), 1)
+  assert.equal(formatPitLabel('top', 7), 6)
+})
+
+test('buildReplayDescription summarizes the selected recorded move', () => {
+  const matchRecord = {
+    positions: [],
+    moves: [
+      {
+        moveNumber: 1,
+        player: 'bottom',
+        fromPit: 0,
+        landedAt: 3,
+        captured: 0,
+        extraTurn: false,
+        gameStatus: 'playing',
+        winner: null,
+      },
+      {
+        moveNumber: 2,
+        player: 'top',
+        fromPit: 11,
+        landedAt: 13,
+        captured: 0,
+        extraTurn: true,
+        gameStatus: 'playing',
+        winner: null,
+      },
+    ],
+  }
+
+  assert.equal(buildReplayDescription(matchRecord, 0, players), 'Viewing the start position.')
+  assert.equal(buildReplayDescription(matchRecord, 1, players), 'Emre played pit 1.')
+  assert.equal(
+    buildReplayDescription(matchRecord, 2, players),
+    'Ayse played pit 2 and moved again.',
+  )
 })
