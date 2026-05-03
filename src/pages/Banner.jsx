@@ -1,6 +1,7 @@
 import styles from './Banner.module.css'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAppData } from '../app/useAppData.js'
+import { RULES } from '../components/mangala/constants'
 
 export default function Banner() {
   const navigate = useNavigate()
@@ -72,6 +73,14 @@ export default function Banner() {
             ),
           )}
         </div>
+        <section className={styles.learnRules}>
+          <h2>Rules</h2>
+          <div className={styles.rulesList}>
+            {RULES.map((rule) => (
+              <p key={rule}>{rule}</p>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   )

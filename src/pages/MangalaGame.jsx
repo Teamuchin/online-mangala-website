@@ -1,10 +1,8 @@
 import Board from '../components/mangala/Board'
-import GameStatus from '../components/mangala/GameStatus'
 import MatchSidebar from '../components/mangala/MatchSidebar.jsx'
 import PageBackLink from '../components/PageBackLink.jsx'
 import { useLocation } from 'react-router-dom'
 import { PLAYER_CONFIG, createInitialState } from '../components/mangala/gameLogic'
-import { RULES } from '../components/mangala/constants'
 import { buildReplayDescription } from '../components/mangala/matchRecord.js'
 import { useMangalaGame } from '../components/mangala/useMangalaGame'
 import styles from '../components/mangala/MangalaGame.module.css'
@@ -49,6 +47,7 @@ export default function MangalaGame() {
     activePositionIndex,
     displayedGame.players,
   )
+  const sidebarDescription = isReviewing ? replayDescription : game.turnMessage
 
   return (
     <main className={styles.page}>
@@ -94,7 +93,7 @@ export default function MangalaGame() {
           <MatchSidebar
             activePositionIndex={activePositionIndex}
             currentPlayer={game.currentPlayer}
-            description={replayDescription}
+            description={sidebarDescription}
             gameStatus={game.gameStatus}
             hasMoves={game.matchRecord.moves.length > 0}
             isReviewing={isReviewing}
@@ -107,31 +106,6 @@ export default function MangalaGame() {
             topStoreCount={displayedGame.board[PLAYER_CONFIG.top.storeIndex]}
             bottomStoreCount={displayedGame.board[PLAYER_CONFIG.bottom.storeIndex]}
           />
-        </section>
-
-        <section className={styles.footerGrid}>
-          <GameStatus
-            gameStatus={displayedGame.gameStatus}
-            winner={displayedGame.winner}
-            turnMessage={displayedGame.turnMessage}
-            players={displayedGame.players}
-            statusLabelOverride={isReviewing ? 'Replay mode' : undefined}
-            messageOverride={isReviewing ? replayDescription : undefined}
-          />
-
-          <details className={styles.accordionCard}>
-            <summary className={styles.accordionSummary}>
-              <span className={styles.accordionTitle}>Rules</span>
-            </summary>
-            <div className={styles.accordionBody}>
-              <h3>Rules in Use</h3>
-              <div className={styles.rulesList}>
-                {RULES.map((rule) => (
-                  <p key={rule}>{rule}</p>
-                ))}
-              </div>
-            </div>
-          </details>
         </section>
       </div>
     </main>
