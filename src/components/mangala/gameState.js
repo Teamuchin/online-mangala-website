@@ -4,6 +4,7 @@ import {
   buildResolvedLastMove,
   buildTurnMessage,
 } from './movePresentation.js'
+import { appendMatchRecord } from './matchRecord.js'
 
 export function tickGameClock(currentGame) {
   if (currentGame.gameStatus !== 'playing') {
@@ -37,6 +38,8 @@ export function tickGameClock(currentGame) {
 }
 
 export function finalizeMoveState(liveGame, currentGame, pitIndex, moveResult) {
+  const matchRecord = appendMatchRecord(liveGame, currentGame, moveResult)
+
   return {
     ...liveGame,
     board: moveResult.board,
@@ -51,6 +54,7 @@ export function finalizeMoveState(liveGame, currentGame, pitIndex, moveResult) {
       ...liveGame.moveHistory,
       buildMoveHistoryEntry(currentGame.currentPlayer, moveResult),
     ],
+    matchRecord,
   }
 }
 

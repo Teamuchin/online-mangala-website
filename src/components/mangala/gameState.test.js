@@ -20,6 +20,21 @@ const baseGame = {
     top: { id: 'p2', name: 'Ayse', rating: 1520, timeLeft: 300 },
   },
   moveHistory: [],
+  matchRecord: {
+    positions: [
+      {
+        board: [4, 4, 4, 4, 4, 4, 0, 4, 4, 4, 4, 4, 4, 0],
+        currentPlayer: 'bottom',
+        gameStatus: 'playing',
+        winner: null,
+        players: {
+          bottom: { id: 'p1', name: 'Emre', rating: 1485, timeLeft: 300 },
+          top: { id: 'p2', name: 'Ayse', rating: 1520, timeLeft: 300 },
+        },
+      },
+    ],
+    moves: [],
+  },
 }
 
 test('tickGameClock decrements the active player timer during play', () => {
@@ -93,6 +108,21 @@ test('finalizeMoveState resolves the live game with move metadata and history', 
       extraTurn: false,
     },
   ])
+  assert.deepEqual(nextGame.matchRecord.moves, [
+    {
+      moveNumber: 1,
+      player: 'bottom',
+      fromPit: 0,
+      landedAt: 3,
+      captured: 0,
+      extraTurn: false,
+      gameStatus: 'playing',
+      winner: null,
+    },
+  ])
+  assert.equal(nextGame.matchRecord.positions.length, 2)
+  assert.deepEqual(nextGame.matchRecord.positions[1].board, moveResult.board)
+  assert.equal(nextGame.matchRecord.positions[1].currentPlayer, 'top')
 })
 
 test('buildAnimatingMoveState marks a move as in progress and preserves the board', () => {

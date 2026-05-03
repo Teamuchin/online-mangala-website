@@ -1,4 +1,5 @@
 import { LOCAL_MATCH_PLAYERS } from '../../app/mockAppData.js'
+import { createMatchRecord } from './matchRecord.js'
 
 export const PLAYER_ORDER = ['bottom', 'top']
 
@@ -138,18 +139,23 @@ export function createInitialState(options = {}) {
     initialPlayers = INITIAL_PLAYERS,
     initialCurrentPlayer = 'bottom',
   } = options
-
-  return {
+  const players = structuredClone(initialPlayers)
+  const initialState = {
     board: [...INITIAL_BOARD],
     currentPlayer: initialCurrentPlayer,
     selectedPit: null,
     moveInProgress: false,
     gameStatus: 'playing',
     winner: null,
-    turnMessage: `${initialPlayers[initialCurrentPlayer].name} to move`,
+    turnMessage: `${players[initialCurrentPlayer].name} to move`,
     lastMove: null,
-    players: structuredClone(initialPlayers),
+    players,
     moveHistory: [],
+  }
+
+  return {
+    ...initialState,
+    matchRecord: createMatchRecord(initialState),
   }
 }
 

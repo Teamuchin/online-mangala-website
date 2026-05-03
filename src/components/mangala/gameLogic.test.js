@@ -18,6 +18,10 @@ test('createInitialState returns the expected starting state', () => {
   assert.equal(state.winner, null)
   assert.equal(state.turnMessage, 'Emre to move')
   assert.deepEqual(state.moveHistory, [])
+  assert.deepEqual(state.matchRecord.moves, [])
+  assert.equal(state.matchRecord.positions.length, 1)
+  assert.deepEqual(state.matchRecord.positions[0].board, INITIAL_BOARD)
+  assert.equal(state.matchRecord.positions[0].currentPlayer, 'bottom')
 })
 
 test('createInitialState clones player data for each call', () => {
