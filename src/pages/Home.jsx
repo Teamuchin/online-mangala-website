@@ -1,11 +1,16 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { buildWelcomeMessage, isGuestUser } from '../app/appState.js'
+import BotSetupModal from './BotSetupModal.jsx'
 import { useAppData } from '../app/useAppData.js'
 import styles from './Home.module.css'
 
 export default function Home() {
+  const navigate = useNavigate()
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false)
+  const [isBotSetupOpen, setIsBotSetupOpen] = useState(false)
+  const [botDifficulty, setBotDifficulty] = useState('1')
+  const [botFirstMove, setBotFirstMove] = useState('you')
   const {
     assets,
     brandName,
@@ -16,6 +21,32 @@ export default function Home() {
     homeSecondaryActions,
   } = useAppData()
   const guestMode = isGuestUser(currentUser)
+
+  const openBotSetup = () => setIsBotSetupOpen(true)
+  const closeBotSetup = () => setIsBotSetupOpen(false)
+
+  const handleStartBotMatch = () => {
+    const startingPlayer =
+      botFirstMove === 'random'
+        ? Math.random() < 0.5
+          ? 'bottom'
+          : 'top'
+        : botFirstMove === 'computer'
+          ? 'top'
+          : 'bottom'
+
+    navigate('/game/local', {
+      state: {
+        botSettings: {
+          difficulty: Number(botDifficulty),
+          firstMove: botFirstMove,
+        },
+        matchMode: 'computer',
+        startingPlayer,
+      },
+    })
+    closeBotSetup()
+  }
 
   if (!isAuthenticated) {
     return (
@@ -102,11 +133,22 @@ export default function Home() {
         <h1>{buildWelcomeMessage(currentUser)}</h1>
         <div className={styles.homebuttons}>
           <div className={styles.homebuttonupper}>
-            {homePrimaryActions.map((action) => (
-              <Link key={action.label} to={action.to} className={styles[action.className]}>
-                {action.label}
-              </Link>
-            ))}
+            {homePrimaryActions.map((action) =>
+              action.label === 'Play Againist Bots' ? (
+                <button
+                  key={action.label}
+                  type="button"
+                  className={styles[action.className]}
+                  onClick={openBotSetup}
+                >
+                  {action.label}
+                </button>
+              ) : (
+                <Link key={action.label} to={action.to} className={styles[action.className]}>
+                  {action.label}
+                </Link>
+              ),
+            )}
           </div>
           <div className={styles.homebuttonlower}>
             {homeSecondaryActions.map((action) => (
@@ -122,6 +164,16 @@ export default function Home() {
           />
         </div>
       </div>
+      {isBotSetupOpen && (
+        <BotSetupModal
+          difficulty={botDifficulty}
+          firstMove={botFirstMove}
+          onClose={closeBotSetup}
+          onDifficultyChange={setBotDifficulty}
+          onFirstMoveChange={setBotFirstMove}
+          onStart={handleStartBotMatch}
+        />
+      )}
     </div>
   )
 }

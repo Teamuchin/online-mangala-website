@@ -2,12 +2,31 @@ import Board from '../components/mangala/Board'
 import GameStatus from '../components/mangala/GameStatus'
 import PlayerPanel from '../components/mangala/PlayerPanel'
 import PageBackLink from '../components/PageBackLink.jsx'
-import { PLAYER_CONFIG } from '../components/mangala/gameLogic'
+import { useLocation } from 'react-router-dom'
+import { PLAYER_CONFIG, createInitialState } from '../components/mangala/gameLogic'
 import { RULES } from '../components/mangala/constants'
 import { useMangalaGame } from '../components/mangala/useMangalaGame'
 import styles from '../components/mangala/MangalaGame.module.css'
 
 export default function MangalaGame() {
+  const location = useLocation()
+  const botSettings = location.state?.botSettings ?? null
+  const initialConfig = botSettings
+    ? {
+        botSettings,
+        initialCurrentPlayer: location.state?.startingPlayer ?? 'bottom',
+        initialPlayers: {
+          ...createInitialState().players,
+          top: {
+            id: 'bot-player',
+            name: 'Computer',
+            rating: 800 + botSettings.difficulty * 200,
+            timeLeft: 300,
+            isBot: true,
+          },
+        },
+      }
+    : undefined
   const {
     game,
     animateMoves,
@@ -16,18 +35,14 @@ export default function MangalaGame() {
     handlePitClick,
     handleReset,
     handleStoneToggle,
-  } = useMangalaGame()
+  } = useMangalaGame(initialConfig)
 
   return (
     <main className={styles.page}>
       <div className={styles.layout}>
         <section className={styles.topBar}>
           <div className={styles.titleBlock}>
-            <h1>Mangala Local Match</h1>
-            <p>
-              Practice the Turkish Mancala variant locally with mock player data,
-              active timers, and turn-by-turn capture logic.
-            </p>
+            <h1>{botSettings ? 'Bot Match' : 'Local Match'}</h1>
           </div>
           <div className={styles.actions}>
             <button

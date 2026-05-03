@@ -1,0 +1,107 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(44, 20, 6, 0.42);
+  z-index: 50;
+}
+
+.modal {
+  width: min(560px, 100%);
+  display: grid;
+  gap: 24px;
+  border-radius: 24px;
+  padding: 28px;
+  background: rgba(255, 247, 235, 0.98);
+  color: #5a2f12;
+  box-shadow: 0 24px 50px rgba(44, 20, 6, 0.22);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.eyebrow {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.78;
+}
+
+.header h2 {
+  margin-top: 6px;
+  font-size: 2rem;
+}
+
+.closeButton,
+.optionButton,
+.startButton {
+  border: none;
+  cursor: pointer;
+}
+
+.closeButton {
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 700;
+  color: #5a2f12;
+  background: rgba(224, 179, 123, 0.34);
+}
+
+.section {
+  display: grid;
+  gap: 12px;
+}
+
+.label {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.optionRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.optionButton {
+  min-width: 88px;
+  border-radius: 16px;
+  padding: 14px 18px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #5a2f12;
+  background: rgba(224, 179, 123, 0.42);
+}
+
+.optionButtonActive {
+  color: #fff7ee;
+  background: #8a4020;
+}
+
+.startButton {
+  justify-self: start;
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff7ee;
+  background: #8a4020;
+}
+
+@media (max-width: 640px) {
+  .modal {
+    padding: 22px 18px;
+  }
+
+  .header {
+    flex-direction: column;
+  }
+}

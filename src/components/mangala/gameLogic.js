@@ -133,17 +133,22 @@ function finalizeGame(board, currentPlayer) {
   return null
 }
 
-export function createInitialState() {
+export function createInitialState(options = {}) {
+  const {
+    initialPlayers = INITIAL_PLAYERS,
+    initialCurrentPlayer = 'bottom',
+  } = options
+
   return {
     board: [...INITIAL_BOARD],
-    currentPlayer: 'bottom',
+    currentPlayer: initialCurrentPlayer,
     selectedPit: null,
     moveInProgress: false,
     gameStatus: 'playing',
     winner: null,
-    turnMessage: `${INITIAL_PLAYERS.bottom.name} to move`,
+    turnMessage: `${initialPlayers[initialCurrentPlayer].name} to move`,
     lastMove: null,
-    players: structuredClone(INITIAL_PLAYERS),
+    players: structuredClone(initialPlayers),
     moveHistory: [],
   }
 }

@@ -15,7 +15,10 @@ export default function PlayerPanel({ player, side, isActive, storeCount }) {
     >
       <div className={styles.playerMeta}>
         <span className={styles.playerSide}>{isTop ? 'Top Side' : 'Bottom Side'}</span>
-        <h2>{player.name}</h2>
+        <div className={styles.playerTitle}>
+          <h2>{player.name}</h2>
+          {player.isBot && <span className={styles.playerBadge}>BOT</span>}
+        </div>
       </div>
       <div className={styles.playerStats}>
         {stats.map((item) => (
