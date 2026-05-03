@@ -100,14 +100,19 @@ export default function MangalaGame() {
             players={game.players}
           />
 
-          <section className={styles.rulesCard}>
-            <h3>Rules in Use</h3>
-            <div className={styles.rulesList}>
-              {RULES.map((rule) => (
-                <p key={rule}>{rule}</p>
-              ))}
+          <details className={styles.accordionCard}>
+            <summary className={styles.accordionSummary}>
+              <span className={styles.accordionTitle}>Rules</span>
+            </summary>
+            <div className={styles.accordionBody}>
+              <h3>Rules in Use</h3>
+              <div className={styles.rulesList}>
+                {RULES.map((rule) => (
+                  <p key={rule}>{rule}</p>
+                ))}
+              </div>
             </div>
-          </section>
+          </details>
         </section>
       </div>
     </main>

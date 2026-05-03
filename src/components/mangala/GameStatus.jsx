@@ -9,9 +9,14 @@ export default function GameStatus({ gameStatus, winner, turnMessage, players })
       : 'Local two-player match'
 
   return (
-    <section className={styles.statusCard}>
-      <span className={styles.statusLabel}>{statusLabel}</span>
-      <p>{turnMessage}</p>
-    </section>
+    <details className={styles.accordionCard} open>
+      <summary className={styles.accordionSummary}>
+        <span className={styles.accordionTitle}>Status</span>
+      </summary>
+      <div className={styles.accordionBody}>
+        <span className={styles.statusLabel}>{statusLabel}</span>
+        <p>{turnMessage}</p>
+      </div>
+    </details>
   )
 }
