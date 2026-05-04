@@ -1,8 +1,9 @@
 import Board from '../components/mangala/Board'
-import MatchSidebar from '../components/mangala/MatchSidebar.jsx'
 import PageBackLink from '../components/PageBackLink.jsx'
+import PlayerPanel from '../components/mangala/PlayerPanel.jsx'
+import ReplayControls from '../components/mangala/ReplayControls.jsx'
 import { useLocation } from 'react-router-dom'
-import { PLAYER_CONFIG, createInitialState } from '../components/mangala/gameLogic'
+import { createInitialState } from '../components/mangala/gameLogic'
 import { buildReplayDescription } from '../components/mangala/matchRecord.js'
 import { useMangalaGame } from '../components/mangala/useMangalaGame'
 import styles from '../components/mangala/MangalaGame.module.css'
@@ -39,6 +40,7 @@ export default function MangalaGame() {
     handleReplayLast,
     handleReplayNext,
     handleReplayPrevious,
+    handleResign,
     handleReset,
     handleStoneToggle,
   } = useMangalaGame(initialConfig)
@@ -79,32 +81,45 @@ export default function MangalaGame() {
         </section>
 
         <section className={styles.matchArena}>
-          <Board
-            board={displayedGame.board}
-            currentPlayer={displayedGame.currentPlayer}
-            selectedPit={displayedGame.selectedPit}
-            gameStatus={displayedGame.gameStatus}
-            players={displayedGame.players}
-            showVisualStones={showVisualStones}
-            lastMove={displayedGame.lastMove}
-            disableInteraction={isReviewing}
-            onPitClick={handlePitClick}
+          <PlayerPanel
+            player={displayedGame.players.top}
+            side="top"
+            isActive={game.currentPlayer === 'top' && game.gameStatus === 'playing'}
+            compact
+            onResign={handleResign}
+            resignDisabled={isReviewing || game.gameStatus !== 'playing'}
           />
-          <MatchSidebar
-            activePositionIndex={activePositionIndex}
-            currentPlayer={game.currentPlayer}
-            description={sidebarDescription}
-            gameStatus={game.gameStatus}
-            hasMoves={game.matchRecord.moves.length > 0}
-            isReviewing={isReviewing}
-            onFirst={handleReplayFirst}
-            onLast={handleReplayLast}
-            onNext={handleReplayNext}
-            onPrevious={handleReplayPrevious}
-            players={displayedGame.players}
-            totalMoves={game.matchRecord.moves.length}
-            topStoreCount={displayedGame.board[PLAYER_CONFIG.top.storeIndex]}
-            bottomStoreCount={displayedGame.board[PLAYER_CONFIG.bottom.storeIndex]}
+          <div className={styles.boardColumn}>
+            <Board
+              board={displayedGame.board}
+              currentPlayer={displayedGame.currentPlayer}
+              selectedPit={displayedGame.selectedPit}
+              gameStatus={displayedGame.gameStatus}
+              players={displayedGame.players}
+              showVisualStones={showVisualStones}
+              lastMove={displayedGame.lastMove}
+              disableInteraction={isReviewing}
+              onPitClick={handlePitClick}
+            />
+            <ReplayControls
+              activePositionIndex={activePositionIndex}
+              totalMoves={game.matchRecord.moves.length}
+              description={sidebarDescription}
+              hasMoves={game.matchRecord.moves.length > 0}
+              isReviewing={isReviewing}
+              onFirst={handleReplayFirst}
+              onLast={handleReplayLast}
+              onNext={handleReplayNext}
+              onPrevious={handleReplayPrevious}
+            />
+          </div>
+          <PlayerPanel
+            player={displayedGame.players.bottom}
+            side="bottom"
+            isActive={game.currentPlayer === 'bottom' && game.gameStatus === 'playing'}
+            compact
+            onResign={handleResign}
+            resignDisabled={isReviewing || game.gameStatus !== 'playing'}
           />
         </section>
       </div>

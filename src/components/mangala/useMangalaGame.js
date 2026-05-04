@@ -4,6 +4,7 @@ import {
   buildMoveAnimationFrames,
   createInitialState,
   getLegalMoves,
+  getOpponent,
 } from './gameLogic'
 import { chooseBotMove } from './botLogic.js'
 import { MOVE_ANIMATION_DELAY_MS } from './constants'
@@ -216,6 +217,27 @@ export function useMangalaGame(initialConfig) {
     setReviewIndex(null)
   }
 
+  const handleResign = (player) => {
+    clearAnimationTimeouts()
+    clearBotTurnTimeout()
+    setReviewIndex(null)
+    setGame((currentGame) => {
+      if (currentGame.gameStatus !== 'playing') {
+        return currentGame
+      }
+
+      const winner = getOpponent(player)
+
+      return {
+        ...currentGame,
+        gameStatus: 'finished',
+        winner,
+        turnMessage: `${currentGame.players[winner].name} wins by resignation.`,
+        moveInProgress: false,
+      }
+    })
+  }
+
   useEffect(() => {
     if (
       !botSettings ||
@@ -292,6 +314,7 @@ export function useMangalaGame(initialConfig) {
     handleReplayLast,
     handleReplayNext,
     handleReplayPrevious,
+    handleResign,
     handleReset,
     handleStoneToggle,
   }

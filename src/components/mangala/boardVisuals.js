@@ -1,50 +1,43 @@
-const MAX_VISIBLE_STONES = 12
-const ROW_ORDER = [0, 1, 2, 3, 2.5, 1.5]
+const BASE_LAYER_ROW_ORDER = [3, 2, 1, 0]
+const STORE_LAYER_ROW_ORDER = [5, 4, 3, 2, 1, 0]
 const MAX_STONES_PER_ROW = 2
-const STORE_MAX_STONES_PER_ROW = 3
-const STORE_BASE_ROW_COUNT = 8
+const MAX_ROWS_PER_LAYER = 4
+const STORE_MAX_ROWS_PER_LAYER = 6
+const STACK_LAYER_SHIFT_X = 0
+const STACK_LAYER_SHIFT_Y = -0.4
 
-function getStoreRowOrder(rowCount) {
-  const positions = Array.from({ length: STORE_BASE_ROW_COUNT }, (_, index) => index)
-
-  if (rowCount <= positions.length) {
-    return positions.slice(0, rowCount)
-  }
-
-  const interleavedPositions = []
-
-  for (let index = positions.length - 2; index >= 0; index -= 1) {
-    interleavedPositions.push(index + 0.5)
-  }
-  interleavedPositions.push(positions.length - 0.5)
-
-  return [...positions, ...interleavedPositions].slice(0, rowCount)
-}
-
-function buildRows(count, stonesPerRow, rowPositions, rowIdPrefix) {
+function buildRows(count, stonesPerRow, rowIdPrefix, rowOrder, maxRowsPerLayer) {
   const rowCount = Math.ceil(count / stonesPerRow)
-  const visiblePositions = rowPositions.slice(0, rowCount)
-  const minPosition = Math.min(...visiblePositions)
-  const maxPosition = Math.max(...visiblePositions)
+  const minPosition = Math.min(...rowOrder)
+  const maxPosition = Math.max(...rowOrder)
   const centerPosition = (minPosition + maxPosition) / 2
 
   return Array.from({ length: rowCount }, (_, rowIndex) => ({
     id: `${rowIdPrefix}-${rowIndex}`,
-    offset: visiblePositions[rowIndex] - centerPosition,
+    offset: rowOrder[rowIndex % maxRowsPerLayer] - centerPosition,
+    layerShiftX: Math.floor(rowIndex / maxRowsPerLayer) * STACK_LAYER_SHIFT_X,
+    layerShiftY: Math.floor(rowIndex / maxRowsPerLayer) * STACK_LAYER_SHIFT_Y,
     stonesInRow: Math.min(stonesPerRow, count - rowIndex * stonesPerRow),
   }))
 }
 
 export function getStoneRows(count) {
-  return buildRows(count, MAX_STONES_PER_ROW, ROW_ORDER, 'row')
+  return buildRows(
+    count,
+    MAX_STONES_PER_ROW,
+    'row',
+    BASE_LAYER_ROW_ORDER,
+    MAX_ROWS_PER_LAYER,
+  )
 }
 
 export function getStoreStoneRows(count) {
   return buildRows(
     count,
-    STORE_MAX_STONES_PER_ROW,
-    getStoreRowOrder(Math.ceil(count / STORE_MAX_STONES_PER_ROW)),
+    MAX_STONES_PER_ROW,
     'store-row',
+    STORE_LAYER_ROW_ORDER,
+    STORE_MAX_ROWS_PER_LAYER,
   )
 }
 
@@ -64,10 +57,10 @@ export function buildStaticStoneStates(count, idPrefix) {
   }))
 }
 
-export function shouldUseOverflowCount(count) {
-  return count > MAX_VISIBLE_STONES
+export function shouldUseOverflowCount() {
+  return false
 }
 
 export function shouldRenderInlinePitStones(count) {
-  return count > 0 && count <= MAX_VISIBLE_STONES
+  return count > 0
 }
