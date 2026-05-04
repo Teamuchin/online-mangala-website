@@ -69,7 +69,7 @@ export default function Home() {
               </Link>
             </div>
             <div className={styles.homebuttonlower}>
-              <Link to="/banner" className={styles.learnbtn}>
+              <Link to="/learn" className={styles.learnbtn}>
                 Learn & Train
               </Link>
             </div>
