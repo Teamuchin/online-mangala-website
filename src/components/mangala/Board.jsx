@@ -13,6 +13,7 @@ export default function Board({
   showVisualStones,
   lastMove,
   disableInteraction = false,
+  interactiveSide = null,
   onPitClick,
 }) {
   const topRow = [...PLAYER_CONFIG.top.pitIndexes].reverse()
@@ -47,6 +48,7 @@ export default function Board({
               currentPlayer,
               gameStatus,
               side: 'top',
+              interactiveSide,
             })}
             isSelected={selectedPit === index}
             onClick={() => onPitClick(index)}
@@ -70,6 +72,7 @@ export default function Board({
               currentPlayer,
               gameStatus,
               side: 'bottom',
+              interactiveSide,
             })}
             isSelected={selectedPit === index}
             onClick={() => onPitClick(index)}

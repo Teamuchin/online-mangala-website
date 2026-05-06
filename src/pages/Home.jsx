@@ -22,6 +22,7 @@ export default function Home() {
   const closeBotSetup = () => setIsBotSetupOpen(false)
 
   const handleStartBotMatch = () => {
+    const matchToken = Date.now()
     const startingPlayer =
       botFirstMove === 'random'
         ? Math.random() < 0.5
@@ -31,17 +32,28 @@ export default function Home() {
           ? 'top'
           : 'bottom'
 
-    navigate('/game/local', {
+    navigate('/game/bot', {
       state: {
         botSettings: {
           difficulty: Number(botDifficulty),
           firstMove: botFirstMove,
         },
         matchMode: 'computer',
+        matchToken,
         startingPlayer,
       },
     })
     closeBotSetup()
+  }
+
+  const handleStartLocalMatch = () => {
+    const matchToken = Date.now()
+    navigate('/game/local', {
+      state: {
+        matchMode: 'local',
+        matchToken,
+      },
+    })
   }
 
   if (!isAuthenticated) {
@@ -87,6 +99,15 @@ export default function Home() {
                   type="button"
                   className={styles[action.className]}
                   onClick={openBotSetup}
+                >
+                  {action.label}
+                </button>
+              ) : action.label === 'Local Match' ? (
+                <button
+                  key={action.label}
+                  type="button"
+                  className={styles[action.className]}
+                  onClick={handleStartLocalMatch}
                 >
                   {action.label}
                 </button>

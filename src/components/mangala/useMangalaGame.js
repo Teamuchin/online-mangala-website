@@ -9,6 +9,11 @@ import {
 import { chooseBotMove } from './botLogic.js'
 import { MOVE_ANIMATION_DELAY_MS } from './constants'
 import {
+  ACTIVE_MATCH_STORAGE_KEY,
+  buildPersistedMatchSession,
+  readPersistedMatchSession,
+} from './gamePersistence.js'
+import {
   buildAnimatedLastMove,
 } from './movePresentation'
 import {
@@ -58,13 +63,61 @@ function scheduleAnimatedMove({
 }
 
 export function useMangalaGame(initialConfig) {
-  const [game, setGame] = useState(() => createInitialState(initialConfig))
-  const [showVisualStones, setShowVisualStones] = useState(true)
-  const [animateMoves, setAnimateMoves] = useState(false)
-  const [reviewIndex, setReviewIndex] = useState(null)
+  const restoredSession =
+    typeof window === 'undefined'
+      ? null
+      : readPersistedMatchSession(
+          window.localStorage.getItem(ACTIVE_MATCH_STORAGE_KEY),
+        )
+  const shouldRestorePersistedSession = Boolean(
+    restoredSession &&
+      (
+        !initialConfig?.matchMode ||
+        restoredSession.matchMode === initialConfig.matchMode
+      ) &&
+      (
+        !initialConfig?.matchToken ||
+        restoredSession.matchToken === initialConfig.matchToken
+      ),
+  )
+  const activeMatchMode =
+    shouldRestorePersistedSession
+      ? restoredSession?.matchMode ?? initialConfig?.matchMode ?? null
+      : initialConfig?.matchMode ?? null
+  const activeMatchToken =
+    shouldRestorePersistedSession
+      ? restoredSession?.matchToken ?? initialConfig?.matchToken ?? null
+      : initialConfig?.matchToken ?? null
+  const [game, setGame] = useState(
+    () =>
+      shouldRestorePersistedSession
+        ? restoredSession.game
+        : createInitialState(initialConfig),
+  )
+  const [showVisualStones, setShowVisualStones] = useState(
+    () =>
+      shouldRestorePersistedSession
+        ? restoredSession.showVisualStones
+        : true,
+  )
+  const [animateMoves, setAnimateMoves] = useState(
+    () =>
+      shouldRestorePersistedSession
+        ? restoredSession.animateMoves
+        : false,
+  )
+  const [reviewIndex, setReviewIndex] = useState(
+    () =>
+      shouldRestorePersistedSession
+        ? restoredSession.reviewIndex
+        : null,
+  )
   const animationTimeoutsRef = useRef([])
   const botTurnTimeoutRef = useRef(null)
-  const botSettings = initialConfig?.botSettings ?? null
+  const botSettings =
+    shouldRestorePersistedSession
+      ? restoredSession?.botSettings ?? initialConfig?.botSettings ?? null
+      : initialConfig?.botSettings ?? null
   const latestPositionIndex = game.matchRecord.positions.length - 1
   const activePositionIndex = reviewIndex ?? latestPositionIndex
   const activePosition = game.matchRecord.positions[activePositionIndex]
@@ -125,6 +178,32 @@ export function useMangalaGame(initialConfig) {
     [],
   )
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const session = buildPersistedMatchSession({
+      game,
+      showVisualStones,
+      animateMoves,
+      reviewIndex,
+      matchMode: activeMatchMode,
+      matchToken: activeMatchToken,
+      botSettings,
+    })
+
+    window.localStorage.setItem(ACTIVE_MATCH_STORAGE_KEY, JSON.stringify(session))
+  }, [
+    activeMatchMode,
+    activeMatchToken,
+    animateMoves,
+    botSettings,
+    game,
+    reviewIndex,
+    showVisualStones,
+  ])
+
   const handleReset = () => {
     clearAnimationTimeouts()
     clearBotTurnTimeout()
@@ -142,7 +221,12 @@ export function useMangalaGame(initialConfig) {
 
   const handlePitClick = (pitIndex) => {
     setGame((currentGame) => {
-      if (reviewIndex !== null || currentGame.moveInProgress || currentGame.gameStatus !== 'playing') {
+      if (
+        reviewIndex !== null ||
+        currentGame.moveInProgress ||
+        currentGame.gameStatus !== 'playing' ||
+        (botSettings && currentGame.currentPlayer === 'top')
+      ) {
         return currentGame
       }
 

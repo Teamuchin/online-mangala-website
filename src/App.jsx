@@ -18,6 +18,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/game/local" element={<MangalaGame />} />
+        <Route path="/game/bot" element={<MangalaGame />} />
         <Route path="/account" element={<AccountSettings />} />
         <Route path="/banner" element={<Banner />} />
         <Route path="/learn" element={<LearnTrainPage />} />

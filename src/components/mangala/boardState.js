@@ -29,10 +29,12 @@ export function isPitDisabled({
   currentPlayer,
   gameStatus,
   side,
+  interactiveSide = null,
 }) {
   return (
     disableInteraction ||
     gameStatus === 'finished' ||
+    (interactiveSide !== null && side !== interactiveSide) ||
     currentPlayer !== side ||
     board[index] === 0
   )

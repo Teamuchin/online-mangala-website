@@ -12,9 +12,18 @@ import styles from '../components/mangala/MangalaGame.module.css'
 export default function MangalaGame() {
   const location = useLocation()
   const { setSettingsContent } = useGlobalHeader()
-  const botSettings = location.state?.botSettings ?? null
-  const initialConfig = botSettings
-    ? {
+  const matchMode =
+    location.pathname === '/game/bot'
+      ? 'computer'
+      : 'local'
+  const botSettings = matchMode === 'computer' ? location.state?.botSettings ?? null : null
+  const initialConfig =
+    matchMode === 'local'
+      ? { matchMode: 'local' }
+      : botSettings
+        ? {
+            matchMode: 'computer',
+            matchToken: location.state?.matchToken ?? null,
         botSettings,
         initialCurrentPlayer: location.state?.startingPlayer ?? 'bottom',
         initialPlayers: {
@@ -27,8 +36,10 @@ export default function MangalaGame() {
             isBot: true,
           },
         },
-      }
-    : undefined
+          }
+        : {
+            matchMode: 'computer',
+          }
   const {
     game,
     displayedGame,
@@ -111,6 +122,7 @@ export default function MangalaGame() {
               showVisualStones={showVisualStones}
               lastMove={displayedGame.lastMove}
               disableInteraction={isReviewing}
+              interactiveSide={botSettings ? 'bottom' : null}
               onPitClick={handlePitClick}
             />
             <ReplayControls
