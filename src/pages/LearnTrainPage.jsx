@@ -1,38 +1,7 @@
 import styles from "./LearnTrainPage.module.css"
-import { Link } from 'react-router-dom'
-import { useState } from "react"
-
-
 export default function LearnTrainPage(){
-    const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
-
     return (
         <div className={styles.learnpage}>
-            <div className={styles.header}>
-                <div className={styles.headerlogo}>
-                    <img src="/logo.svg" alt="logo" className={styles.logo}/>
-                    <h1>Mangala</h1>
-                </div>
-                <div className={styles.headerbuttons}>
-                    <div
-                        className={styles.accountWrapper}
-                        onMouseEnter={() => setIsAccountModalOpen(true)}
-                        onMouseLeave={() => setIsAccountModalOpen(false)}
-                    >
-                        <Link to="/account" className={styles.account}>
-                            <img src="/accountbtn.svg" alt="account"/>
-                        </Link>
-                        {isAccountModalOpen && <div className={styles.accountModal}>
-                            <img src="/accountbtn.svg" alt="profilepic" className={styles.accountModalIcon}/>
-                            <p className={styles.accountModalUsername}>Username</p>
-                            <p className={styles.accountModalElo}>Elo: 1200</p>
-                            <Link to="/login" className={styles.modallogout}>Log out</Link>
-                            </div>}
-                    </div>
-                    <button className={styles.langbtn}><img src="/languagebtn.svg" alt="language"/></button>
-                    <button className={styles.settingbtn}><img src="/settingsbtn.png" alt="settings"/></button>
-                </div>
-            </div>
             <div className={styles.bodybuttons}>
                 <p className={styles.learnText}>
                     Mangala, a Turkish game of intelligence and strategy, is played by two people. The game board features 12 small pits—six on each side—and a large treasury where each player collects their stones. Mangala is played with 48 stones.

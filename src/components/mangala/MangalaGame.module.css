@@ -1,78 +1,32 @@
 .page {
-  min-height: 100vh;
-  padding: 32px 20px 48px;
+  height: calc(100svh - 72px);
+  padding: 20px;
   background:
     radial-gradient(circle at top, rgba(255, 233, 204, 0.9), transparent 35%),
     linear-gradient(180deg, #f8d9b6 0%, #efc093 45%, #c98856 100%);
   color: #5a2f12;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
 }
 
 .layout {
   width: min(1180px, 100%);
+  max-height: 100%;
   margin: 0 auto;
   display: grid;
-  gap: 24px;
 }
 
-.topBar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-}
-
-.titleBlock {
-  flex: 1;
-  min-width: 0;
-}
-
-.actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-.titleBlock h1 {
-  font-size: clamp(2rem, 4vw, 3.4rem);
-  margin: 0;
-  margin-bottom: 6px;
-}
-
-.titleBlock p {
-  max-width: 720px;
-  line-height: 1.5;
-}
-
-.homeLink,
-.resetButton,
-.secondaryButton {
-  border: none;
-  border-radius: 999px;
-  padding: 10px 16px;
-  font-size: 1rem;
+.headerSettingsOption {
+  border: 2px solid #6f4326;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
   font-weight: 700;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-}
-
-.homeLink {
-  color: #5a2f12;
-  background: rgba(255, 248, 235, 0.82);
-}
-
-.resetButton {
-  color: #fff7ee;
-  background: #8a4020;
-}
-
-.secondaryButton {
   color: #5a2f12;
   background: rgba(255, 248, 235, 0.9);
+  cursor: pointer;
+  text-align: left;
 }
 
 .matchArena {
@@ -509,6 +463,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
   padding: 0 0 8px;
 }
 
@@ -602,16 +557,6 @@
 @media (max-width: 640px) {
   .page {
     padding-inline: 14px;
-  }
-
-  .topBar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .actions {
-    justify-content: center;
-    flex-wrap: wrap;
   }
 
   .pitRow {

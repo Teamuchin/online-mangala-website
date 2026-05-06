@@ -1,5 +1,6 @@
 import './App.css'
 import { Route, Routes } from 'react-router-dom'
+import GlobalHeader from './components/GlobalHeader.jsx'
 import Login from "./pages/Login.jsx"
 import Home from "./pages/Home.jsx"
 import Register from "./pages/Register.jsx"
@@ -10,15 +11,18 @@ import LearnTrainPage from "./pages/LearnTrainPage.jsx"
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/game/local" element={<MangalaGame />} />
-      <Route path="/account" element={<AccountSettings />} />
-      <Route path="/banner" element={<Banner />} />
-      <Route path="/learn" element={<LearnTrainPage />} />
-    </Routes>
+    <>
+      <GlobalHeader />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/game/local" element={<MangalaGame />} />
+        <Route path="/account" element={<AccountSettings />} />
+        <Route path="/banner" element={<Banner />} />
+        <Route path="/learn" element={<LearnTrainPage />} />
+      </Routes>
+    </>
   )
 }
 

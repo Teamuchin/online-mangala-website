@@ -4,7 +4,7 @@
     justify-content:start;
     align-items: center;
     width: 100%;
-    min-height: 100vh;
+    min-height: calc(100vh - 72px);
     background:
     radial-gradient(circle at top, rgba(255, 233, 204, 0.9), transparent 35%),
     linear-gradient(180deg, #f8d9b6 0%, #efc093 45%, #c98856 100%);
@@ -57,8 +57,8 @@
     justify-content: center;
     align-items: center;
     width: 100%;
-    height: calc(100vh - 100px);
-    padding-bottom: 5%;
+    min-height: calc(100vh - 72px);
+    padding: 24px 0 5%;
 }
 .homebody h1 {
     font-size: 50px;

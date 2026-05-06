@@ -7,13 +7,6 @@
     padding: 24px 20px 32px;
 }
 
-.topBar {
-    width: 100%;
-    max-width: 480px;
-    display: flex;
-    justify-content: flex-start;
-}
-
 .accountsettings h1 {
     margin: 0;
     color: #5a2f12;

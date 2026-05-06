@@ -1,26 +1,22 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { buildWelcomeMessage, isGuestUser } from '../app/appState.js'
+import { buildWelcomeMessage } from '../app/appState.js'
 import BotSetupModal from './BotSetupModal.jsx'
 import { useAppData } from '../app/useAppData.js'
 import styles from './Home.module.css'
 
 export default function Home() {
   const navigate = useNavigate()
-  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false)
   const [isBotSetupOpen, setIsBotSetupOpen] = useState(false)
   const [botDifficulty, setBotDifficulty] = useState('1')
   const [botFirstMove, setBotFirstMove] = useState('you')
   const {
     assets,
-    brandName,
     currentUser,
     isAuthenticated,
-    logOut,
     homePrimaryActions,
     homeSecondaryActions,
   } = useAppData()
-  const guestMode = isGuestUser(currentUser)
 
   const openBotSetup = () => setIsBotSetupOpen(true)
   const closeBotSetup = () => setIsBotSetupOpen(false)
@@ -51,12 +47,6 @@ export default function Home() {
   if (!isAuthenticated) {
     return (
       <div className={styles.home}>
-        <div className={styles.homeheader}>
-          <div className={styles.headerlogo}>
-            <img src={assets.logo} alt="logo" className={styles.logo} />
-            <h1>{brandName}</h1>
-          </div>
-        </div>
         <div className={styles.homebody}>
           <h1>Please log in to continue.</h1>
           <div className={styles.homebuttons}>
@@ -86,49 +76,6 @@ export default function Home() {
 
   return (
     <div className={styles.home}>
-      <div className={styles.homeheader}>
-        <div className={styles.headerlogo}>
-          <img src={assets.logo} alt="logo" className={styles.logo} />
-          <h1>{brandName}</h1>
-        </div>
-        <div className={styles.headerbuttons}>
-          <div
-            className={styles.accountWrapper}
-            onMouseEnter={() => setIsAccountModalOpen(true)}
-            onMouseLeave={() => setIsAccountModalOpen(false)}
-          >
-            {guestMode ? (
-              <span className={styles.accountDisabled}>
-                <img src={assets.accountIcon} alt="account" />
-              </span>
-            ) : (
-              <Link to="/account" className={styles.account}>
-                <img src={assets.accountIcon} alt="account" />
-              </Link>
-            )}
-            {isAccountModalOpen && (
-              <div className={styles.accountModal}>
-                <img
-                  src={assets.accountIcon}
-                  alt="profilepic"
-                  className={styles.accountModalIcon}
-                />
-                <p className={styles.accountModalUsername}>{currentUser.username}</p>
-                <p className={styles.accountModalElo}>Elo: {currentUser.elo}</p>
-                <Link to="/login" className={styles.modallogout} onClick={logOut}>
-                  Log out
-                </Link>
-              </div>
-            )}
-          </div>
-          <button className={styles.langbtn}>
-            <img src={assets.languageIcon} alt="language" />
-          </button>
-          <button className={styles.settingbtn}>
-            <img src={assets.settingsIcon} alt="settings" />
-          </button>
-        </div>
-      </div>
       <div className={styles.homebody}>
         <h1>{buildWelcomeMessage(currentUser)}</h1>
         <div className={styles.homebuttons}>

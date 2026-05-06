@@ -1,8 +1,9 @@
+import { useEffect, useRef } from 'react'
 import Board from '../components/mangala/Board'
-import PageBackLink from '../components/PageBackLink.jsx'
 import PlayerPanel from '../components/mangala/PlayerPanel.jsx'
 import ReplayControls from '../components/mangala/ReplayControls.jsx'
 import { useLocation } from 'react-router-dom'
+import { useGlobalHeader } from '../app/useGlobalHeader.js'
 import { createInitialState } from '../components/mangala/gameLogic'
 import { buildReplayDescription } from '../components/mangala/matchRecord.js'
 import { useMangalaGame } from '../components/mangala/useMangalaGame'
@@ -10,6 +11,7 @@ import styles from '../components/mangala/MangalaGame.module.css'
 
 export default function MangalaGame() {
   const location = useLocation()
+  const { setSettingsContent } = useGlobalHeader()
   const botSettings = location.state?.botSettings ?? null
   const initialConfig = botSettings
     ? {
@@ -50,36 +52,46 @@ export default function MangalaGame() {
     displayedGame.players,
   )
   const sidebarDescription = isReviewing ? replayDescription : game.turnMessage
+  const stoneToggleRef = useRef(handleStoneToggle)
+  const animationToggleRef = useRef(handleAnimationToggle)
+
+  useEffect(() => {
+    stoneToggleRef.current = handleStoneToggle
+    animationToggleRef.current = handleAnimationToggle
+  }, [handleAnimationToggle, handleStoneToggle])
+
+  useEffect(() => {
+    setSettingsContent(
+      <>
+        <button
+          type="button"
+          className={styles.headerSettingsOption}
+          onClick={() => stoneToggleRef.current()}
+        >
+          Visual Stones: {showVisualStones ? 'On' : 'Off'}
+        </button>
+        <button
+          type="button"
+          className={styles.headerSettingsOption}
+          onClick={() => animationToggleRef.current()}
+        >
+          Move Animation: {animateMoves ? 'On' : 'Off'}
+        </button>
+      </>,
+    )
+
+    return () => {
+      setSettingsContent(null)
+    }
+  }, [
+    setSettingsContent,
+    showVisualStones,
+    animateMoves,
+  ])
 
   return (
     <main className={styles.page}>
       <div className={styles.layout}>
-        <section className={styles.topBar}>
-          <div className={styles.titleBlock}>
-            <h1>{botSettings ? 'Bot Match' : 'Local Match'}</h1>
-          </div>
-          <div className={styles.actions}>
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={handleStoneToggle}
-            >
-              Visual Stones: {showVisualStones ? 'On' : 'Off'}
-            </button>
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={handleAnimationToggle}
-            >
-              Move Animation: {animateMoves ? 'On' : 'Off'}
-            </button>
-            <PageBackLink className={styles.homeLink} />
-            <button type="button" className={styles.resetButton} onClick={handleReset}>
-              Restart Match
-            </button>
-          </div>
-        </section>
-
         <section className={styles.matchArena}>
           <PlayerPanel
             player={displayedGame.players.top}
@@ -111,6 +123,7 @@ export default function MangalaGame() {
               onLast={handleReplayLast}
               onNext={handleReplayNext}
               onPrevious={handleReplayPrevious}
+              onReset={handleReset}
             />
           </div>
           <PlayerPanel

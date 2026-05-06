@@ -10,6 +10,7 @@ export default function ReplayControls({
   onPrevious,
   onNext,
   onLast,
+  onReset,
 }) {
   return (
     <section className={styles.replayPanel}>
@@ -29,6 +30,15 @@ export default function ReplayControls({
           disabled={!hasMoves || activePositionIndex === 0}
         >
           &lt;
+        </button>
+        <button
+          type="button"
+          className={styles.replayIconButton}
+          onClick={onReset}
+          aria-label="Restart match"
+          title="Restart match"
+        >
+          ↻
         </button>
         <button
           type="button"
