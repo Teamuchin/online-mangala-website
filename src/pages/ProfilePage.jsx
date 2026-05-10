@@ -1,0 +1,109 @@
+import { Navigate } from 'react-router-dom'
+import { isGuestUser } from '../app/appState.js'
+import { useAppData } from '../app/useAppData.js'
+import styles from './ProfilePage.module.css'
+
+const EMPTY_MATCHES = []
+const EMPTY_RATING_POINTS = []
+
+export default function ProfilePage() {
+  const { currentUser, isAuthenticated } = useAppData()
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (isGuestUser(currentUser)) {
+    return <Navigate to="/" replace />
+  }
+
+  const isOnline = isAuthenticated
+
+  return (
+    <main className={styles.profilePage}>
+      <section className={styles.profileShell}>
+        <header className={styles.profileHeader}>
+          <div className={styles.identityBlock}>
+            <div
+              className={`${styles.statusDot} ${isOnline ? styles.online : styles.offline}`}
+              aria-hidden="true"
+            />
+            <div className={styles.identityText}>
+              <h1>{currentUser.username}</h1>
+              <div className={styles.metaRow}>
+                <span>{isOnline ? 'Online' : 'Offline'}</span>
+                <span className={styles.metaDivider}>•</span>
+                <span>Member since {currentUser.memberSince}</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <section className={styles.ratingSection}>
+          <div className={styles.ratingCard}>
+            <span className={styles.sectionLabel}>Rating</span>
+            <strong className={styles.ratingValue}>{currentUser.elo ?? '—'}</strong>
+          </div>
+
+          <div className={styles.chartCard}>
+            <div className={styles.chartHeader}>
+              <span className={styles.sectionLabel}>Rating History</span>
+            </div>
+            <div className={styles.chartFrame}>
+              <svg
+                viewBox="0 0 640 240"
+                className={styles.chartSvg}
+                role="img"
+                aria-label="Empty rating history chart"
+              >
+                <line x1="52" y1="22" x2="52" y2="204" className={styles.chartAxis} />
+                <line x1="52" y1="204" x2="604" y2="204" className={styles.chartAxis} />
+                <line x1="52" y1="62" x2="604" y2="62" className={styles.chartGrid} />
+                <line x1="52" y1="108" x2="604" y2="108" className={styles.chartGrid} />
+                <line x1="52" y1="154" x2="604" y2="154" className={styles.chartGrid} />
+                {EMPTY_RATING_POINTS.length > 0 && null}
+              </svg>
+              <div className={styles.emptyChartText}>No rating history yet.</div>
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.historyCard}>
+          <div className={styles.historyHeader}>
+            <span className={styles.sectionLabel}>Last 5 Games</span>
+          </div>
+          <div className={styles.tableWrap}>
+            <table className={styles.historyTable}>
+              <thead>
+                <tr>
+                  <th>Opponent</th>
+                  <th>Mode</th>
+                  <th>Result</th>
+                  <th>Rating</th>
+                </tr>
+              </thead>
+              <tbody>
+                {EMPTY_MATCHES.length > 0 ? (
+                  EMPTY_MATCHES.map((match) => (
+                    <tr key={match.id}>
+                      <td>{match.opponent}</td>
+                      <td>{match.mode}</td>
+                      <td>{match.result}</td>
+                      <td>{match.rating}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" className={styles.emptyCell}>
+                      No matches saved yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+    </main>
+  )
+}

@@ -16,6 +16,7 @@ export default function GlobalHeader() {
   } = useAppData()
   const { settingsContent } = useGlobalHeader()
   const showProfilePanel = isAuthenticated && !isGuestUser(currentUser)
+  const showAccountSettings = isAuthenticated && !isGuestUser(currentUser)
   const isOnGamePage = location.pathname.startsWith('/game/')
   const showBackToGame = activeMatchSummary?.isActive && !isOnGamePage
 
@@ -29,10 +30,7 @@ export default function GlobalHeader() {
           </a>
 
           {showBackToGame ? (
-            <Link
-              to={activeMatchSummary.url}
-              className={styles.backToGameLink}
-            >
+            <Link to={activeMatchSummary.url} className={styles.backToGameLink}>
               <span className={styles.liveDot} aria-hidden="true" />
               <span className={styles.actionText}>Back to Game</span>
             </Link>
@@ -43,9 +41,9 @@ export default function GlobalHeader() {
           {showProfilePanel ? (
             <div className={styles.menu}>
               <a
-                href="/account"
+                href="/profile"
                 className={styles.actionLink}
-                aria-label="Open account settings"
+                aria-label="Open profile"
                 onClick={(event) => event.currentTarget.blur()}
               >
                 <span className={styles.actionIcon} aria-hidden="true">
@@ -100,7 +98,14 @@ export default function GlobalHeader() {
               </span>
               <span className={styles.actionText}>Settings</span>
             </button>
-            <div className={styles.panel}>{settingsContent}</div>
+            <div className={styles.panel}>
+              {showAccountSettings ? (
+                <a href="/account" className={styles.panelLink}>
+                  Account Settings
+                </a>
+              ) : null}
+              {settingsContent}
+            </div>
           </div>
         </nav>
       </div>

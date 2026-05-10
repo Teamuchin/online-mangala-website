@@ -17,6 +17,7 @@ test('app brand and seeded current user stay aligned with the current UI copy', 
   assert.equal(INITIAL_CURRENT_USER.username, 'Username')
   assert.equal(INITIAL_CURRENT_USER.elo, 1200)
   assert.equal(INITIAL_CURRENT_USER.email, 'username@example.com')
+  assert.equal(INITIAL_CURRENT_USER.memberSince, 'May 2026')
   assert.equal(INITIAL_CURRENT_USER.profilePicture, '/assets/profile-picture-placeholder.png')
 })
 

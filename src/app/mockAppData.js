@@ -14,6 +14,7 @@ export const INITIAL_CURRENT_USER = {
   username: 'Username',
   elo: 1200,
   email: 'username@example.com',
+  memberSince: 'May 2026',
   bio: '',
   profilePicture: '/assets/profile-picture-placeholder.png',
 }
@@ -23,6 +24,7 @@ export const GUEST_CURRENT_USER = {
   username: 'Guest',
   elo: 1200,
   email: 'guest@example.com',
+  memberSince: 'May 2026',
   bio: 'Playing as guest',
   profilePicture: '/assets/profile-picture-placeholder.png',
 }
