@@ -25,10 +25,14 @@ export default function GlobalHeader() {
         <div className={styles.leftCluster}>
           <a href="/" className={styles.brand} aria-label="Go home">
             <img src={assets.logo} alt={brandName} className={styles.logo} />
+            <span className={styles.brandText}>MangalaOyna</span>
           </a>
 
           {showBackToGame ? (
-            <Link to={activeMatchSummary.url} className={styles.backToGameLink}>
+            <Link
+              to={activeMatchSummary.url}
+              className={styles.backToGameLink}
+            >
               <span className={styles.liveDot} aria-hidden="true" />
               <span className={styles.actionText}>Back to Game</span>
             </Link>

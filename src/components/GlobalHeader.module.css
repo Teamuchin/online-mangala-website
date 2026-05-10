@@ -32,13 +32,27 @@
 .brand {
   display: inline-flex;
   align-items: center;
+  gap: 10px;
   text-decoration: none;
+}
+
+.brand:hover .brandText {
+  color: #7a3e19;
 }
 
 .logo {
   display: block;
   width: 54px;
   height: 54px;
+}
+
+.brandText {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #5a2f12;
+  transition: color 150ms ease;
+  white-space: nowrap;
 }
 
 .actions {
@@ -87,6 +101,7 @@
   font-weight: 600;
   white-space: nowrap;
 }
+
 
 .panel {
   position: absolute;
@@ -227,6 +242,10 @@
   .logo {
     width: 44px;
     height: 44px;
+  }
+
+  .brandText {
+    font-size: 1.2rem;
   }
 
   .actionText {
