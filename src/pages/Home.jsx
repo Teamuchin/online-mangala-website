@@ -12,7 +12,6 @@ export default function Home() {
   const [botFirstMove, setBotFirstMove] = useState('you')
   const {
     activeMatchSummary,
-    assets,
     currentUser,
     isAuthenticated,
     homePrimaryActions,
@@ -94,11 +93,6 @@ export default function Home() {
                 Learn & Train
               </Link>
             </div>
-            <img
-              src={assets.decorationBoard}
-              alt="decorationboard"
-              className={styles.decorationboard}
-            />
           </div>
         </div>
       </div>
@@ -144,11 +138,6 @@ export default function Home() {
               </Link>
             ))}
           </div>
-          <img
-            src={assets.decorationBoard}
-            alt="decorationboard"
-            className={styles.decorationboard}
-          />
         </div>
       </div>
       {isBotSetupOpen && (
