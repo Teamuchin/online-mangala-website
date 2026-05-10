@@ -19,6 +19,7 @@ export default function GlobalHeader() {
   const showAccountSettings = isAuthenticated && !isGuestUser(currentUser)
   const isOnGamePage = location.pathname.startsWith('/game/')
   const showBackToGame = activeMatchSummary?.isActive && !isOnGamePage
+  const profileHref = `/member/${encodeURIComponent(currentUser.username)}`
 
   return (
     <header className={styles.header}>
@@ -41,7 +42,7 @@ export default function GlobalHeader() {
           {showProfilePanel ? (
             <div className={styles.menu}>
               <a
-                href="/profile"
+                href={profileHref}
                 className={styles.actionLink}
                 aria-label="Open profile"
                 onClick={(event) => event.currentTarget.blur()}

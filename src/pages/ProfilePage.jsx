@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom'
+import { Navigate, useParams } from 'react-router-dom'
 import { isGuestUser } from '../app/appState.js'
 import { useAppData } from '../app/useAppData.js'
 import styles from './ProfilePage.module.css'
@@ -7,6 +7,7 @@ const EMPTY_MATCHES = []
 const EMPTY_RATING_POINTS = []
 
 export default function ProfilePage() {
+  const { username } = useParams()
   const { currentUser, isAuthenticated } = useAppData()
 
   if (!isAuthenticated) {
@@ -15,6 +16,26 @@ export default function ProfilePage() {
 
   if (isGuestUser(currentUser)) {
     return <Navigate to="/" replace />
+  }
+
+  const canonicalUsername = currentUser.username
+  const canonicalProfilePath = `/member/${encodeURIComponent(canonicalUsername)}`
+
+  if (!username) {
+    return <Navigate to={canonicalProfilePath} replace />
+  }
+
+  if (username !== canonicalUsername) {
+    return (
+      <main className={styles.profilePage}>
+        <section className={styles.profileShell}>
+          <section className={styles.missingProfileCard}>
+            <h1>No such player</h1>
+            <p>This username doesn&apos;t match any player.</p>
+          </section>
+        </section>
+      </main>
+    )
   }
 
   const isOnline = isAuthenticated

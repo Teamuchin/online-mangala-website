@@ -20,6 +20,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/game/:gameId" element={<MangalaGame />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/member/:username" element={<ProfilePage />} />
         <Route path="/account" element={<AccountSettings />} />
         <Route path="/banner" element={<Banner />} />
         <Route path="/learn" element={<LearnTrainPage />} />
