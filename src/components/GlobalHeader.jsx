@@ -1,10 +1,11 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { isGuestUser } from '../app/appState.js'
 import { useAppData } from '../app/useAppData.js'
 import { useGlobalHeader } from '../app/useGlobalHeader.js'
 import styles from './GlobalHeader.module.css'
 
 export default function GlobalHeader() {
+  const location = useLocation()
   const {
     activeMatchSummary,
     assets,
@@ -15,22 +16,26 @@ export default function GlobalHeader() {
   } = useAppData()
   const { settingsContent } = useGlobalHeader()
   const showProfilePanel = isAuthenticated && !isGuestUser(currentUser)
+  const isOnGamePage = location.pathname.startsWith('/game/')
+  const showBackToGame = activeMatchSummary?.isActive && !isOnGamePage
 
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <a href="/" className={styles.brand} aria-label="Go home">
-          <img src={assets.logo} alt={brandName} className={styles.logo} />
-        </a>
+        <div className={styles.leftCluster}>
+          <a href="/" className={styles.brand} aria-label="Go home">
+            <img src={assets.logo} alt={brandName} className={styles.logo} />
+          </a>
 
-        <nav className={styles.actions} aria-label="Global navigation">
-          {activeMatchSummary?.isActive && (
+          {showBackToGame ? (
             <Link to={activeMatchSummary.url} className={styles.backToGameLink}>
               <span className={styles.liveDot} aria-hidden="true" />
               <span className={styles.actionText}>Back to Game</span>
             </Link>
-          )}
+          ) : null}
+        </div>
 
+        <nav className={styles.actions} aria-label="Global navigation">
           {showProfilePanel ? (
             <div className={styles.menu}>
               <a

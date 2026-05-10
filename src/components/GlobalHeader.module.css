@@ -22,6 +22,13 @@
   gap: 16px;
 }
 
+.leftCluster {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
 .brand {
   display: inline-flex;
   align-items: center;
@@ -211,6 +218,10 @@
   .inner {
     min-height: 64px;
     padding: 0 12px;
+  }
+
+  .leftCluster {
+    gap: 8px;
   }
 
   .logo {
