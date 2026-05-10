@@ -68,6 +68,26 @@ export function buildActiveMatchSummary(session) {
   }
 }
 
+export function areActiveMatchSummariesEqual(left, right) {
+  if (left === right) {
+    return true
+  }
+
+  if (!left || !right) {
+    return left === right
+  }
+
+  return (
+    left.gameId === right.gameId &&
+    left.url === right.url &&
+    left.matchMode === right.matchMode &&
+    left.gameStatus === right.gameStatus &&
+    left.isActive === right.isActive &&
+    left.participants?.bottom === right.participants?.bottom &&
+    left.participants?.top === right.participants?.top
+  )
+}
+
 export function readPersistedMatchSession(serializedSession) {
   if (!serializedSession) {
     return null

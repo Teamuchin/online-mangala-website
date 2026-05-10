@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   ACTIVE_MATCH_UPDATED_EVENT,
+  areActiveMatchSummariesEqual,
   readStoredActiveMatchSummary,
 } from '../components/mangala/gamePersistence.js'
 import {
@@ -123,12 +124,14 @@ export function AppDataProvider({ children }) {
 
   useEffect(() => {
     const syncActiveMatch = (event) => {
-      if (event?.detail !== undefined) {
-        setActiveMatchSummary(event.detail)
-        return
-      }
+      const nextSummary =
+        event?.detail !== undefined ? event.detail : readStoredActiveMatchSummary()
 
-      setActiveMatchSummary(readStoredActiveMatchSummary())
+      setActiveMatchSummary((currentSummary) =>
+        areActiveMatchSummariesEqual(currentSummary, nextSummary)
+          ? currentSummary
+          : nextSummary,
+      )
     }
 
     window.addEventListener(ACTIVE_MATCH_UPDATED_EVENT, syncActiveMatch)
