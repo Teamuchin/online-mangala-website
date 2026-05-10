@@ -58,14 +58,13 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+          <div className={styles.headerRating}>
+            <span className={styles.sectionLabel}>Rating</span>
+            <strong className={styles.headerRatingValue}>{currentUser.elo ?? '—'}</strong>
+          </div>
         </header>
 
         <section className={styles.ratingSection}>
-          <div className={styles.ratingCard}>
-            <span className={styles.sectionLabel}>Rating</span>
-            <strong className={styles.ratingValue}>{currentUser.elo ?? '—'}</strong>
-          </div>
-
           <div className={styles.chartCard}>
             <div className={styles.chartHeader}>
               <span className={styles.sectionLabel}>Rating History</span>
@@ -87,41 +86,41 @@ export default function ProfilePage() {
               <div className={styles.emptyChartText}>No rating history yet.</div>
             </div>
           </div>
-        </section>
 
-        <section className={styles.historyCard}>
-          <div className={styles.historyHeader}>
-            <span className={styles.sectionLabel}>Last 5 Games</span>
-          </div>
-          <div className={styles.tableWrap}>
-            <table className={styles.historyTable}>
-              <thead>
-                <tr>
-                  <th>Opponent</th>
-                  <th>Mode</th>
-                  <th>Result</th>
-                  <th>Rating</th>
-                </tr>
-              </thead>
-              <tbody>
-                {EMPTY_MATCHES.length > 0 ? (
-                  EMPTY_MATCHES.map((match) => (
-                    <tr key={match.id}>
-                      <td>{match.opponent}</td>
-                      <td>{match.mode}</td>
-                      <td>{match.result}</td>
-                      <td>{match.rating}</td>
-                    </tr>
-                  ))
-                ) : (
+          <div className={styles.historyCard}>
+            <div className={styles.historyHeader}>
+              <span className={styles.sectionLabel}>Last 5 Games</span>
+            </div>
+            <div className={styles.tableWrap}>
+              <table className={styles.historyTable}>
+                <thead>
                   <tr>
-                    <td colSpan="4" className={styles.emptyCell}>
-                      No matches saved yet.
-                    </td>
+                    <th>Opponent</th>
+                    <th>Mode</th>
+                    <th>Result</th>
+                    <th>Rating</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {EMPTY_MATCHES.length > 0 ? (
+                    EMPTY_MATCHES.map((match) => (
+                      <tr key={match.id}>
+                        <td>{match.opponent}</td>
+                        <td>{match.mode}</td>
+                        <td>{match.result}</td>
+                        <td>{match.rating}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="4" className={styles.emptyCell}>
+                        No matches saved yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
       </section>

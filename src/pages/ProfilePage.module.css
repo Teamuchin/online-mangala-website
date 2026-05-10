@@ -16,7 +16,6 @@
 }
 
 .profileHeader,
-.ratingCard,
 .chartCard,
 .historyCard,
 .missingProfileCard {
@@ -50,6 +49,13 @@
   justify-content: space-between;
   gap: 20px;
   padding: 24px 28px;
+}
+
+.headerRating {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  text-align: right;
 }
 
 .identityBlock {
@@ -95,21 +101,13 @@
 
 .ratingSection {
   display: grid;
-  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
   gap: 20px;
 }
 
-.ratingCard,
 .chartCard,
 .historyCard {
   padding: 24px;
-}
-
-.ratingCard {
-  display: grid;
-  align-content: center;
-  gap: 12px;
-  min-height: 280px;
 }
 
 .sectionLabel {
@@ -120,8 +118,8 @@
   color: rgba(90, 47, 18, 0.7);
 }
 
-.ratingValue {
-  font-size: clamp(3.5rem, 9vw, 5.25rem);
+.headerRatingValue {
+  font-size: clamp(2.8rem, 7vw, 4.4rem);
   line-height: 0.92;
   color: #5a2f12;
 }
@@ -129,7 +127,7 @@
 .chartCard {
   display: grid;
   gap: 14px;
-  min-height: 280px;
+  min-height: 250px;
 }
 
 .chartHeader,
@@ -177,6 +175,11 @@
   overflow-x: auto;
 }
 
+.historyCard {
+  display: grid;
+  align-content: start;
+}
+
 .historyTable {
   width: 100%;
   border-collapse: collapse;
@@ -215,5 +218,10 @@
   .profileHeader {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .headerRating {
+    justify-items: start;
+    text-align: left;
   }
 }
