@@ -46,6 +46,7 @@
 }
 
 .actionLink,
+.backToGameLink,
 .actionButton {
   border: 1px solid rgba(143, 92, 48, 0.14);
   border-radius: 12px;
@@ -62,6 +63,10 @@
     border-color 150ms ease,
     box-shadow 150ms ease,
     transform 150ms ease;
+}
+
+.backToGameLink {
+  border-color: rgba(92, 53, 27, 0.22);
 }
 
 .actionIcon {
@@ -108,6 +113,7 @@
 }
 
 .actionLink:hover,
+.backToGameLink:hover,
 .menu:hover .actionButton,
 .menu:focus-within .actionButton,
 .actionButton:hover {
@@ -177,6 +183,28 @@
   line-height: 1.45;
   color: #5f3820;
   font-size: 0.9rem;
+}
+
+.liveDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d3362d;
+  box-shadow: 0 0 0 rgba(211, 54, 45, 0.45);
+  animation: pulseLive 1.6s ease-in-out infinite;
+}
+
+@keyframes pulseLive {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(211, 54, 45, 0.45);
+  }
+
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 8px rgba(211, 54, 45, 0);
+  }
 }
 
 @media (max-width: 640px) {

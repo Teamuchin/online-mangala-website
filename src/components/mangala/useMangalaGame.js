@@ -10,12 +10,12 @@ import { chooseBotMove } from './botLogic.js'
 import { MOVE_ANIMATION_DELAY_MS } from './constants'
 import {
   ACTIVE_MATCH_STORAGE_KEY,
+  buildActiveMatchSummary,
   buildPersistedMatchSession,
   readPersistedMatchSession,
+  writePersistedMatchSession,
 } from './gamePersistence.js'
-import {
-  buildAnimatedLastMove,
-} from './movePresentation'
+import { buildAnimatedLastMove } from './movePresentation'
 import {
   buildAnimatingMoveState,
   finalizeMoveState,
@@ -23,6 +23,16 @@ import {
 } from './gameState.js'
 
 const BOT_MOVE_DELAY_MS = 700
+
+function buildUnavailableGameState() {
+  const state = createInitialState()
+
+  return {
+    ...state,
+    gameStatus: 'finished',
+    turnMessage: 'Game unavailable.',
+  }
+}
 
 function scheduleAnimatedMove({
   animationTimeoutsRef,
@@ -69,55 +79,45 @@ export function useMangalaGame(initialConfig) {
       : readPersistedMatchSession(
           window.localStorage.getItem(ACTIVE_MATCH_STORAGE_KEY),
         )
+  const hasRestoredGameForRoute = Boolean(
+    restoredSession && restoredSession.gameId === initialConfig?.gameId,
+  )
+  const canCreateFreshMatch = Boolean(initialConfig?.matchMode)
   const shouldRestorePersistedSession = Boolean(
     restoredSession &&
-      (
-        !initialConfig?.matchMode ||
-        restoredSession.matchMode === initialConfig.matchMode
-      ) &&
-      (
-        !initialConfig?.matchToken ||
-        restoredSession.matchToken === initialConfig.matchToken
-      ),
+      restoredSession.gameId === initialConfig?.gameId &&
+      (!initialConfig?.matchMode ||
+        restoredSession.matchMode === initialConfig.matchMode),
   )
-  const activeMatchMode =
+  const isUnavailable = !hasRestoredGameForRoute && !canCreateFreshMatch
+  const activeGameId = initialConfig?.gameId ?? restoredSession?.gameId ?? null
+  const activeMatchMode = shouldRestorePersistedSession
+    ? restoredSession?.matchMode ?? initialConfig?.matchMode ?? null
+    : initialConfig?.matchMode ?? null
+  const botSettings = shouldRestorePersistedSession
+    ? restoredSession?.botSettings ?? initialConfig?.botSettings ?? null
+    : initialConfig?.botSettings ?? null
+
+  const [game, setGame] = useState(() =>
     shouldRestorePersistedSession
-      ? restoredSession?.matchMode ?? initialConfig?.matchMode ?? null
-      : initialConfig?.matchMode ?? null
-  const activeMatchToken =
-    shouldRestorePersistedSession
-      ? restoredSession?.matchToken ?? initialConfig?.matchToken ?? null
-      : initialConfig?.matchToken ?? null
-  const [game, setGame] = useState(
-    () =>
-      shouldRestorePersistedSession
-        ? restoredSession.game
+      ? restoredSession.game
+      : isUnavailable
+        ? buildUnavailableGameState()
         : createInitialState(initialConfig),
   )
-  const [showVisualStones, setShowVisualStones] = useState(
-    () =>
-      shouldRestorePersistedSession
-        ? restoredSession.showVisualStones
-        : true,
+  const [showVisualStones, setShowVisualStones] = useState(() =>
+    shouldRestorePersistedSession ? restoredSession.showVisualStones : true,
   )
-  const [animateMoves, setAnimateMoves] = useState(
-    () =>
-      shouldRestorePersistedSession
-        ? restoredSession.animateMoves
-        : false,
+  const [animateMoves, setAnimateMoves] = useState(() =>
+    shouldRestorePersistedSession ? restoredSession.animateMoves : false,
   )
-  const [reviewIndex, setReviewIndex] = useState(
-    () =>
-      shouldRestorePersistedSession
-        ? restoredSession.reviewIndex
-        : null,
+  const [reviewIndex, setReviewIndex] = useState(() =>
+    shouldRestorePersistedSession ? restoredSession.reviewIndex : null,
   )
+  const isComputerMatch =
+    activeMatchMode === 'computer' || game.players.top?.isBot === true
   const animationTimeoutsRef = useRef([])
   const botTurnTimeoutRef = useRef(null)
-  const botSettings =
-    shouldRestorePersistedSession
-      ? restoredSession?.botSettings ?? initialConfig?.botSettings ?? null
-      : initialConfig?.botSettings ?? null
   const latestPositionIndex = game.matchRecord.positions.length - 1
   const activePositionIndex = reviewIndex ?? latestPositionIndex
   const activePosition = game.matchRecord.positions[activePositionIndex]
@@ -179,27 +179,28 @@ export function useMangalaGame(initialConfig) {
   )
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    if (typeof window === 'undefined' || !activeGameId || !activeMatchMode || isUnavailable) {
       return
     }
 
     const session = buildPersistedMatchSession({
       game,
+      gameId: activeGameId,
       showVisualStones,
       animateMoves,
       reviewIndex,
       matchMode: activeMatchMode,
-      matchToken: activeMatchToken,
       botSettings,
     })
 
-    window.localStorage.setItem(ACTIVE_MATCH_STORAGE_KEY, JSON.stringify(session))
+    writePersistedMatchSession(session)
   }, [
+    activeGameId,
     activeMatchMode,
-    activeMatchToken,
     animateMoves,
     botSettings,
     game,
+    isUnavailable,
     reviewIndex,
     showVisualStones,
   ])
@@ -225,7 +226,7 @@ export function useMangalaGame(initialConfig) {
         reviewIndex !== null ||
         currentGame.moveInProgress ||
         currentGame.gameStatus !== 'playing' ||
-        (botSettings && currentGame.currentPlayer === 'top')
+        (isComputerMatch && currentGame.currentPlayer === 'top')
       ) {
         return currentGame
       }
@@ -324,7 +325,7 @@ export function useMangalaGame(initialConfig) {
 
   useEffect(() => {
     if (
-      !botSettings ||
+      !isComputerMatch ||
       game.currentPlayer !== 'top' ||
       game.moveInProgress ||
       game.gameStatus !== 'playing'
@@ -378,16 +379,22 @@ export function useMangalaGame(initialConfig) {
     return () => clearBotTurnTimeout()
   }, [
     animateMoves,
-    botSettings,
     game.board,
     game.currentPlayer,
     game.gameStatus,
     game.moveInProgress,
+    isComputerMatch,
   ])
 
   return {
     game,
     displayedGame,
+    isUnavailable,
+    activeMatchSummary: buildActiveMatchSummary({
+      game,
+      gameId: activeGameId,
+      matchMode: activeMatchMode,
+    }),
     animateMoves,
     activePositionIndex,
     isReviewing,

@@ -10,6 +10,7 @@ export const APP_ASSETS = {
 }
 
 export const INITIAL_CURRENT_USER = {
+  id: 'registered-user',
   username: 'Username',
   elo: 1200,
   email: 'username@example.com',
@@ -18,6 +19,7 @@ export const INITIAL_CURRENT_USER = {
 }
 
 export const GUEST_CURRENT_USER = {
+  id: 'guest-user',
   username: 'Guest',
   elo: 1200,
   email: 'guest@example.com',

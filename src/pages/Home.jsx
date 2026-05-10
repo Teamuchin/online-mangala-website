@@ -11,6 +11,7 @@ export default function Home() {
   const [botDifficulty, setBotDifficulty] = useState('1')
   const [botFirstMove, setBotFirstMove] = useState('you')
   const {
+    activeMatchSummary,
     assets,
     currentUser,
     isAuthenticated,
@@ -18,11 +19,27 @@ export default function Home() {
     homeSecondaryActions,
   } = useAppData()
 
-  const openBotSetup = () => setIsBotSetupOpen(true)
+  const redirectToActiveGame = () => {
+    if (activeMatchSummary?.isActive) {
+      navigate(activeMatchSummary.url)
+      return true
+    }
+
+    return false
+  }
+
+  const openBotSetup = () => {
+    if (redirectToActiveGame()) {
+      return
+    }
+
+    setIsBotSetupOpen(true)
+  }
+
   const closeBotSetup = () => setIsBotSetupOpen(false)
 
   const handleStartBotMatch = () => {
-    const matchToken = Date.now()
+    const gameId = String(Date.now())
     const startingPlayer =
       botFirstMove === 'random'
         ? Math.random() < 0.5
@@ -32,14 +49,13 @@ export default function Home() {
           ? 'top'
           : 'bottom'
 
-    navigate('/game/bot', {
+    navigate(`/game/${gameId}`, {
       state: {
         botSettings: {
           difficulty: Number(botDifficulty),
           firstMove: botFirstMove,
         },
         matchMode: 'computer',
-        matchToken,
         startingPlayer,
       },
     })
@@ -47,11 +63,14 @@ export default function Home() {
   }
 
   const handleStartLocalMatch = () => {
-    const matchToken = Date.now()
-    navigate('/game/local', {
+    if (redirectToActiveGame()) {
+      return
+    }
+
+    const gameId = String(Date.now())
+    navigate(`/game/${gameId}`, {
       state: {
         matchMode: 'local',
-        matchToken,
       },
     })
   }

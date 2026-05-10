@@ -29,6 +29,7 @@ export const staticAppData = {
 
 export const AppDataContext = createContext({
   ...staticAppData,
+  activeMatchSummary: null,
   currentUser: INITIAL_CURRENT_USER,
   isAuthenticated: true,
   continueAsGuest: () => {},

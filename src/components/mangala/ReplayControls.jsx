@@ -11,6 +11,7 @@ export default function ReplayControls({
   onNext,
   onLast,
   onReset,
+  resetDisabled = false,
 }) {
   return (
     <section className={styles.replayPanel}>
@@ -37,6 +38,7 @@ export default function ReplayControls({
           onClick={onReset}
           aria-label="Restart match"
           title="Restart match"
+          disabled={resetDisabled}
         >
           ↻
         </button>

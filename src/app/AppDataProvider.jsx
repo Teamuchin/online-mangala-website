@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
 import {
+  ACTIVE_MATCH_UPDATED_EVENT,
+  readStoredActiveMatchSummary,
+} from '../components/mangala/gamePersistence.js'
+import {
   buildAuthenticatedSessionUpdates,
   buildLoggedOutSessionUpdates,
   isGuestUser,
@@ -58,6 +62,9 @@ export function AppDataProvider({ children }) {
       return true
     }
   })
+  const [activeMatchSummary, setActiveMatchSummary] = useState(() =>
+    readStoredActiveMatchSummary(),
+  )
 
   const updateCurrentUser = (updates) => {
     setCurrentUser((existingUser) => updateUserProfile(existingUser, updates))
@@ -114,8 +121,28 @@ export function AppDataProvider({ children }) {
     )
   }, [isAuthenticated])
 
+  useEffect(() => {
+    const syncActiveMatch = (event) => {
+      if (event?.detail !== undefined) {
+        setActiveMatchSummary(event.detail)
+        return
+      }
+
+      setActiveMatchSummary(readStoredActiveMatchSummary())
+    }
+
+    window.addEventListener(ACTIVE_MATCH_UPDATED_EVENT, syncActiveMatch)
+    window.addEventListener('storage', syncActiveMatch)
+
+    return () => {
+      window.removeEventListener(ACTIVE_MATCH_UPDATED_EVENT, syncActiveMatch)
+      window.removeEventListener('storage', syncActiveMatch)
+    }
+  }, [])
+
   const value = {
     ...staticAppData,
+    activeMatchSummary,
     continueAsGuest,
     currentUser,
     isAuthenticated,

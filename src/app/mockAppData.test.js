@@ -46,7 +46,7 @@ test('home and banner actions preserve their current routes and labels', () => {
   ])
 
   assert.deepEqual(HOME_SECONDARY_ACTIONS, [
-    { to: '/banner', className: 'learnbtn', label: 'Learn & Train' },
+    { to: '/learn', className: 'learnbtn', label: 'Learn & Train' },
     { to: '/game/local', className: 'watchbtn', label: 'Watch Others' },
     { to: '/game/local', className: 'communitybtn', label: 'Community' },
   ])

@@ -1,48 +1,90 @@
 import { useEffect, useRef } from 'react'
-import Board from '../components/mangala/Board'
-import PlayerPanel from '../components/mangala/PlayerPanel.jsx'
-import ReplayControls from '../components/mangala/ReplayControls.jsx'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
+import { useAppData } from '../app/useAppData.js'
 import { useGlobalHeader } from '../app/useGlobalHeader.js'
+import Board from '../components/mangala/Board'
+import {
+  ACTIVE_MATCH_STORAGE_KEY,
+  readPersistedMatchSession,
+} from '../components/mangala/gamePersistence.js'
 import { createInitialState } from '../components/mangala/gameLogic'
+import ReplayControls from '../components/mangala/ReplayControls.jsx'
+import PlayerPanel from '../components/mangala/PlayerPanel.jsx'
 import { buildReplayDescription } from '../components/mangala/matchRecord.js'
 import { useMangalaGame } from '../components/mangala/useMangalaGame'
 import styles from '../components/mangala/MangalaGame.module.css'
 
 export default function MangalaGame() {
   const location = useLocation()
+  const { gameId } = useParams()
+  const { activeMatchSummary, currentUser } = useAppData()
   const { setSettingsContent } = useGlobalHeader()
+  const persistedRouteSession =
+    typeof window === 'undefined'
+      ? null
+      : readPersistedMatchSession(
+          window.localStorage.getItem(ACTIVE_MATCH_STORAGE_KEY),
+        )
+  const matchingPersistedSession =
+    persistedRouteSession?.gameId === gameId ? persistedRouteSession : null
+  const matchingActiveMatchSummary =
+    activeMatchSummary?.gameId === gameId ? activeMatchSummary : null
   const matchMode =
-    location.pathname === '/game/bot'
-      ? 'computer'
-      : 'local'
-  const botSettings = matchMode === 'computer' ? location.state?.botSettings ?? null : null
+    location.state?.matchMode ??
+    matchingPersistedSession?.matchMode ??
+    matchingActiveMatchSummary?.matchMode ??
+    null
+  const isLocalMatch = matchMode === 'local'
+  const isComputerMatch = matchMode === 'computer'
+  const botSettings =
+    isComputerMatch
+      ? location.state?.botSettings ??
+        matchingPersistedSession?.botSettings ??
+        null
+      : null
   const initialConfig =
     matchMode === 'local'
-      ? { matchMode: 'local' }
+      ? {
+          gameId,
+          matchMode: 'local',
+          initialPlayers: {
+            ...createInitialState().players,
+            bottom: {
+              ...createInitialState().players.bottom,
+              id: currentUser.id,
+            },
+          },
+        }
       : botSettings
         ? {
+            gameId,
             matchMode: 'computer',
-            matchToken: location.state?.matchToken ?? null,
-        botSettings,
-        initialCurrentPlayer: location.state?.startingPlayer ?? 'bottom',
-        initialPlayers: {
-          ...createInitialState().players,
-          top: {
-            id: 'bot-player',
-            name: 'Computer',
-            rating: 800 + botSettings.difficulty * 200,
-            timeLeft: 300,
-            isBot: true,
-          },
-        },
+            botSettings,
+            initialCurrentPlayer: location.state?.startingPlayer ?? 'bottom',
+            initialPlayers: {
+              ...createInitialState().players,
+              bottom: {
+                ...createInitialState().players.bottom,
+                id: currentUser.id,
+              },
+              top: {
+                id: 'bot-player',
+                name: 'Computer',
+                rating: 800 + botSettings.difficulty * 200,
+                timeLeft: 300,
+                isBot: true,
+              },
+            },
           }
-        : {
-            matchMode: 'computer',
+      : {
+            gameId,
+            matchMode: null,
           }
+
   const {
     game,
     displayedGame,
+    isUnavailable,
     animateMoves,
     activePositionIndex,
     isReviewing,
@@ -57,6 +99,14 @@ export default function MangalaGame() {
     handleReset,
     handleStoneToggle,
   } = useMangalaGame(initialConfig)
+
+  const currentUserRole = isLocalMatch
+    ? 'both'
+    : currentUser.id === game.players.bottom.id
+      ? 'bottom'
+      : currentUser.id === game.players.top.id
+        ? 'top'
+        : 'spectator'
   const replayDescription = buildReplayDescription(
     game.matchRecord,
     activePositionIndex,
@@ -94,11 +144,20 @@ export default function MangalaGame() {
     return () => {
       setSettingsContent(null)
     }
-  }, [
-    setSettingsContent,
-    showVisualStones,
-    animateMoves,
-  ])
+  }, [animateMoves, setSettingsContent, showVisualStones])
+
+  if (isUnavailable) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.layout}>
+          <section className={styles.unavailableState}>
+            <h1>Game unavailable</h1>
+            <p>This game is not available in the current session.</p>
+          </section>
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main className={styles.page}>
@@ -110,7 +169,11 @@ export default function MangalaGame() {
             isActive={game.currentPlayer === 'top' && game.gameStatus === 'playing'}
             compact
             onResign={handleResign}
-            resignDisabled={isReviewing || game.gameStatus !== 'playing'}
+            resignDisabled={
+              isReviewing ||
+              game.gameStatus !== 'playing' ||
+              (!isLocalMatch && currentUserRole !== 'top')
+            }
           />
           <div className={styles.boardColumn}>
             <Board
@@ -121,8 +184,14 @@ export default function MangalaGame() {
               players={displayedGame.players}
               showVisualStones={showVisualStones}
               lastMove={displayedGame.lastMove}
-              disableInteraction={isReviewing}
-              interactiveSide={botSettings ? 'bottom' : null}
+              disableInteraction={isReviewing || currentUserRole === 'spectator'}
+              interactiveSide={
+                currentUserRole === 'spectator'
+                  ? '__none__'
+                  : isComputerMatch
+                    ? 'bottom'
+                    : null
+              }
               onPitClick={handlePitClick}
             />
             <ReplayControls
@@ -136,6 +205,7 @@ export default function MangalaGame() {
               onNext={handleReplayNext}
               onPrevious={handleReplayPrevious}
               onReset={handleReset}
+              resetDisabled={currentUserRole === 'spectator'}
             />
           </div>
           <PlayerPanel
@@ -144,7 +214,11 @@ export default function MangalaGame() {
             isActive={game.currentPlayer === 'bottom' && game.gameStatus === 'playing'}
             compact
             onResign={handleResign}
-            resignDisabled={isReviewing || game.gameStatus !== 'playing'}
+            resignDisabled={
+              isReviewing ||
+              game.gameStatus !== 'playing' ||
+              (!isLocalMatch && currentUserRole !== 'bottom')
+            }
           />
         </section>
       </div>

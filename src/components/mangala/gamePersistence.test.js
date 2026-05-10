@@ -20,8 +20,8 @@ const baseSession = buildPersistedMatchSession({
   showVisualStones: true,
   animateMoves: false,
   reviewIndex: null,
+  gameId: '12345',
   matchMode: 'computer',
-  matchToken: 12345,
   botSettings: null,
 })
 
@@ -30,8 +30,8 @@ test('buildPersistedMatchSession returns the serializable match session shape', 
   assert.equal(baseSession.showVisualStones, true)
   assert.equal(baseSession.animateMoves, false)
   assert.equal(baseSession.reviewIndex, null)
+  assert.equal(baseSession.gameId, '12345')
   assert.equal(baseSession.matchMode, 'computer')
-  assert.equal(baseSession.matchToken, 12345)
   assert.equal(baseSession.botSettings, null)
 })
 
@@ -39,6 +39,17 @@ test('readPersistedMatchSession restores a valid saved match session', () => {
   const restoredSession = readPersistedMatchSession(JSON.stringify(baseSession))
 
   assert.deepEqual(restoredSession, baseSession)
+})
+
+test('readPersistedMatchSession normalizes legacy prefixed game ids', () => {
+  const restoredSession = readPersistedMatchSession(
+    JSON.stringify({
+      ...baseSession,
+      gameId: 'game-12345',
+    }),
+  )
+
+  assert.equal(restoredSession.gameId, '12345')
 })
 
 test('readPersistedMatchSession rejects invalid saved data', () => {

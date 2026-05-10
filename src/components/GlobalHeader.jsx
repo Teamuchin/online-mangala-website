@@ -5,22 +5,36 @@ import { useGlobalHeader } from '../app/useGlobalHeader.js'
 import styles from './GlobalHeader.module.css'
 
 export default function GlobalHeader() {
-  const { assets, brandName, currentUser, isAuthenticated, logOut } = useAppData()
+  const {
+    activeMatchSummary,
+    assets,
+    brandName,
+    currentUser,
+    isAuthenticated,
+    logOut,
+  } = useAppData()
   const { settingsContent } = useGlobalHeader()
   const showProfilePanel = isAuthenticated && !isGuestUser(currentUser)
 
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <Link to="/" className={styles.brand} aria-label="Go home">
+        <a href="/" className={styles.brand} aria-label="Go home">
           <img src={assets.logo} alt={brandName} className={styles.logo} />
-        </Link>
+        </a>
 
         <nav className={styles.actions} aria-label="Global navigation">
+          {activeMatchSummary?.isActive && (
+            <Link to={activeMatchSummary.url} className={styles.backToGameLink}>
+              <span className={styles.liveDot} aria-hidden="true" />
+              <span className={styles.actionText}>Back to Game</span>
+            </Link>
+          )}
+
           {showProfilePanel ? (
             <div className={styles.menu}>
-              <Link
-                to="/account"
+              <a
+                href="/account"
                 className={styles.actionLink}
                 aria-label="Open account settings"
                 onClick={(event) => event.currentTarget.blur()}
@@ -29,7 +43,7 @@ export default function GlobalHeader() {
                   ◎
                 </span>
                 <span className={styles.actionText}>{currentUser.username}</span>
-              </Link>
+              </a>
               <div className={`${styles.panel} ${styles.profilePanel}`}>
                 <img
                   src={currentUser.profilePicture || assets.profilePicturePlaceholder}
@@ -45,12 +59,12 @@ export default function GlobalHeader() {
               </div>
             </div>
           ) : (
-            <Link to="/login" className={styles.actionLink}>
+            <a href="/login" className={styles.actionLink}>
               <span className={styles.actionIcon} aria-hidden="true">
                 ◎
               </span>
               <span className={styles.actionText}>Account</span>
-            </Link>
+            </a>
           )}
 
           <div className={styles.menu}>

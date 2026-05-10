@@ -17,6 +17,18 @@
   display: grid;
 }
 
+.unavailableState {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  text-align: center;
+  padding: 32px;
+  border-radius: 18px;
+  background: rgba(255, 247, 235, 0.82);
+  border: 2px solid rgba(90, 47, 18, 0.16);
+  color: #5a2f12;
+}
+
 .headerSettingsOption {
   border: 2px solid #6f4326;
   border-radius: 10px;
