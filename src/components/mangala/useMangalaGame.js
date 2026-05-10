@@ -19,7 +19,7 @@ import { buildAnimatedLastMove } from './movePresentation'
 import {
   buildAnimatingMoveState,
   finalizeMoveState,
-  tickGameClock,
+  syncGameClock,
 } from './gameState.js'
 
 const BOT_MOVE_DELAY_MS = 700
@@ -100,7 +100,7 @@ export function useMangalaGame(initialConfig) {
 
   const [game, setGame] = useState(() =>
     shouldRestorePersistedSession
-      ? restoredSession.game
+      ? syncGameClock(restoredSession.game)
       : isUnavailable
         ? buildUnavailableGameState()
         : createInitialState(initialConfig),
@@ -164,7 +164,7 @@ export function useMangalaGame(initialConfig) {
     }
 
     const timerId = window.setInterval(() => {
-      setGame(tickGameClock)
+      setGame((currentGame) => syncGameClock(currentGame))
     }, 1000)
 
     return () => window.clearInterval(timerId)

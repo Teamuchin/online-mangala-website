@@ -140,6 +140,7 @@ export function createInitialState(options = {}) {
     initialCurrentPlayer = 'bottom',
   } = options
   const players = structuredClone(initialPlayers)
+  const now = Date.now()
   const initialState = {
     board: [...INITIAL_BOARD],
     currentPlayer: initialCurrentPlayer,
@@ -151,6 +152,7 @@ export function createInitialState(options = {}) {
     lastMove: null,
     players,
     moveHistory: [],
+    lastTimerStartedAt: now,
   }
 
   return {

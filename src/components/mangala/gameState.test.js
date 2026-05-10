@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   buildAnimatingMoveState,
   finalizeMoveState,
+  syncGameClock,
   tickGameClock,
 } from './gameState.js'
 
@@ -15,6 +16,7 @@ const baseGame = {
   winner: null,
   turnMessage: 'Emre to move',
   lastMove: null,
+  lastTimerStartedAt: 1_000_000,
   players: {
     bottom: { id: 'p1', name: 'Emre', rating: 1485, timeLeft: 300 },
     top: { id: 'p2', name: 'Ayse', rating: 1520, timeLeft: 300 },
@@ -43,6 +45,14 @@ test('tickGameClock decrements the active player timer during play', () => {
   assert.equal(nextGame.players.bottom.timeLeft, 299)
   assert.equal(nextGame.players.top.timeLeft, 300)
   assert.equal(nextGame.gameStatus, 'playing')
+})
+
+test('syncGameClock applies elapsed real time since the last timer anchor', () => {
+  const nextGame = syncGameClock(baseGame, 1_003_500)
+
+  assert.equal(nextGame.players.bottom.timeLeft, 297)
+  assert.equal(nextGame.players.top.timeLeft, 300)
+  assert.equal(nextGame.lastTimerStartedAt, 1_003_000)
 })
 
 test('tickGameClock leaves non-playing games unchanged', () => {
@@ -123,6 +133,7 @@ test('finalizeMoveState resolves the live game with move metadata and history', 
   assert.equal(nextGame.matchRecord.positions.length, 2)
   assert.deepEqual(nextGame.matchRecord.positions[1].board, moveResult.board)
   assert.equal(nextGame.matchRecord.positions[1].currentPlayer, 'top')
+  assert.equal(typeof nextGame.lastTimerStartedAt, 'number')
 })
 
 test('buildAnimatingMoveState marks a move as in progress and preserves the board', () => {
