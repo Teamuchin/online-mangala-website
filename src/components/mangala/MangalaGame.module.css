@@ -146,6 +146,28 @@
   color: rgba(94, 56, 32, 0.92);
 }
 
+.playerRatingRow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ratingChange {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.positiveRatingChange {
+  color: #2f9e44;
+}
+
+.negativeRatingChange {
+  color: #d62828;
+}
+
 .resignButton {
   border: 2px solid #6f4326;
   border-radius: 10px;

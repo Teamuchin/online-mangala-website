@@ -220,6 +220,17 @@ export function useMangalaGame(initialConfig) {
     setAnimateMoves((currentValue) => !currentValue)
   }
 
+  const markRatingApplied = () => {
+    setGame((currentGame) =>
+      currentGame.ratingApplied
+        ? currentGame
+        : {
+            ...currentGame,
+            ratingApplied: true,
+          },
+    )
+  }
+
   const handlePitClick = (pitIndex) => {
     setGame((currentGame) => {
       if (
@@ -401,6 +412,7 @@ export function useMangalaGame(initialConfig) {
     showVisualStones,
     handleAnimationToggle,
     handlePitClick,
+    markRatingApplied,
     handleReplayFirst,
     handleReplayLast,
     handleReplayNext,

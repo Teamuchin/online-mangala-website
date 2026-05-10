@@ -146,6 +146,7 @@ export function createInitialState(options = {}) {
     currentPlayer: initialCurrentPlayer,
     selectedPit: null,
     moveInProgress: false,
+    ratingApplied: false,
     gameStatus: 'playing',
     winner: null,
     turnMessage: `${players[initialCurrentPlayer].name} to move`,
