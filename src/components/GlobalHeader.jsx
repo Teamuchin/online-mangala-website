@@ -7,8 +7,7 @@ import styles from './GlobalHeader.module.css'
 export default function GlobalHeader() {
   const { assets, brandName, currentUser, isAuthenticated, logOut } = useAppData()
   const { settingsContent } = useGlobalHeader()
-  const accountTarget =
-    isAuthenticated && !isGuestUser(currentUser) ? '/account' : '/login'
+  const showProfilePanel = isAuthenticated && !isGuestUser(currentUser)
 
   return (
     <header className={styles.header}>
@@ -18,14 +17,41 @@ export default function GlobalHeader() {
         </Link>
 
         <nav className={styles.actions} aria-label="Global navigation">
-          <Link to={accountTarget} className={styles.actionLink}>
-            <span className={styles.actionIcon} aria-hidden="true">
-              ◎
-            </span>
-            <span className={styles.actionText}>
-              {isAuthenticated ? currentUser.username : 'Account'}
-            </span>
-          </Link>
+          {showProfilePanel ? (
+            <div className={styles.menu}>
+              <Link
+                to="/account"
+                className={styles.actionLink}
+                aria-label="Open account settings"
+                onClick={(event) => event.currentTarget.blur()}
+              >
+                <span className={styles.actionIcon} aria-hidden="true">
+                  ◎
+                </span>
+                <span className={styles.actionText}>{currentUser.username}</span>
+              </Link>
+              <div className={`${styles.panel} ${styles.profilePanel}`}>
+                <img
+                  src={currentUser.profilePicture || assets.profilePicturePlaceholder}
+                  alt={`${currentUser.username} profile`}
+                  className={styles.profileImage}
+                />
+                <h3 className={styles.profileName}>{currentUser.username}</h3>
+                <p className={styles.profileElo}>ELO: {currentUser.elo ?? 'N/A'}</p>
+                <p className={styles.profileBio}>{currentUser.bio || 'No bio yet.'}</p>
+                <Link to="/login" className={styles.panelLink} onClick={logOut}>
+                  Log out
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <Link to="/login" className={styles.actionLink}>
+              <span className={styles.actionIcon} aria-hidden="true">
+                ◎
+              </span>
+              <span className={styles.actionText}>Account</span>
+            </Link>
+          )}
 
           <div className={styles.menu}>
             <button type="button" className={styles.actionButton} aria-label="Language">
@@ -51,17 +77,7 @@ export default function GlobalHeader() {
               </span>
               <span className={styles.actionText}>Settings</span>
             </button>
-            <div className={styles.panel}>
-              {settingsContent}
-              <Link to="/learn" className={styles.panelLink}>
-                Learn
-              </Link>
-              {isAuthenticated && (
-                <Link to="/login" className={styles.panelLink} onClick={logOut}>
-                  Log out
-                </Link>
-              )}
-            </div>
+            <div className={styles.panel}>{settingsContent}</div>
           </div>
         </nav>
       </div>

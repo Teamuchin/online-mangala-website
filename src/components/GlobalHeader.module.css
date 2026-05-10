@@ -6,13 +6,16 @@
   border-bottom: 1px solid rgba(92, 53, 27, 0.3);
   backdrop-filter: blur(10px);
   box-shadow: 0 8px 18px rgba(143, 92, 48, 0.08);
+  width: 100%;
 }
 
 .inner {
-  width: min(1240px, 100%);
-  margin: 0 auto;
+  width: max(1240px, 100%);
+  margin-left: auto;
+  margin-right: auto;
   min-height: 72px;
-  padding: 0 18px;
+  padding-left: 24px;
+  padding-right: 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -34,6 +37,7 @@
 .actions {
   display: flex;
   align-items: center;
+  margin-left: auto;
   gap: 10px;
 }
 
@@ -105,7 +109,8 @@
 
 .actionLink:hover,
 .menu:hover .actionButton,
-.menu:focus-within .actionButton {
+.menu:focus-within .actionButton,
+.actionButton:hover {
   background: rgba(255, 248, 235, 0.38);
   border-color: rgba(92, 53, 27, 0.24);
   box-shadow: 0 6px 14px rgba(143, 92, 48, 0.08);
@@ -137,6 +142,41 @@
 .panelButton:hover,
 .panelLink:hover {
   background: #f1ddc2;
+}
+
+.profilePanel {
+  min-width: 260px;
+  padding: 14px;
+  text-align: center;
+}
+
+.profileImage {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(90, 47, 18, 0.2);
+  margin: 0 auto 10px;
+  display: block;
+}
+
+.profileName {
+  margin: 0 0 6px;
+  font-size: 1rem;
+}
+
+.profileElo {
+  margin: 0 0 6px;
+  font-weight: 700;
+  color: #5a2f12;
+  font-size: 0.92rem;
+}
+
+.profileBio {
+  margin: 0 0 10px;
+  line-height: 1.45;
+  color: #5f3820;
+  font-size: 0.9rem;
 }
 
 @media (max-width: 640px) {
