@@ -1,5 +1,14 @@
 export const APP_BRAND_NAME = 'Mangala'
 
+const SEEDED_RATING_HISTORY = [
+  {
+    id: 'initial-rating',
+    playedAt: '2026-05-01T00:00:00.000Z',
+    rating: 1200,
+    ratingDelta: 0,
+  },
+]
+
 export const APP_ASSETS = {
   logo: '/logo.svg',
   accountIcon: '/accountbtn.svg',
@@ -17,6 +26,8 @@ export const INITIAL_CURRENT_USER = {
   memberSince: 'May 2026',
   bio: '',
   profilePicture: '/assets/profile-picture-placeholder.png',
+  matchHistory: [],
+  ratingHistory: SEEDED_RATING_HISTORY,
 }
 
 export const GUEST_CURRENT_USER = {
@@ -27,6 +38,8 @@ export const GUEST_CURRENT_USER = {
   memberSince: 'May 2026',
   bio: 'Playing as guest',
   profilePicture: '/assets/profile-picture-placeholder.png',
+  matchHistory: [],
+  ratingHistory: SEEDED_RATING_HISTORY,
 }
 
 export const LOCAL_MATCH_PLAYERS = {

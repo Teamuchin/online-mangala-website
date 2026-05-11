@@ -142,7 +142,7 @@
   min-height: 210px;
   border-radius: 16px;
   background: rgba(244, 214, 178, 0.55);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .chartSvg {
@@ -159,6 +159,73 @@
 .chartGrid {
   stroke: rgba(90, 47, 18, 0.13);
   stroke-width: 1.5;
+}
+
+.chartLabel {
+  fill: rgba(90, 47, 18, 0.72);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.chartLine {
+  fill: none;
+  stroke: #8a4020;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chartPoint {
+  fill: #f8efe2;
+  stroke: #8a4020;
+  stroke-width: 3;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.chartPointActive {
+  fill: #fff9f1;
+  stroke: #5a2f12;
+  opacity: 1;
+}
+
+.chartHitArea {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.chartTooltipObject {
+  overflow: visible;
+}
+
+.chartTooltip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(90, 47, 18, 0.2);
+  border-radius: 10px;
+  background: rgba(90, 47, 18, 0.94);
+  box-shadow: 0 10px 22px rgba(90, 47, 18, 0.22);
+  color: #fff7ee;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.chartTooltipDate {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.chartTooltipRating,
+.chartTooltipDelta {
+  font-size: 0.88rem;
+  color: rgba(255, 247, 238, 0.92);
+}
+
+.chartTooltipRating {
+  font-weight: 800;
 }
 
 .emptyChartText {

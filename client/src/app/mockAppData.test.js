@@ -19,6 +19,15 @@ test('app brand and seeded current user stay aligned with the current UI copy', 
   assert.equal(INITIAL_CURRENT_USER.email, 'username@example.com')
   assert.equal(INITIAL_CURRENT_USER.memberSince, 'May 2026')
   assert.equal(INITIAL_CURRENT_USER.profilePicture, '/assets/profile-picture-placeholder.png')
+  assert.deepEqual(INITIAL_CURRENT_USER.matchHistory, [])
+  assert.deepEqual(INITIAL_CURRENT_USER.ratingHistory, [
+    {
+      id: 'initial-rating',
+      playedAt: '2026-05-01T00:00:00.000Z',
+      rating: 1200,
+      ratingDelta: 0,
+    },
+  ])
 })
 
 test('asset paths expose the static files referenced by the UI', () => {

@@ -35,6 +35,67 @@ export function updateUserProfile(currentUser, updates) {
   }
 }
 
+export function buildMatchHistoryEntry({
+  gameId,
+  playedAt,
+  opponent,
+  mode,
+  result,
+  ratingAfter,
+  ratingDelta,
+}) {
+  return {
+    id: gameId,
+    playedAt,
+    opponent,
+    mode,
+    result,
+    ratingAfter,
+    ratingDelta,
+  }
+}
+
+export function buildRatingHistoryEntry({
+  gameId,
+  playedAt,
+  rating,
+  ratingDelta,
+}) {
+  return {
+    id: gameId,
+    playedAt,
+    rating,
+    ratingDelta,
+  }
+}
+
+export function applyRatedMatchResult(currentUser, matchResult) {
+  const nextMatchHistory = [
+    buildMatchHistoryEntry(matchResult),
+    ...(currentUser.matchHistory ?? []).filter(
+      (existingMatch) => existingMatch.id !== matchResult.gameId,
+    ),
+  ]
+  const nextRatingHistory = [
+    ...(currentUser.ratingHistory ?? []).filter(
+      (existingPoint) => existingPoint.id !== matchResult.gameId,
+    ),
+    buildRatingHistoryEntry({
+      gameId: matchResult.gameId,
+      playedAt: matchResult.playedAt,
+      rating: matchResult.ratingAfter,
+      ratingDelta: matchResult.ratingDelta,
+    }),
+  ]
+
+  return {
+    ...currentUser,
+    elo: matchResult.ratingAfter,
+    matchHistory: nextMatchHistory,
+    ratingHistory: nextRatingHistory,
+  }
+}
+
 export function buildAccountFormState(currentUser) {
   return {
     username: currentUser.username,

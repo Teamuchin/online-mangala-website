@@ -5,6 +5,7 @@ import {
   readStoredActiveMatchSummary,
 } from '../components/mangala/gamePersistence.js'
 import {
+  applyRatedMatchResult,
   buildAuthenticatedSessionUpdates,
   buildLoggedOutSessionUpdates,
   isGuestUser,
@@ -104,6 +105,16 @@ export function AppDataProvider({ children }) {
     setIsAuthenticated(buildLoggedOutSessionUpdates().isAuthenticated)
   }
 
+  const recordRatedMatchResult = (matchResult) => {
+    setCurrentUser((existingUser) => applyRatedMatchResult(existingUser, matchResult))
+
+    if (!isGuestUser(currentUser)) {
+      setRegisteredUser((existingUser) =>
+        applyRatedMatchResult(existingUser, matchResult),
+      )
+    }
+  }
+
   useEffect(() => {
     window.localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(currentUser))
   }, [currentUser])
@@ -151,6 +162,7 @@ export function AppDataProvider({ children }) {
     isAuthenticated,
     logIn,
     logOut,
+    recordRatedMatchResult,
     registerUser,
     setIsAuthenticated,
     updateCurrentUser,

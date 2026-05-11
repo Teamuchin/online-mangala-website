@@ -18,7 +18,7 @@ import styles from '../components/mangala/MangalaGame.module.css'
 export default function MangalaGame() {
   const location = useLocation()
   const { gameId } = useParams()
-  const { activeMatchSummary, currentUser, updateCurrentUser } = useAppData()
+  const { activeMatchSummary, currentUser, recordRatedMatchResult } = useAppData()
   const { setSettingsContent } = useGlobalHeader()
   const seededPlayers = createInitialState().players
   const persistedRouteSession =
@@ -185,7 +185,20 @@ export default function MangalaGame() {
       playerResult,
     )
 
-    updateCurrentUser({ elo: ratedOutcome.playerRating })
+    recordRatedMatchResult({
+      gameId,
+      playedAt: new Date().toISOString(),
+      opponent: game.players.top.name,
+      mode: 'Bot',
+      result:
+        playerResult === 'win'
+          ? 'Win'
+          : playerResult === 'draw'
+            ? 'Draw'
+            : 'Loss',
+      ratingAfter: ratedOutcome.playerRating,
+      ratingDelta: ratedOutcome.playerDelta,
+    })
     markRatingApplied()
   }, [
     currentUserRole,
@@ -194,9 +207,11 @@ export default function MangalaGame() {
     game.players.top.rating,
     game.ratingApplied,
     game.winner,
+    game.players.top.name,
+    gameId,
     isComputerMatch,
     markRatingApplied,
-    updateCurrentUser,
+    recordRatedMatchResult,
   ])
 
   if (isUnavailable) {
