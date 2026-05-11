@@ -1,4 +1,4 @@
-import AuthBrand from '../components/AuthBrand'
+import AuthBrand from '../components/AuthBrand.jsx'
 import styles from './Register.module.css'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAppData } from '../app/useAppData.js'

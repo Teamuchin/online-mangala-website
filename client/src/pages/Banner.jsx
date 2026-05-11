@@ -1,7 +1,7 @@
 import styles from './Banner.module.css'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAppData } from '../app/useAppData.js'
-import { RULES } from '../components/mangala/constants'
+import { RULES } from '../components/mangala/constants.js'
 
 export default function Banner() {
   const navigate = useNavigate()

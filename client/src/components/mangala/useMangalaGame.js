@@ -5,9 +5,9 @@ import {
   createInitialState,
   getLegalMoves,
   getOpponent,
-} from './gameLogic'
+} from './gameLogic.js'
 import { chooseBotMove } from './botLogic.js'
-import { MOVE_ANIMATION_DELAY_MS } from './constants'
+import { MOVE_ANIMATION_DELAY_MS } from './constants.js'
 import {
   ACTIVE_MATCH_STORAGE_KEY,
   buildActiveMatchSummary,
@@ -15,7 +15,7 @@ import {
   readPersistedMatchSession,
   writePersistedMatchSession,
 } from './gamePersistence.js'
-import { buildAnimatedLastMove } from './movePresentation'
+import { buildAnimatedLastMove } from './movePresentation.js'
 import {
   buildAnimatingMoveState,
   finalizeMoveState,

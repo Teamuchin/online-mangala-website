@@ -3,16 +3,16 @@ import { useLocation, useParams } from 'react-router-dom'
 import { buildRatedMatchOutcome } from '../app/rating.js'
 import { useAppData } from '../app/useAppData.js'
 import { useGlobalHeader } from '../app/useGlobalHeader.js'
-import Board from '../components/mangala/Board'
+import Board from '../components/mangala/Board.jsx'
 import {
   ACTIVE_MATCH_STORAGE_KEY,
   readPersistedMatchSession,
 } from '../components/mangala/gamePersistence.js'
-import { createInitialState } from '../components/mangala/gameLogic'
+import { createInitialState } from '../components/mangala/gameLogic.js'
 import ReplayControls from '../components/mangala/ReplayControls.jsx'
 import PlayerPanel from '../components/mangala/PlayerPanel.jsx'
 import { buildReplayDescription } from '../components/mangala/matchRecord.js'
-import { useMangalaGame } from '../components/mangala/useMangalaGame'
+import { useMangalaGame } from '../components/mangala/useMangalaGame.js'
 import styles from '../components/mangala/MangalaGame.module.css'
 
 export default function MangalaGame() {
