@@ -189,6 +189,7 @@ export default function MangalaGame() {
       gameId,
       playedAt: new Date().toISOString(),
       opponent: game.players.top.name,
+      playerRating: game.players.bottom.rating,
       opponentRating: ratedOutcome.opponentRating,
       opponentRatingDelta: ratedOutcome.opponentDelta,
       mode: 'Bot',

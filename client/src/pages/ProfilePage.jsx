@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import { isGuestUser } from '../app/appState.js'
 import { useAppData } from '../app/useAppData.js'
 import styles from './ProfilePage.module.css'
@@ -8,6 +8,21 @@ const MAX_VISIBLE_RATING_POINTS = 10
 
 function formatRatingDelta(value) {
   return `${value > 0 ? '+' : ''}${value}`
+}
+
+function getPlayerHistoryRating(match) {
+  if (typeof match.playerRating === 'number') {
+    return match.playerRating
+  }
+
+  if (
+    typeof match.ratingAfter === 'number' &&
+    typeof match.ratingDelta === 'number'
+  ) {
+    return match.ratingAfter - match.ratingDelta
+  }
+
+  return '-'
 }
 
 function getTooltipDateLabel(value) {
@@ -38,20 +53,23 @@ function getClosestPointId(points, mouseEvent) {
 }
 
 function buildChartModel(ratingHistory) {
+  const plotLeft = 92
+  const plotRight = 576
+  const plotTop = 36
+  const plotBottom = 328
+  const plotWidth = plotRight - plotLeft
+  const plotHeight = plotBottom - plotTop
+
   if (ratingHistory.length === 0) {
     return {
       polylinePoints: '',
       points: [],
       labels: [],
+      gridLines: [],
+      plot: { left: plotLeft, right: plotRight, top: plotTop, bottom: plotBottom },
     }
   }
 
-  const plotLeft = 92
-  const plotRight = 576
-  const plotTop = 28
-  const plotBottom = 192
-  const plotWidth = plotRight - plotLeft
-  const plotHeight = plotBottom - plotTop
   const ratings = ratingHistory.map((point) => point.rating)
   const minRating = Math.min(...ratings)
   const maxRating = Math.max(...ratings)
@@ -84,6 +102,12 @@ function buildChartModel(ratingHistory) {
       { value: Math.round((displayMin + displayMax) / 2), y: plotTop + plotHeight / 2 },
       { value: displayMin, y: plotBottom },
     ],
+    gridLines: [
+      plotTop + plotHeight * 0.25,
+      plotTop + plotHeight * 0.5,
+      plotTop + plotHeight * 0.75,
+    ],
+    plot: { left: plotLeft, right: plotRight, top: plotTop, bottom: plotBottom },
   }
 }
 
@@ -130,7 +154,9 @@ export default function ProfilePage() {
   }
 
   const isOnline = isAuthenticated
-  const recentMatches = (currentUser.matchHistory ?? []).slice(0, 5)
+  const allMatches = currentUser.matchHistory ?? []
+  const recentMatches = allMatches.slice(0, 5)
+  const hasMoreMatches = allMatches.length > recentMatches.length
 
   return (
     <main className={styles.profilePage}>
@@ -145,14 +171,14 @@ export default function ProfilePage() {
               <h1>{currentUser.username}</h1>
               <div className={styles.metaRow}>
                 <span>{isOnline ? 'Online' : 'Offline'}</span>
-                <span className={styles.metaDivider}>•</span>
+                <span className={styles.metaDivider}>|</span>
                 <span>Member since {currentUser.memberSince}</span>
               </div>
             </div>
           </div>
           <div className={styles.headerRating}>
             <span className={styles.sectionLabel}>Rating</span>
-            <strong className={styles.headerRatingValue}>{currentUser.elo ?? '—'}</strong>
+            <strong className={styles.headerRatingValue}>{currentUser.elo ?? '-'}</strong>
           </div>
         </header>
 
@@ -163,7 +189,7 @@ export default function ProfilePage() {
             </div>
             <div className={styles.chartFrame}>
               <svg
-                viewBox="0 0 640 240"
+                viewBox="0 0 640 360"
                 className={styles.chartSvg}
                 role="img"
                 aria-label="Rating history chart"
@@ -172,11 +198,30 @@ export default function ProfilePage() {
                 }
                 onMouseLeave={() => setHoveredPointId(null)}
               >
-                <line x1="92" y1="28" x2="92" y2="192" className={styles.chartAxis} />
-                <line x1="92" y1="192" x2="576" y2="192" className={styles.chartAxis} />
-                <line x1="92" y1="69" x2="576" y2="69" className={styles.chartGrid} />
-                <line x1="92" y1="110" x2="576" y2="110" className={styles.chartGrid} />
-                <line x1="92" y1="151" x2="576" y2="151" className={styles.chartGrid} />
+                <line
+                  x1={chart.plot.left}
+                  y1={chart.plot.top}
+                  x2={chart.plot.left}
+                  y2={chart.plot.bottom}
+                  className={styles.chartAxis}
+                />
+                <line
+                  x1={chart.plot.left}
+                  y1={chart.plot.bottom}
+                  x2={chart.plot.right}
+                  y2={chart.plot.bottom}
+                  className={styles.chartAxis}
+                />
+                {chart.gridLines.map((gridY) => (
+                  <line
+                    key={gridY}
+                    x1={chart.plot.left}
+                    y1={gridY}
+                    x2={chart.plot.right}
+                    y2={gridY}
+                    className={styles.chartGrid}
+                  />
+                ))}
                 {chart.labels.map((label) => (
                   <text
                     key={`${label.value}-${label.y}`}
@@ -230,7 +275,9 @@ export default function ProfilePage() {
 
           <div className={styles.historyCard}>
             <div className={styles.historyHeader}>
-              <span className={styles.sectionLabel}>Last 5 Games</span>
+              <span className={styles.sectionLabel}>
+                Match History ({allMatches.length})
+              </span>
             </div>
             <div className={styles.tableWrap}>
               <table className={styles.historyTable}>
@@ -269,7 +316,7 @@ export default function ProfilePage() {
                         <td>{match.result}</td>
                         <td>
                           <div className={styles.ratingCell}>
-                            <span>{match.ratingAfter}</span>
+                            <span>{getPlayerHistoryRating(match)}</span>
                             <span
                               className={
                                 match.ratingDelta >= 0
@@ -293,6 +340,16 @@ export default function ProfilePage() {
                 </tbody>
               </table>
             </div>
+            {hasMoreMatches && (
+              <div className={styles.historyFooter}>
+                <Link
+                  to={`/member/${encodeURIComponent(canonicalUsername)}/games`}
+                  className={styles.seeMoreLink}
+                >
+                  See More
+                </Link>
+              </div>
+            )}
           </div>
         </section>
       </section>
