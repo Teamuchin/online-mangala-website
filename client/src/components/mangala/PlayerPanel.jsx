@@ -34,7 +34,6 @@ export default function PlayerPanel({
         </button>
       </div>
       <div className={styles.playerMeta}>
-        <span className={styles.playerSide} />
         <div className={styles.playerTitle}>
           <h2>{player.name}</h2>
           {player.isBot && <span className={styles.playerBadge}>BOT</span>}

@@ -237,7 +237,6 @@ export default function ProfilePage() {
                 <thead>
                   <tr>
                     <th>Opponent</th>
-                    <th>Mode</th>
                     <th>Result</th>
                     <th>Rating</th>
                   </tr>
@@ -246,17 +245,47 @@ export default function ProfilePage() {
                   {recentMatches.length > 0 ? (
                     recentMatches.map((match) => (
                       <tr key={match.id}>
-                        <td>{match.opponent}</td>
-                        <td>{match.mode}</td>
+                        <td>
+                          <div className={styles.opponentCell}>
+                            <span>{match.opponent}</span>
+                            {typeof match.opponentRating === 'number' && (
+                              <span className={styles.opponentMeta}>
+                                {match.opponentRating}
+                                {typeof match.opponentRatingDelta === 'number' && (
+                                  <span
+                                    className={
+                                      match.opponentRatingDelta >= 0
+                                        ? styles.positiveChange
+                                        : styles.negativeChange
+                                    }
+                                  >
+                                    {formatRatingDelta(match.opponentRatingDelta)}
+                                  </span>
+                                )}
+                              </span>
+                            )}
+                          </div>
+                        </td>
                         <td>{match.result}</td>
                         <td>
-                          {match.ratingAfter} ({formatRatingDelta(match.ratingDelta)})
+                          <div className={styles.ratingCell}>
+                            <span>{match.ratingAfter}</span>
+                            <span
+                              className={
+                                match.ratingDelta >= 0
+                                  ? styles.positiveChange
+                                  : styles.negativeChange
+                              }
+                            >
+                              {formatRatingDelta(match.ratingDelta)}
+                            </span>
+                          </div>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="4" className={styles.emptyCell}>
+                      <td colSpan="3" className={styles.emptyCell}>
                         No matches saved yet.
                       </td>
                     </tr>
