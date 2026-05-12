@@ -1,22 +1,25 @@
-const { Pool } = require('pg');
 require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const db = require('./db');
 
-// Create a new pool instance using the connection string from your .env file
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+app.get('/api/health', async (req, res) => {
+  try {
+    const result = await db.query('SELECT NOW()');
+    res.json({ 
+      status: "Server is healthy!", 
+      db_time: result.rows[0].now 
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ status: "Database connection failed", error: err.message });
+  }
 });
 
-// A helpful log to verify the connection works
-pool.on('connect', () => {
-  console.log('🐘 Connected to the PostgreSQL database');
-});
-
-pool.on('error', (err) => {
-  console.error('❌ Unexpected error on idle client', err);
-  process.exit(-1);
-});
-
-module.exports = {
-  // We export this 'query' function so we can use it in other files
-  query: (text, params) => pool.query(text, params),
-};
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`🚀 Running on http://localhost:${PORT}`));
