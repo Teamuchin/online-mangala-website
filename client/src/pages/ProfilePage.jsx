@@ -2,12 +2,33 @@ import { useMemo, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { isGuestUser } from '../app/appState.js'
 import { useAppData } from '../app/useAppData.js'
+import { readStoredMatchSessionByGameId } from '../components/mangala/gamePersistence.js'
 import styles from './ProfilePage.module.css'
 
 const MAX_VISIBLE_RATING_POINTS = 10
 
 function formatRatingDelta(value) {
   return `${value > 0 ? '+' : ''}${value}`
+}
+
+function getResultClassName(styles, result) {
+  if (result === 'Win') {
+    return styles.resultWin
+  }
+
+  if (result === 'Loss') {
+    return styles.resultLoss
+  }
+
+  if (result === 'Draw') {
+    return styles.resultDraw
+  }
+
+  if (result === 'Live') {
+    return styles.resultLive
+  }
+
+  return ''
 }
 
 function getPlayerHistoryRating(match) {
@@ -50,6 +71,38 @@ function getClosestPointId(points, mouseEvent) {
       ? point
       : closestPoint
   }, null)?.id ?? null
+}
+
+function buildLiveMatchEntry(activeMatchSummary, currentUser) {
+  if (!activeMatchSummary?.isActive) {
+    return null
+  }
+
+  const session = readStoredMatchSessionByGameId(activeMatchSummary.gameId)
+
+  if (!session?.game?.players) {
+    return null
+  }
+
+  const { bottom, top } = session.game.players
+  const player = currentUser.id === bottom?.id ? bottom : currentUser.id === top?.id ? top : null
+  const opponent = player?.id === bottom?.id ? top : bottom
+
+  if (!player || !opponent) {
+    return null
+  }
+
+  return {
+    id: activeMatchSummary.gameId,
+    playedAt: new Date(session.game.lastTimerStartedAt ?? Date.now()).toISOString(),
+    opponent: opponent.name,
+    playerRating: player.rating,
+    opponentRating: opponent.rating,
+    result: 'Live',
+    ratingDelta: null,
+    opponentRatingDelta: null,
+    isLive: true,
+  }
 }
 
 function buildChartModel(ratingHistory) {
@@ -113,7 +166,7 @@ function buildChartModel(ratingHistory) {
 
 export default function ProfilePage() {
   const { username } = useParams()
-  const { currentUser, isAuthenticated } = useAppData()
+  const { activeMatchSummary, currentUser, isAuthenticated } = useAppData()
   const [hoveredPointId, setHoveredPointId] = useState(null)
   const visibleRatingHistory = (currentUser.ratingHistory ?? []).slice(
     -MAX_VISIBLE_RATING_POINTS,
@@ -154,7 +207,10 @@ export default function ProfilePage() {
   }
 
   const isOnline = isAuthenticated
-  const allMatches = currentUser.matchHistory ?? []
+  const liveMatch = buildLiveMatchEntry(activeMatchSummary, currentUser)
+  const allMatches = liveMatch
+    ? [liveMatch, ...(currentUser.matchHistory ?? []).filter((match) => match.id !== liveMatch.id)]
+    : currentUser.matchHistory ?? []
   const recentMatches = allMatches.slice(0, 5)
   const hasMoreMatches = allMatches.length > recentMatches.length
 
@@ -300,7 +356,7 @@ export default function ProfilePage() {
                             {typeof match.opponentRating === 'number' && (
                               <span className={styles.opponentMeta}>
                                 {match.opponentRating}
-                                {typeof match.opponentRatingDelta === 'number' && (
+                                {typeof match.opponentRatingDelta === 'number' && !match.isLive && (
                                   <span
                                     className={
                                       match.opponentRatingDelta >= 0
@@ -315,19 +371,25 @@ export default function ProfilePage() {
                             )}
                           </div>
                         </td>
-                        <td>{match.result}</td>
+                        <td>
+                          <span className={getResultClassName(styles, match.result)}>
+                            {match.result}
+                          </span>
+                        </td>
                         <td>
                           <div className={styles.ratingCell}>
                             <span>{getPlayerHistoryRating(match)}</span>
-                            <span
-                              className={
-                                match.ratingDelta >= 0
-                                  ? styles.positiveChange
-                                  : styles.negativeChange
-                              }
-                            >
-                              {formatRatingDelta(match.ratingDelta)}
-                            </span>
+                            {typeof match.ratingDelta === 'number' && !match.isLive && (
+                              <span
+                                className={
+                                  match.ratingDelta >= 0
+                                    ? styles.positiveChange
+                                    : styles.negativeChange
+                                }
+                              >
+                                {formatRatingDelta(match.ratingDelta)}
+                              </span>
+                            )}
                           </div>
                         </td>
                       </tr>

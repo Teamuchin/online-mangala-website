@@ -318,6 +318,26 @@
   font-weight: 700;
 }
 
+.resultWin {
+  color: #2f8c2f;
+  font-weight: 700;
+}
+
+.resultLoss {
+  color: #b33a28;
+  font-weight: 700;
+}
+
+.resultDraw {
+  color: inherit;
+  font-weight: 700;
+}
+
+.resultLive {
+  color: #2f6fb3;
+  font-weight: 700;
+}
+
 .emptyCell {
   text-align: center !important;
   font-weight: 700;
