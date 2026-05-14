@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { isGuestUser } from '../app/appState.js'
 import { useAppData } from '../app/useAppData.js'
 import { readStoredMatchSessionByGameId } from '../components/mangala/gamePersistence.js'
@@ -176,6 +176,7 @@ function resolveProfile(publicProfileDirectory, currentUser, username) {
 
 export default function ProfilePage() {
   const { username } = useParams()
+  const navigate = useNavigate()
   const {
     activeMatchSummary,
     currentUser,
@@ -367,10 +368,18 @@ export default function ProfilePage() {
                 <tbody>
                   {recentMatches.length > 0 ? (
                     recentMatches.map((match) => (
-                      <tr key={match.id}>
+                      <tr
+                        key={match.id}
+                        className={styles.clickableHistoryRow}
+                        onClick={() => navigate(`/game/${match.id}`)}
+                      >
                         <td>
                           <div className={styles.opponentCell}>
-                            <Link to={`/game/${match.id}`} className={styles.matchLink}>
+                            <Link
+                              to={`/member/${encodeURIComponent(match.opponent)}`}
+                              className={styles.matchLink}
+                              onClick={(event) => event.stopPropagation()}
+                            >
                               {match.opponent}
                             </Link>
                             {typeof match.opponentRating === 'number' && (

@@ -274,6 +274,14 @@
   color: #5a2f12;
 }
 
+.clickableHistoryRow {
+  cursor: pointer;
+}
+
+.clickableHistoryRow:hover td {
+  background: rgba(90, 47, 18, 0.05);
+}
+
 .opponentCell {
   display: inline-flex;
   align-items: baseline;
