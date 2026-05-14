@@ -97,6 +97,16 @@
   gap: 8px;
 }
 
+.matchLink {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.matchLink:hover {
+  text-decoration: underline;
+}
+
 .opponentMeta,
 .ratingCell {
   display: inline-flex;

@@ -294,7 +294,9 @@ export default function ProfilePage() {
                       <tr key={match.id}>
                         <td>
                           <div className={styles.opponentCell}>
-                            <span>{match.opponent}</span>
+                            <Link to={`/game/${match.id}`} className={styles.matchLink}>
+                              {match.opponent}
+                            </Link>
                             {typeof match.opponentRating === 'number' && (
                               <span className={styles.opponentMeta}>
                                 {match.opponentRating}

@@ -6,6 +6,7 @@ export default function ReplayControls({
   description,
   hasMoves,
   isReviewing,
+  showReset = false,
   onFirst,
   onPrevious,
   onNext,
@@ -32,16 +33,18 @@ export default function ReplayControls({
         >
           &lt;
         </button>
-        <button
-          type="button"
-          className={styles.replayIconButton}
-          onClick={onReset}
-          aria-label="Restart match"
-          title="Restart match"
-          disabled={resetDisabled}
-        >
-          ↻
-        </button>
+        {showReset && (
+          <button
+            type="button"
+            className={styles.replayIconButton}
+            onClick={onReset}
+            aria-label="Start rematch"
+            title="Start rematch"
+            disabled={resetDisabled}
+          >
+            ↻
+          </button>
+        )}
         <button
           type="button"
           className={styles.replayIconButton}
