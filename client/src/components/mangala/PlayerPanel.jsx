@@ -44,7 +44,6 @@ export default function PlayerPanel({
               {player.name}
             </Link>
           </h2>
-          {player.isBot && <span className={styles.playerBadge}>BOT</span>}
         </div>
         <div className={styles.playerRatingRow}>
           <span className={styles.playerRating}>{player.rating}</span>

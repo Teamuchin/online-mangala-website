@@ -119,17 +119,6 @@
   background: #3ea733;
 }
 
-.playerBadge {
-  border-radius: 999px;
-  padding: 3px 8px;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #fff6ed;
-  background: #6f4326;
-}
-
 .playerClock {
   display: inline-flex;
   align-items: center;

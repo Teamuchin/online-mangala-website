@@ -37,6 +37,7 @@ export const AppDataContext = createContext({
   continueAsGuest: () => {},
   logIn: () => {},
   logOut: () => {},
+  recordPublicProfileMatchResult: () => {},
   registerUser: () => {},
   setIsAuthenticated: () => {},
   updateCurrentUser: () => {},

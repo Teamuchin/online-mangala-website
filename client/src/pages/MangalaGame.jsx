@@ -16,6 +16,19 @@ import { buildReplayDescription } from '../components/mangala/matchRecord.js'
 import { useMangalaGame } from '../components/mangala/useMangalaGame.js'
 import styles from '../components/mangala/MangalaGame.module.css'
 
+function getBotProfileForDifficulty(publicProfileDirectory, difficulty) {
+  const botIdsByDifficulty = {
+    1: 'bot-deniz',
+    2: 'bot-toprak',
+    3: 'bot-ruzgar',
+    4: 'bot-alev',
+  }
+
+  return publicProfileDirectory.find(
+    (profile) => profile.id === botIdsByDifficulty[difficulty],
+  ) ?? null
+}
+
 function MangalaGameScreen({ gameId }) {
   const location = useLocation()
   const navigate = useNavigate()
@@ -23,6 +36,8 @@ function MangalaGameScreen({ gameId }) {
     activeMatchSummary,
     currentUser,
     isAuthenticated,
+    publicProfileDirectory,
+    recordPublicProfileMatchResult,
     recordRatedMatchResult,
   } = useAppData()
   const { setSettingsContent } = useGlobalHeader()
@@ -47,6 +62,10 @@ function MangalaGameScreen({ gameId }) {
       ? location.state?.botSettings ??
         matchingPersistedSession?.botSettings ??
         null
+      : null
+  const selectedBotProfile =
+    botSettings?.difficulty
+      ? getBotProfileForDifficulty(publicProfileDirectory, botSettings.difficulty)
       : null
   const initialConfig =
     matchMode === 'local'
@@ -78,9 +97,9 @@ function MangalaGameScreen({ gameId }) {
                 rating: currentUser.elo ?? seededPlayers.bottom.rating,
               },
               top: {
-                id: 'bot-player',
-                name: 'Computer',
-                rating: 800 + botSettings.difficulty * 200,
+                id: selectedBotProfile?.id ?? 'bot-deniz',
+                name: selectedBotProfile?.username ?? 'deniz-bot',
+                rating: selectedBotProfile?.elo ?? 1000,
                 timeLeft: 300,
                 isBot: true,
               },
@@ -227,10 +246,11 @@ function MangalaGameScreen({ gameId }) {
       game.players.top.rating,
       playerResult,
     )
+    const playedAt = new Date().toISOString()
 
     recordRatedMatchResult({
       gameId,
-      playedAt: new Date().toISOString(),
+      playedAt,
       opponent: game.players.top.name,
       playerRating: game.players.bottom.rating,
       opponentRating: ratedOutcome.opponentRating,
@@ -245,18 +265,38 @@ function MangalaGameScreen({ gameId }) {
       ratingAfter: ratedOutcome.playerRating,
       ratingDelta: ratedOutcome.playerDelta,
     })
+    recordPublicProfileMatchResult(game.players.top.id, {
+      gameId,
+      playedAt,
+      opponent: game.players.bottom.name,
+      playerRating: game.players.top.rating,
+      opponentRating: game.players.bottom.rating,
+      opponentRatingDelta: ratedOutcome.playerDelta,
+      mode: 'Bot',
+      result:
+        playerResult === 'win'
+          ? 'Loss'
+          : playerResult === 'draw'
+            ? 'Draw'
+            : 'Win',
+      ratingAfter: ratedOutcome.opponentRating,
+      ratingDelta: ratedOutcome.opponentDelta,
+    })
     markRatingApplied()
   }, [
     currentUserRole,
     game.gameStatus,
     game.players.bottom.rating,
+    game.players.bottom.name,
     game.players.top.rating,
+    game.players.top.id,
     game.ratingApplied,
     game.winner,
     game.players.top.name,
     gameId,
     isComputerMatch,
     markRatingApplied,
+    recordPublicProfileMatchResult,
     recordRatedMatchResult,
   ])
 

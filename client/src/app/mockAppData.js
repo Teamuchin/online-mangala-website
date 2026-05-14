@@ -9,6 +9,17 @@ const SEEDED_RATING_HISTORY = [
   },
 ]
 
+function buildSeededRatingHistory(id, rating) {
+  return [
+    {
+      id: `initial-rating-${id}`,
+      playedAt: '2026-05-01T00:00:00.000Z',
+      rating,
+      ratingDelta: 0,
+    },
+  ]
+}
+
 export const APP_ASSETS = {
   logo: '/logo.svg',
   accountIcon: '/accountbtn.svg',
@@ -42,6 +53,57 @@ export const GUEST_CURRENT_USER = {
   ratingHistory: SEEDED_RATING_HISTORY,
 }
 
+export const BOT_PROFILES = [
+  {
+    id: 'bot-deniz',
+    username: 'deniz-bot',
+    elo: 1000,
+    email: '',
+    memberSince: 'May 2026',
+    bio: 'Automated Mangala opponent.',
+    profilePicture: '/assets/profile-picture-placeholder.png',
+    matchHistory: [],
+    ratingHistory: buildSeededRatingHistory('bot-deniz', 1000),
+    isBot: true,
+  },
+  {
+    id: 'bot-toprak',
+    username: 'toprak-bot',
+    elo: 1200,
+    email: '',
+    memberSince: 'May 2026',
+    bio: 'Automated Mangala opponent.',
+    profilePicture: '/assets/profile-picture-placeholder.png',
+    matchHistory: [],
+    ratingHistory: buildSeededRatingHistory('bot-toprak', 1200),
+    isBot: true,
+  },
+  {
+    id: 'bot-ruzgar',
+    username: 'ruzgar-bot',
+    elo: 1400,
+    email: '',
+    memberSince: 'May 2026',
+    bio: 'Automated Mangala opponent.',
+    profilePicture: '/assets/profile-picture-placeholder.png',
+    matchHistory: [],
+    ratingHistory: buildSeededRatingHistory('bot-ruzgar', 1400),
+    isBot: true,
+  },
+  {
+    id: 'bot-alev',
+    username: 'alev-bot',
+    elo: 1600,
+    email: '',
+    memberSince: 'May 2026',
+    bio: 'Automated Mangala opponent.',
+    profilePicture: '/assets/profile-picture-placeholder.png',
+    matchHistory: [],
+    ratingHistory: buildSeededRatingHistory('bot-alev', 1600),
+    isBot: true,
+  },
+]
+
 export const PUBLIC_PROFILE_DIRECTORY = [
   {
     id: 'p1',
@@ -65,18 +127,7 @@ export const PUBLIC_PROFILE_DIRECTORY = [
     matchHistory: [],
     ratingHistory: [],
   },
-  {
-    id: 'bot-player',
-    username: 'Computer',
-    elo: 1000,
-    email: '',
-    memberSince: 'May 2026',
-    bio: 'Automated Mangala opponent.',
-    profilePicture: '/assets/profile-picture-placeholder.png',
-    matchHistory: [],
-    ratingHistory: [],
-    isBot: true,
-  },
+  ...BOT_PROFILES,
 ]
 
 export const LOCAL_MATCH_PLAYERS = {
