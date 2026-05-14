@@ -58,6 +58,7 @@ function MangalaGameScreen({ gameId }) {
             bottom: {
               ...seededPlayers.bottom,
               id: currentUser.id,
+              name: currentUser.username,
               rating: currentUser.elo ?? seededPlayers.bottom.rating,
             },
           },
@@ -73,6 +74,7 @@ function MangalaGameScreen({ gameId }) {
               bottom: {
                 ...seededPlayers.bottom,
                 id: currentUser.id,
+                name: currentUser.username,
                 rating: currentUser.elo ?? seededPlayers.bottom.rating,
               },
               top: {

@@ -42,6 +42,43 @@ export const GUEST_CURRENT_USER = {
   ratingHistory: SEEDED_RATING_HISTORY,
 }
 
+export const PUBLIC_PROFILE_DIRECTORY = [
+  {
+    id: 'p1',
+    username: 'Emre',
+    elo: 1485,
+    email: '',
+    memberSince: 'May 2026',
+    bio: 'Local match player.',
+    profilePicture: '/assets/profile-picture-placeholder.png',
+    matchHistory: [],
+    ratingHistory: [],
+  },
+  {
+    id: 'p2',
+    username: 'Ayse',
+    elo: 1520,
+    email: '',
+    memberSince: 'May 2026',
+    bio: 'Local match player.',
+    profilePicture: '/assets/profile-picture-placeholder.png',
+    matchHistory: [],
+    ratingHistory: [],
+  },
+  {
+    id: 'bot-player',
+    username: 'Computer',
+    elo: 1000,
+    email: '',
+    memberSince: 'May 2026',
+    bio: 'Automated Mangala opponent.',
+    profilePicture: '/assets/profile-picture-placeholder.png',
+    matchHistory: [],
+    ratingHistory: [],
+    isBot: true,
+  },
+]
+
 export const LOCAL_MATCH_PLAYERS = {
   bottom: { id: 'p1', name: 'Emre', rating: 1485, timeLeft: 300 },
   top: { id: 'p2', name: 'Ayse', rating: 1520, timeLeft: 300 },

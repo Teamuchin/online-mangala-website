@@ -94,6 +94,15 @@
   text-overflow: ellipsis;
 }
 
+.playerNameLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.playerNameLink:hover {
+  text-decoration: underline;
+}
+
 .compactPlayerPanel {
   min-width: 0;
 }

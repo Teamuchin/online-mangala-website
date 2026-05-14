@@ -111,28 +111,48 @@ function buildLiveMatchEntry(activeMatchSummary, currentUser) {
   }
 }
 
+function resolveProfile(publicProfileDirectory, currentUser, username) {
+  if (currentUser.username === username) {
+    return currentUser
+  }
+
+  return (
+    publicProfileDirectory.find((profile) => profile.username === username) ?? null
+  )
+}
+
 export default function ProfileGamesPage() {
   const { username } = useParams()
   const [searchParams] = useSearchParams()
-  const { activeMatchSummary, currentUser, isAuthenticated } = useAppData()
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-
-  if (isGuestUser(currentUser)) {
-    return <Navigate to="/" replace />
-  }
+  const {
+    activeMatchSummary,
+    currentUser,
+    isAuthenticated,
+    publicProfileDirectory,
+  } = useAppData()
 
   const canonicalUsername = currentUser.username
   const canonicalProfilePath = `/member/${encodeURIComponent(canonicalUsername)}`
   const canonicalGamesPath = `${canonicalProfilePath}/games`
 
   if (!username) {
-    return <Navigate to={canonicalGamesPath} replace />
+    return isAuthenticated
+      ? <Navigate to={canonicalGamesPath} replace />
+      : (
+        <main className={styles.page}>
+          <section className={styles.shell}>
+            <section className={styles.missingCard}>
+              <h1>No such player</h1>
+              <p>This username doesn&apos;t match any player.</p>
+            </section>
+          </section>
+        </main>
+      )
   }
 
-  if (username !== canonicalUsername) {
+  const profile = resolveProfile(publicProfileDirectory, currentUser, username)
+
+  if (!profile || (isGuestUser(currentUser) && username === currentUser.username)) {
     return (
       <main className={styles.page}>
         <section className={styles.shell}>
@@ -147,8 +167,9 @@ export default function ProfileGamesPage() {
 
   const liveMatch = buildLiveMatchEntry(activeMatchSummary, currentUser)
   const allMatches = liveMatch
-    ? [liveMatch, ...(currentUser.matchHistory ?? []).filter((match) => match.id !== liveMatch.id)]
-    : currentUser.matchHistory ?? []
+    && profile.id === currentUser.id
+      ? [liveMatch, ...(profile.matchHistory ?? []).filter((match) => match.id !== liveMatch.id)]
+      : profile.matchHistory ?? []
   const pageCount = getPageCount(allMatches.length)
   const rawPage = Number.parseInt(searchParams.get('page') ?? '1', 10)
   const currentPage = Number.isNaN(rawPage)

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { isGuestUser } from '../app/appState.js'
 import { useAppData } from '../app/useAppData.js'
@@ -164,36 +164,54 @@ function buildChartModel(ratingHistory) {
   }
 }
 
+function resolveProfile(publicProfileDirectory, currentUser, username) {
+  if (currentUser.username === username) {
+    return currentUser
+  }
+
+  return (
+    publicProfileDirectory.find((profile) => profile.username === username) ?? null
+  )
+}
+
 export default function ProfilePage() {
   const { username } = useParams()
-  const { activeMatchSummary, currentUser, isAuthenticated } = useAppData()
+  const {
+    activeMatchSummary,
+    currentUser,
+    isAuthenticated,
+    publicProfileDirectory,
+  } = useAppData()
   const [hoveredPointId, setHoveredPointId] = useState(null)
-  const visibleRatingHistory = (currentUser.ratingHistory ?? []).slice(
+  const profile = username
+    ? resolveProfile(publicProfileDirectory, currentUser, username)
+    : currentUser
+  const visibleRatingHistory = (profile?.ratingHistory ?? []).slice(
     -MAX_VISIBLE_RATING_POINTS,
   )
-  const chart = useMemo(
-    () => buildChartModel(visibleRatingHistory),
-    [visibleRatingHistory],
-  )
+  const chart = buildChartModel(visibleRatingHistory)
   const hoveredPoint =
     chart.points.find((point) => point.id === hoveredPointId) ?? null
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-
-  if (isGuestUser(currentUser)) {
-    return <Navigate to="/" replace />
-  }
 
   const canonicalUsername = currentUser.username
   const canonicalProfilePath = `/member/${encodeURIComponent(canonicalUsername)}`
 
   if (!username) {
-    return <Navigate to={canonicalProfilePath} replace />
+    return isAuthenticated
+      ? <Navigate to={canonicalProfilePath} replace />
+      : (
+        <main className={styles.profilePage}>
+          <section className={styles.profileShell}>
+            <section className={styles.missingProfileCard}>
+              <h1>No such player</h1>
+              <p>This username doesn&apos;t match any player.</p>
+            </section>
+          </section>
+        </main>
+      )
   }
 
-  if (username !== canonicalUsername) {
+  if (!profile || (isGuestUser(currentUser) && username === currentUser.username)) {
     return (
       <main className={styles.profilePage}>
         <section className={styles.profileShell}>
@@ -206,11 +224,13 @@ export default function ProfilePage() {
     )
   }
 
-  const isOnline = isAuthenticated
+  const isOnline =
+    isAuthenticated && !isGuestUser(currentUser) && profile.id === currentUser.id
   const liveMatch = buildLiveMatchEntry(activeMatchSummary, currentUser)
   const allMatches = liveMatch
-    ? [liveMatch, ...(currentUser.matchHistory ?? []).filter((match) => match.id !== liveMatch.id)]
-    : currentUser.matchHistory ?? []
+    && profile.id === currentUser.id
+      ? [liveMatch, ...(profile.matchHistory ?? []).filter((match) => match.id !== liveMatch.id)]
+      : profile.matchHistory ?? []
   const recentMatches = allMatches.slice(0, 5)
   const hasMoreMatches = allMatches.length > recentMatches.length
 
@@ -224,17 +244,17 @@ export default function ProfilePage() {
               aria-hidden="true"
             />
             <div className={styles.identityText}>
-              <h1>{currentUser.username}</h1>
+              <h1>{profile.username}</h1>
               <div className={styles.metaRow}>
                 <span>{isOnline ? 'Online' : 'Offline'}</span>
                 <span className={styles.metaDivider}>|</span>
-                <span>Member since {currentUser.memberSince}</span>
+                <span>Member since {profile.memberSince}</span>
               </div>
             </div>
           </div>
           <div className={styles.headerRating}>
             <span className={styles.sectionLabel}>Rating</span>
-            <strong className={styles.headerRatingValue}>{currentUser.elo ?? '-'}</strong>
+            <strong className={styles.headerRatingValue}>{profile.elo ?? '-'}</strong>
           </div>
         </header>
 

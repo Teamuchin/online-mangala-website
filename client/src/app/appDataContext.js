@@ -11,6 +11,7 @@ import {
   HOME_SECONDARY_ACTIONS,
   INITIAL_CURRENT_USER,
   LOCAL_MATCH_PLAYERS,
+  PUBLIC_PROFILE_DIRECTORY,
 } from './mockAppData.js'
 
 export const staticAppData = {
@@ -25,6 +26,7 @@ export const staticAppData = {
   guestCurrentUser: GUEST_CURRENT_USER,
   initialCurrentUser: INITIAL_CURRENT_USER,
   localMatchPlayers: LOCAL_MATCH_PLAYERS,
+  publicProfileDirectory: PUBLIC_PROFILE_DIRECTORY,
 }
 
 export const AppDataContext = createContext({
