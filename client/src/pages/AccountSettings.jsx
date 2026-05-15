@@ -7,11 +7,27 @@ import {
 import { Navigate } from 'react-router-dom'
 import styles from './AccountSettings.module.css'
 import { useAppData } from '../app/useAppData.js'
+import { updateMeRequest } from '../app/authApi.js'
+
+function formatMemberSince(isoDateString) {
+  const parsedDate = new Date(isoDateString)
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return 'May 2026'
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    year: 'numeric',
+  }).format(parsedDate)
+}
 
 export default function AccountSettings() {
   const { accountSettingsFields, assets, currentUser, updateCurrentUser } = useAppData()
   const [formState, setFormState] = useState(() => buildAccountFormState(currentUser))
   const [saveMessage, setSaveMessage] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const guestMode = isGuestUser(currentUser)
 
   useEffect(() => {
@@ -21,6 +37,7 @@ export default function AccountSettings() {
   const handleFieldChange = (event) => {
     const { id, value, files, type } = event.target
     setSaveMessage('')
+    setErrorMessage('')
 
     setFormState((currentFormState) => ({
       ...currentFormState,
@@ -28,17 +45,67 @@ export default function AccountSettings() {
     }))
   }
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
-    updateCurrentUser(buildProfileUpdatesFromForm(formState))
-    setFormState((currentFormState) => ({
-      ...currentFormState,
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-      profilePicture: null,
-    }))
-    setSaveMessage('Profile details saved.')
+    setSaveMessage('')
+    setErrorMessage('')
+
+    try {
+      setIsSubmitting(true)
+
+      const token = window.localStorage.getItem('mangala.authToken')
+
+      if (!token) {
+        setErrorMessage('Please log in again to update your account.')
+        return
+      }
+
+      if (!String(formState.currentPassword || '').trim()) {
+        setErrorMessage('Enter your password first.')
+        return
+      }
+
+      const payload = {
+        ...buildProfileUpdatesFromForm(formState),
+        currentPassword: formState.currentPassword,
+        newPassword: formState.newPassword,
+        confirmPassword: formState.confirmPassword,
+      }
+
+      const response = await updateMeRequest(payload, token)
+
+      window.localStorage.setItem('mangala.authToken', response.token)
+
+      updateCurrentUser({
+        id: String(response.user.id),
+        username: response.user.username,
+        email: response.user.email,
+        bio: response.user.bio || '',
+        memberSince: formatMemberSince(response.user.created_at),
+      })
+
+      setFormState((currentFormState) => ({
+        ...currentFormState,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+        profilePicture: null,
+      }))
+      setSaveMessage('Profile details saved.')
+    } catch (error) {
+      if (
+        error.message === 'Unauthorized' ||
+        error.message === 'Invalid or expired token' ||
+        error.message === 'Invalid token payload'
+      ) {
+        window.localStorage.removeItem('mangala.authToken')
+        setErrorMessage('Session expired. Please log out and log in again, then retry.')
+      } else {
+        setErrorMessage(error.message || 'Could not update account settings.')
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (guestMode) {
@@ -50,6 +117,7 @@ export default function AccountSettings() {
       <h1>Account Settings</h1>
       <form className={styles.infochangediv} onSubmit={handleSubmit}>
         {saveMessage && <p className={styles.saveMessage}>{saveMessage}</p>}
+        {errorMessage && <p className={styles.saveMessage}>{errorMessage}</p>}
         <div className={styles.nonButtonInput}>
           {accountSettingsFields.map((field) => (
             <input
@@ -80,7 +148,12 @@ export default function AccountSettings() {
             />
           </div>
         </div>
-        <input type="submit" value="Save Changes" className={styles.submitbtn} />
+        <input
+          type="submit"
+          value={isSubmitting ? 'Saving...' : 'Save Changes'}
+          className={styles.submitbtn}
+          disabled={isSubmitting}
+        />
       </form>
     </div>
   )

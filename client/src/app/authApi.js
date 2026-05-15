@@ -1,27 +1,61 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 
-async function request(path, payload) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
+function normalizeToken(token = '') {
+  let normalized = String(token || '').trim()
 
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new Error(data.message || 'Request failed');
+  if (normalized.toLowerCase().startsWith('bearer ')) {
+    normalized = normalized.slice(7).trim()
   }
 
-  return data;
+  for (let i = 0; i < 3; i += 1) {
+    const unquoted = normalized.replace(/^"|"$/g, '').trim()
+    if (unquoted === normalized) {
+      break
+    }
+    normalized = unquoted
+  }
+
+  try {
+    const parsed = JSON.parse(normalized)
+    if (typeof parsed === 'string') {
+      normalized = parsed.trim()
+    }
+  } catch {
+    // Keep value as-is when it is not JSON.
+  }
+
+  return normalized
+}
+
+async function request(path, payload, options = {}) {
+  const token = options.token ? normalizeToken(options.token) : ''
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: options.method || 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  })
+
+  const data = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Request failed')
+  }
+
+  return data
 }
 
 export function registerRequest(payload) {
-  return request('/api/auth/register', payload);
+  return request('/api/auth/register', payload)
 }
 
 export function loginRequest(payload) {
-  return request('/api/auth/login', payload);
+  return request('/api/auth/login', payload)
+}
+
+export function updateMeRequest(payload, token) {
+  return request('/api/auth/me', payload, { method: 'PATCH', token })
 }
