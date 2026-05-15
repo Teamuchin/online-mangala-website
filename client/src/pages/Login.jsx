@@ -1,16 +1,65 @@
+import { useState } from 'react'
 import AuthBrand from '../components/AuthBrand.jsx'
 import styles from './Login.module.css'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAppData } from '../app/useAppData.js'
+import { loginRequest } from '../app/authApi.js'
+
+function formatMemberSince(isoDateString) {
+  const parsedDate = new Date(isoDateString)
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return 'May 2026'
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    year: 'numeric',
+  }).format(parsedDate)
+}
 
 export default function Login() {
   const navigate = useNavigate()
   const { continueAsGuest, logIn } = useAppData()
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault()
-    logIn()
-    navigate('/')
+
+    const formData = new FormData(event.currentTarget)
+    const credential = String(formData.get('usercredential') || '').trim()
+    const password = String(formData.get('userpwd') || '')
+
+    if (!credential || !password) {
+      setErrorMessage('Please enter your email/username and password.')
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      setErrorMessage('')
+
+      const response = await loginRequest({
+        email: credential,
+        password,
+      })
+
+      window.localStorage.setItem('mangala.authToken', response.token)
+
+      logIn({
+        id: String(response.user.id),
+        username: response.user.username,
+        email: response.user.email,
+        memberSince: formatMemberSince(response.user.created_at),
+      })
+
+      navigate('/')
+    } catch (error) {
+      setErrorMessage(error.message || 'Login failed. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleGuestLogin = () => {
@@ -29,7 +78,7 @@ export default function Login() {
         <input
           id="usercredential"
           defaultValue=""
-          type="email"
+          type="text"
           name="usercredential"
           placeholder="Username or Email"
           className={styles.textinput}
@@ -51,8 +100,9 @@ export default function Login() {
             name="rememberme"
           />
         </div>
-        <button type="submit" className={styles.submitbtn}>
-          Log in
+        {errorMessage ? <p>{errorMessage}</p> : null}
+        <button type="submit" className={styles.submitbtn} disabled={isSubmitting}>
+          {isSubmitting ? 'Logging in...' : 'Log in'}
         </button>
         <Link to="/register" className={styles.signupbtn}>
           Sign Up
