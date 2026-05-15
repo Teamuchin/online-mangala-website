@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const db = require('./db');
 const authRoutes = require('./routes/auth');
-const { createUsersTableQuery } = require('./auth/queries');
+const { createUsersTableQuery, ensureBioColumnQuery } = require('./auth/queries');
 
 const app = express();
 app.use(cors());
@@ -27,6 +27,7 @@ app.get('/api/health', async (req, res) => {
 async function startServer() {
   try {
     await db.query(createUsersTableQuery);
+    await db.query(ensureBioColumnQuery);
     console.log('Users table is ready');
 
     const PORT = process.env.PORT || 5000;
