@@ -1,6 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { buildWelcomeMessage } from '../app/appState.js'
+import {
+  createRandomGameId,
+  readStoredMatchIds,
+} from '../components/mangala/gamePersistence.js'
 import BotSetupModal from './BotSetupModal.jsx'
 import { useAppData } from '../app/useAppData.js'
 import styles from './Home.module.css'
@@ -38,7 +42,7 @@ export default function Home() {
   const closeBotSetup = () => setIsBotSetupOpen(false)
 
   const handleStartBotMatch = () => {
-    const gameId = String(Date.now())
+    const gameId = createRandomGameId(readStoredMatchIds())
     const startingPlayer =
       botFirstMove === 'random'
         ? Math.random() < 0.5
@@ -66,7 +70,7 @@ export default function Home() {
       return
     }
 
-    const gameId = String(Date.now())
+    const gameId = createRandomGameId(readStoredMatchIds())
     navigate(`/game/${gameId}`, {
       state: {
         matchMode: 'local',

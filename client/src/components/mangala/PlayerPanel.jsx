@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { formatTime } from './gameLogic'
 import styles from './MangalaGame.module.css'
 
@@ -34,10 +35,15 @@ export default function PlayerPanel({
         </button>
       </div>
       <div className={styles.playerMeta}>
-        <span className={styles.playerSide} />
         <div className={styles.playerTitle}>
-          <h2>{player.name}</h2>
-          {player.isBot && <span className={styles.playerBadge}>BOT</span>}
+          <h2>
+            <Link
+              to={`/member/${encodeURIComponent(player.name)}`}
+              className={styles.playerNameLink}
+            >
+              {player.name}
+            </Link>
+          </h2>
         </div>
         <div className={styles.playerRatingRow}>
           <span className={styles.playerRating}>{player.rating}</span>

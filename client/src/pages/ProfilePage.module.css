@@ -107,7 +107,7 @@
 
 .chartCard,
 .historyCard {
-  padding: 24px;
+  padding: 20px;
 }
 
 .sectionLabel {
@@ -126,8 +126,9 @@
 
 .chartCard {
   display: grid;
-  gap: 14px;
-  min-height: 250px;
+  align-content: start;
+  gap: 18px;
+  min-height: 0;
 }
 
 .chartHeader,
@@ -245,6 +246,8 @@
 .historyCard {
   display: grid;
   align-content: start;
+  gap: 10px;
+  padding-bottom: 12px;
 }
 
 .historyTable {
@@ -254,7 +257,7 @@
 
 .historyTable th,
 .historyTable td {
-  padding: 14px 10px;
+  padding: 12px 10px;
   text-align: left;
   border-bottom: 1px solid rgba(90, 47, 18, 0.12);
 }
@@ -271,10 +274,100 @@
   color: #5a2f12;
 }
 
+.clickableHistoryRow {
+  cursor: pointer;
+}
+
+.clickableHistoryRow:hover td {
+  background: rgba(90, 47, 18, 0.05);
+}
+
+.opponentCell {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.matchLink {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.matchLink:hover {
+  text-decoration: underline;
+}
+
+.opponentMeta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  color: rgba(90, 47, 18, 0.72);
+  font-size: 0.94rem;
+}
+
+.ratingCell {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+  color: rgba(90, 47, 18, 0.72);
+  font-size: 0.94rem;
+}
+
+.positiveChange {
+  color: #2f8c2f;
+  font-weight: 700;
+}
+
+.negativeChange {
+  color: #b33a28;
+  font-weight: 700;
+}
+
+.resultWin {
+  color: #2f8c2f;
+  font-weight: 700;
+}
+
+.resultLoss {
+  color: #b33a28;
+  font-weight: 700;
+}
+
+.resultDraw {
+  color: inherit;
+  font-weight: 700;
+}
+
+.resultLive {
+  color: #2f6fb3;
+  font-weight: 700;
+}
+
 .emptyCell {
   text-align: center !important;
   font-weight: 700;
   color: rgba(90, 47, 18, 0.66);
+}
+
+.historyFooter {
+  display: flex;
+  justify-content: center;
+}
+
+.seeMoreLink {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(90, 47, 18, 0.08);
+  color: #5a2f12;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.seeMoreLink:hover {
+  background: rgba(90, 47, 18, 0.14);
 }
 
 @media (max-width: 860px) {

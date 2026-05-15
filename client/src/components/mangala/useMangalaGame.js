@@ -9,10 +9,9 @@ import {
 import { chooseBotMove } from './botLogic.js'
 import { MOVE_ANIMATION_DELAY_MS } from './constants.js'
 import {
-  ACTIVE_MATCH_STORAGE_KEY,
   buildActiveMatchSummary,
   buildPersistedMatchSession,
-  readPersistedMatchSession,
+  readStoredMatchSessionByGameId,
   writePersistedMatchSession,
 } from './gamePersistence.js'
 import { buildAnimatedLastMove } from './movePresentation.js'
@@ -76,9 +75,7 @@ export function useMangalaGame(initialConfig) {
   const restoredSession =
     typeof window === 'undefined'
       ? null
-      : readPersistedMatchSession(
-          window.localStorage.getItem(ACTIVE_MATCH_STORAGE_KEY),
-        )
+      : readStoredMatchSessionByGameId(initialConfig?.gameId)
   const hasRestoredGameForRoute = Boolean(
     restoredSession && restoredSession.gameId === initialConfig?.gameId,
   )

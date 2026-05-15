@@ -1,0 +1,219 @@
+.page {
+  height: calc(100svh - 72px);
+  padding: 28px 20px 36px;
+  background:
+    radial-gradient(circle at top, rgba(255, 233, 204, 0.9), transparent 35%),
+    linear-gradient(180deg, #f8d9b6 0%, #efc093 45%, #c98856 100%);
+  color: #5a2f12;
+  overflow-y: auto;
+}
+
+.shell {
+  width: min(1080px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 20px;
+}
+
+.header,
+.historyCard,
+.missingCard {
+  border: 1px solid rgba(90, 47, 18, 0.18);
+  border-radius: 20px;
+  background: rgba(255, 248, 235, 0.76);
+  box-shadow: 0 14px 28px rgba(112, 69, 36, 0.08);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 28px;
+}
+
+.kicker {
+  margin: 0 0 8px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(90, 47, 18, 0.7);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1;
+}
+
+.backLink {
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(90, 47, 18, 0.08);
+  color: #5a2f12;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  background: rgba(90, 47, 18, 0.14);
+}
+
+.historyCard {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.historyTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.historyTable th,
+.historyTable td {
+  padding: 14px 10px;
+  text-align: left;
+  border-bottom: 1px solid rgba(90, 47, 18, 0.12);
+}
+
+.historyTable th {
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(90, 47, 18, 0.74);
+}
+
+.clickableHistoryRow {
+  cursor: pointer;
+}
+
+.clickableHistoryRow:hover td {
+  background: rgba(90, 47, 18, 0.05);
+}
+
+.opponentCell {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.matchLink {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.matchLink:hover {
+  text-decoration: underline;
+}
+
+.opponentMeta,
+.ratingCell {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+  color: rgba(90, 47, 18, 0.72);
+  font-size: 0.94rem;
+}
+
+.positiveChange {
+  color: #2f8c2f;
+  font-weight: 700;
+}
+
+.negativeChange {
+  color: #b33a28;
+  font-weight: 700;
+}
+
+.resultWin {
+  color: #2f8c2f;
+  font-weight: 700;
+}
+
+.resultLoss {
+  color: #b33a28;
+  font-weight: 700;
+}
+
+.resultDraw {
+  color: inherit;
+  font-weight: 700;
+}
+
+.resultLive {
+  color: #2f6fb3;
+  font-weight: 700;
+}
+
+.emptyCell {
+  text-align: center !important;
+  font-weight: 700;
+  color: rgba(90, 47, 18, 0.66);
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pageButton {
+  min-width: 40px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(90, 47, 18, 0.08);
+  color: #5a2f12;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+}
+
+.pageButton:hover {
+  background: rgba(90, 47, 18, 0.14);
+}
+
+.pageButtonActive {
+  background: #7b431f;
+  color: #fff7ee;
+}
+
+.pageButtonDisabled {
+  pointer-events: none;
+  opacity: 0.45;
+}
+
+.missingCard {
+  padding: 36px 40px;
+  min-height: 220px;
+}
+
+.missingCard h1 {
+  margin: 0 0 22px;
+  font-size: clamp(2.4rem, 7vw, 4rem);
+  font-weight: 400;
+  line-height: 1.05;
+}
+
+.missingCard p {
+  margin: 0;
+  font-size: 1.1rem;
+  color: rgba(90, 47, 18, 0.84);
+}
+
+@media (max-width: 860px) {
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

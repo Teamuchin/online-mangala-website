@@ -1,13 +1,49 @@
-import { useMemo, useState } from 'react'
-import { Navigate, useParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { isGuestUser } from '../app/appState.js'
 import { useAppData } from '../app/useAppData.js'
+import { readStoredMatchSessionByGameId } from '../components/mangala/gamePersistence.js'
 import styles from './ProfilePage.module.css'
 
 const MAX_VISIBLE_RATING_POINTS = 10
 
 function formatRatingDelta(value) {
   return `${value > 0 ? '+' : ''}${value}`
+}
+
+function getResultClassName(styles, result) {
+  if (result === 'Win') {
+    return styles.resultWin
+  }
+
+  if (result === 'Loss') {
+    return styles.resultLoss
+  }
+
+  if (result === 'Draw') {
+    return styles.resultDraw
+  }
+
+  if (result === 'Live') {
+    return styles.resultLive
+  }
+
+  return ''
+}
+
+function getPlayerHistoryRating(match) {
+  if (typeof match.playerRating === 'number') {
+    return match.playerRating
+  }
+
+  if (
+    typeof match.ratingAfter === 'number' &&
+    typeof match.ratingDelta === 'number'
+  ) {
+    return match.ratingAfter - match.ratingDelta
+  }
+
+  return '-'
 }
 
 function getTooltipDateLabel(value) {
@@ -37,21 +73,56 @@ function getClosestPointId(points, mouseEvent) {
   }, null)?.id ?? null
 }
 
+function buildLiveMatchEntry(activeMatchSummary, currentUser) {
+  if (!activeMatchSummary?.isActive) {
+    return null
+  }
+
+  const session = readStoredMatchSessionByGameId(activeMatchSummary.gameId)
+
+  if (!session?.game?.players) {
+    return null
+  }
+
+  const { bottom, top } = session.game.players
+  const player = currentUser.id === bottom?.id ? bottom : currentUser.id === top?.id ? top : null
+  const opponent = player?.id === bottom?.id ? top : bottom
+
+  if (!player || !opponent) {
+    return null
+  }
+
+  return {
+    id: activeMatchSummary.gameId,
+    playedAt: new Date(session.game.lastTimerStartedAt ?? Date.now()).toISOString(),
+    opponent: opponent.name,
+    playerRating: player.rating,
+    opponentRating: opponent.rating,
+    result: 'Live',
+    ratingDelta: null,
+    opponentRatingDelta: null,
+    isLive: true,
+  }
+}
+
 function buildChartModel(ratingHistory) {
+  const plotLeft = 92
+  const plotRight = 576
+  const plotTop = 36
+  const plotBottom = 328
+  const plotWidth = plotRight - plotLeft
+  const plotHeight = plotBottom - plotTop
+
   if (ratingHistory.length === 0) {
     return {
       polylinePoints: '',
       points: [],
       labels: [],
+      gridLines: [],
+      plot: { left: plotLeft, right: plotRight, top: plotTop, bottom: plotBottom },
     }
   }
 
-  const plotLeft = 92
-  const plotRight = 576
-  const plotTop = 28
-  const plotBottom = 192
-  const plotWidth = plotRight - plotLeft
-  const plotHeight = plotBottom - plotTop
   const ratings = ratingHistory.map((point) => point.rating)
   const minRating = Math.min(...ratings)
   const maxRating = Math.max(...ratings)
@@ -84,39 +155,64 @@ function buildChartModel(ratingHistory) {
       { value: Math.round((displayMin + displayMax) / 2), y: plotTop + plotHeight / 2 },
       { value: displayMin, y: plotBottom },
     ],
+    gridLines: [
+      plotTop + plotHeight * 0.25,
+      plotTop + plotHeight * 0.5,
+      plotTop + plotHeight * 0.75,
+    ],
+    plot: { left: plotLeft, right: plotRight, top: plotTop, bottom: plotBottom },
   }
+}
+
+function resolveProfile(publicProfileDirectory, currentUser, username) {
+  if (currentUser.username === username) {
+    return currentUser
+  }
+
+  return (
+    publicProfileDirectory.find((profile) => profile.username === username) ?? null
+  )
 }
 
 export default function ProfilePage() {
   const { username } = useParams()
-  const { currentUser, isAuthenticated } = useAppData()
+  const navigate = useNavigate()
+  const {
+    activeMatchSummary,
+    currentUser,
+    isAuthenticated,
+    publicProfileDirectory,
+  } = useAppData()
   const [hoveredPointId, setHoveredPointId] = useState(null)
-  const visibleRatingHistory = (currentUser.ratingHistory ?? []).slice(
+  const profile = username
+    ? resolveProfile(publicProfileDirectory, currentUser, username)
+    : currentUser
+  const visibleRatingHistory = (profile?.ratingHistory ?? []).slice(
     -MAX_VISIBLE_RATING_POINTS,
   )
-  const chart = useMemo(
-    () => buildChartModel(visibleRatingHistory),
-    [visibleRatingHistory],
-  )
+  const chart = buildChartModel(visibleRatingHistory)
   const hoveredPoint =
     chart.points.find((point) => point.id === hoveredPointId) ?? null
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
-  }
-
-  if (isGuestUser(currentUser)) {
-    return <Navigate to="/" replace />
-  }
 
   const canonicalUsername = currentUser.username
   const canonicalProfilePath = `/member/${encodeURIComponent(canonicalUsername)}`
 
   if (!username) {
-    return <Navigate to={canonicalProfilePath} replace />
+    return isAuthenticated
+      ? <Navigate to={canonicalProfilePath} replace />
+      : (
+        <main className={styles.profilePage}>
+          <section className={styles.profileShell}>
+            <section className={styles.missingProfileCard}>
+              <h1>No such player</h1>
+              <p>This username doesn&apos;t match any player.</p>
+            </section>
+          </section>
+        </main>
+      )
   }
 
-  if (username !== canonicalUsername) {
+  if (!profile || (isGuestUser(currentUser) && username === currentUser.username)) {
     return (
       <main className={styles.profilePage}>
         <section className={styles.profileShell}>
@@ -129,8 +225,15 @@ export default function ProfilePage() {
     )
   }
 
-  const isOnline = isAuthenticated
-  const recentMatches = (currentUser.matchHistory ?? []).slice(0, 5)
+  const isOnline =
+    isAuthenticated && !isGuestUser(currentUser) && profile.id === currentUser.id
+  const liveMatch = buildLiveMatchEntry(activeMatchSummary, currentUser)
+  const allMatches = liveMatch
+    && profile.id === currentUser.id
+      ? [liveMatch, ...(profile.matchHistory ?? []).filter((match) => match.id !== liveMatch.id)]
+      : profile.matchHistory ?? []
+  const recentMatches = allMatches.slice(0, 5)
+  const hasMoreMatches = allMatches.length > recentMatches.length
 
   return (
     <main className={styles.profilePage}>
@@ -142,17 +245,17 @@ export default function ProfilePage() {
               aria-hidden="true"
             />
             <div className={styles.identityText}>
-              <h1>{currentUser.username}</h1>
+              <h1>{profile.username}</h1>
               <div className={styles.metaRow}>
                 <span>{isOnline ? 'Online' : 'Offline'}</span>
-                <span className={styles.metaDivider}>•</span>
-                <span>Member since {currentUser.memberSince}</span>
+                <span className={styles.metaDivider}>|</span>
+                <span>Member since {profile.memberSince}</span>
               </div>
             </div>
           </div>
           <div className={styles.headerRating}>
             <span className={styles.sectionLabel}>Rating</span>
-            <strong className={styles.headerRatingValue}>{currentUser.elo ?? '—'}</strong>
+            <strong className={styles.headerRatingValue}>{profile.elo ?? '-'}</strong>
           </div>
         </header>
 
@@ -163,7 +266,7 @@ export default function ProfilePage() {
             </div>
             <div className={styles.chartFrame}>
               <svg
-                viewBox="0 0 640 240"
+                viewBox="0 0 640 360"
                 className={styles.chartSvg}
                 role="img"
                 aria-label="Rating history chart"
@@ -172,11 +275,30 @@ export default function ProfilePage() {
                 }
                 onMouseLeave={() => setHoveredPointId(null)}
               >
-                <line x1="92" y1="28" x2="92" y2="192" className={styles.chartAxis} />
-                <line x1="92" y1="192" x2="576" y2="192" className={styles.chartAxis} />
-                <line x1="92" y1="69" x2="576" y2="69" className={styles.chartGrid} />
-                <line x1="92" y1="110" x2="576" y2="110" className={styles.chartGrid} />
-                <line x1="92" y1="151" x2="576" y2="151" className={styles.chartGrid} />
+                <line
+                  x1={chart.plot.left}
+                  y1={chart.plot.top}
+                  x2={chart.plot.left}
+                  y2={chart.plot.bottom}
+                  className={styles.chartAxis}
+                />
+                <line
+                  x1={chart.plot.left}
+                  y1={chart.plot.bottom}
+                  x2={chart.plot.right}
+                  y2={chart.plot.bottom}
+                  className={styles.chartAxis}
+                />
+                {chart.gridLines.map((gridY) => (
+                  <line
+                    key={gridY}
+                    x1={chart.plot.left}
+                    y1={gridY}
+                    x2={chart.plot.right}
+                    y2={gridY}
+                    className={styles.chartGrid}
+                  />
+                ))}
                 {chart.labels.map((label) => (
                   <text
                     key={`${label.value}-${label.y}`}
@@ -230,14 +352,15 @@ export default function ProfilePage() {
 
           <div className={styles.historyCard}>
             <div className={styles.historyHeader}>
-              <span className={styles.sectionLabel}>Last 5 Games</span>
+              <span className={styles.sectionLabel}>
+                Match History ({allMatches.length})
+              </span>
             </div>
             <div className={styles.tableWrap}>
               <table className={styles.historyTable}>
                 <thead>
                   <tr>
                     <th>Opponent</th>
-                    <th>Mode</th>
                     <th>Result</th>
                     <th>Rating</th>
                   </tr>
@@ -245,18 +368,64 @@ export default function ProfilePage() {
                 <tbody>
                   {recentMatches.length > 0 ? (
                     recentMatches.map((match) => (
-                      <tr key={match.id}>
-                        <td>{match.opponent}</td>
-                        <td>{match.mode}</td>
-                        <td>{match.result}</td>
+                      <tr
+                        key={match.id}
+                        className={styles.clickableHistoryRow}
+                        onClick={() => navigate(`/game/${match.id}`)}
+                      >
                         <td>
-                          {match.ratingAfter} ({formatRatingDelta(match.ratingDelta)})
+                          <div className={styles.opponentCell}>
+                            <Link
+                              to={`/member/${encodeURIComponent(match.opponent)}`}
+                              className={styles.matchLink}
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              {match.opponent}
+                            </Link>
+                            {typeof match.opponentRating === 'number' && (
+                              <span className={styles.opponentMeta}>
+                                {match.opponentRating}
+                                {typeof match.opponentRatingDelta === 'number' && !match.isLive && (
+                                  <span
+                                    className={
+                                      match.opponentRatingDelta >= 0
+                                        ? styles.positiveChange
+                                        : styles.negativeChange
+                                    }
+                                  >
+                                    {formatRatingDelta(match.opponentRatingDelta)}
+                                  </span>
+                                )}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td>
+                          <span className={getResultClassName(styles, match.result)}>
+                            {match.result}
+                          </span>
+                        </td>
+                        <td>
+                          <div className={styles.ratingCell}>
+                            <span>{getPlayerHistoryRating(match)}</span>
+                            {typeof match.ratingDelta === 'number' && !match.isLive && (
+                              <span
+                                className={
+                                  match.ratingDelta >= 0
+                                    ? styles.positiveChange
+                                    : styles.negativeChange
+                                }
+                              >
+                                {formatRatingDelta(match.ratingDelta)}
+                              </span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="4" className={styles.emptyCell}>
+                      <td colSpan="3" className={styles.emptyCell}>
                         No matches saved yet.
                       </td>
                     </tr>
@@ -264,6 +433,16 @@ export default function ProfilePage() {
                 </tbody>
               </table>
             </div>
+            {hasMoreMatches && (
+              <div className={styles.historyFooter}>
+                <Link
+                  to={`/member/${encodeURIComponent(canonicalUsername)}/games`}
+                  className={styles.seeMoreLink}
+                >
+                  See More
+                </Link>
+              </div>
+            )}
           </div>
         </section>
       </section>

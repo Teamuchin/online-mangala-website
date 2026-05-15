@@ -39,18 +39,22 @@ export function buildMatchHistoryEntry({
   gameId,
   playedAt,
   opponent,
+  playerRating,
+  opponentRating,
+  opponentRatingDelta,
   mode,
   result,
-  ratingAfter,
   ratingDelta,
 }) {
   return {
     id: gameId,
     playedAt,
     opponent,
+    playerRating,
+    opponentRating,
+    opponentRatingDelta,
     mode,
     result,
-    ratingAfter,
     ratingDelta,
   }
 }

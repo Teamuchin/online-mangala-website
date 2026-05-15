@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react'
-import { useLocation, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { buildRatedMatchOutcome } from '../app/rating.js'
 import { useAppData } from '../app/useAppData.js'
 import { useGlobalHeader } from '../app/useGlobalHeader.js'
 import Board from '../components/mangala/Board.jsx'
 import {
-  ACTIVE_MATCH_STORAGE_KEY,
-  readPersistedMatchSession,
+  createRandomGameId,
+  readStoredMatchIds,
+  readStoredMatchSessionByGameId,
 } from '../components/mangala/gamePersistence.js'
 import { createInitialState } from '../components/mangala/gameLogic.js'
 import ReplayControls from '../components/mangala/ReplayControls.jsx'
@@ -15,18 +16,36 @@ import { buildReplayDescription } from '../components/mangala/matchRecord.js'
 import { useMangalaGame } from '../components/mangala/useMangalaGame.js'
 import styles from '../components/mangala/MangalaGame.module.css'
 
-export default function MangalaGame() {
+function getBotProfileForDifficulty(publicProfileDirectory, difficulty) {
+  const botIdsByDifficulty = {
+    1: 'bot-deniz',
+    2: 'bot-toprak',
+    3: 'bot-ruzgar',
+    4: 'bot-alev',
+  }
+
+  return publicProfileDirectory.find(
+    (profile) => profile.id === botIdsByDifficulty[difficulty],
+  ) ?? null
+}
+
+function MangalaGameScreen({ gameId }) {
   const location = useLocation()
-  const { gameId } = useParams()
-  const { activeMatchSummary, currentUser, recordRatedMatchResult } = useAppData()
+  const navigate = useNavigate()
+  const {
+    activeMatchSummary,
+    currentUser,
+    isAuthenticated,
+    publicProfileDirectory,
+    recordPublicProfileMatchResult,
+    recordRatedMatchResult,
+  } = useAppData()
   const { setSettingsContent } = useGlobalHeader()
   const seededPlayers = createInitialState().players
   const persistedRouteSession =
     typeof window === 'undefined'
       ? null
-      : readPersistedMatchSession(
-          window.localStorage.getItem(ACTIVE_MATCH_STORAGE_KEY),
-        )
+      : readStoredMatchSessionByGameId(gameId)
   const matchingPersistedSession =
     persistedRouteSession?.gameId === gameId ? persistedRouteSession : null
   const matchingActiveMatchSummary =
@@ -44,6 +63,10 @@ export default function MangalaGame() {
         matchingPersistedSession?.botSettings ??
         null
       : null
+  const selectedBotProfile =
+    botSettings?.difficulty
+      ? getBotProfileForDifficulty(publicProfileDirectory, botSettings.difficulty)
+      : null
   const initialConfig =
     matchMode === 'local'
         ? {
@@ -54,6 +77,7 @@ export default function MangalaGame() {
             bottom: {
               ...seededPlayers.bottom,
               id: currentUser.id,
+              name: currentUser.username,
               rating: currentUser.elo ?? seededPlayers.bottom.rating,
             },
           },
@@ -69,12 +93,13 @@ export default function MangalaGame() {
               bottom: {
                 ...seededPlayers.bottom,
                 id: currentUser.id,
+                name: currentUser.username,
                 rating: currentUser.elo ?? seededPlayers.bottom.rating,
               },
               top: {
-                id: 'bot-player',
-                name: 'Computer',
-                rating: 800 + botSettings.difficulty * 200,
+                id: selectedBotProfile?.id ?? 'bot-deniz',
+                name: selectedBotProfile?.username ?? 'deniz-bot',
+                rating: selectedBotProfile?.elo ?? 1000,
                 timeLeft: 300,
                 isBot: true,
               },
@@ -100,18 +125,20 @@ export default function MangalaGame() {
     handleReplayNext,
     handleReplayPrevious,
     handleResign,
-    handleReset,
     handleStoneToggle,
     markRatingApplied,
   } = useMangalaGame(initialConfig)
 
-  const currentUserRole = isLocalMatch
-    ? 'both'
-    : currentUser.id === game.players.bottom.id
-      ? 'bottom'
-      : currentUser.id === game.players.top.id
-        ? 'top'
-        : 'spectator'
+  const currentUserRole = !isAuthenticated
+    ? 'spectator'
+    : isLocalMatch
+      ? 'both'
+      : currentUser.id === game.players.bottom.id
+        ? 'bottom'
+        : currentUser.id === game.players.top.id
+          ? 'top'
+          : 'spectator'
+  const canRequestRematch = currentUserRole !== 'spectator' && Boolean(matchMode)
   const ratedOutcome =
     isComputerMatch && game.gameStatus === 'finished'
       ? buildRatedMatchOutcome(
@@ -132,6 +159,41 @@ export default function MangalaGame() {
   const sidebarDescription = isReviewing ? replayDescription : game.turnMessage
   const stoneToggleRef = useRef(handleStoneToggle)
   const animationToggleRef = useRef(handleAnimationToggle)
+
+  const handleRematch = () => {
+    if (!canRequestRematch) {
+      return
+    }
+
+    const nextGameId = createRandomGameId(readStoredMatchIds())
+
+    if (isComputerMatch) {
+      const nextStartingPlayer =
+        botSettings?.firstMove === 'random'
+          ? Math.random() < 0.5
+            ? 'bottom'
+            : 'top'
+          : botSettings?.firstMove === 'computer'
+            ? 'top'
+            : 'bottom'
+
+      navigate(`/game/${nextGameId}`, {
+        state: {
+          matchMode: 'computer',
+          botSettings,
+          startingPlayer: nextStartingPlayer,
+        },
+      })
+
+      return
+    }
+
+    navigate(`/game/${nextGameId}`, {
+      state: {
+        matchMode: 'local',
+      },
+    })
+  }
 
   useEffect(() => {
     stoneToggleRef.current = handleStoneToggle
@@ -184,11 +246,15 @@ export default function MangalaGame() {
       game.players.top.rating,
       playerResult,
     )
+    const playedAt = new Date().toISOString()
 
     recordRatedMatchResult({
       gameId,
-      playedAt: new Date().toISOString(),
+      playedAt,
       opponent: game.players.top.name,
+      playerRating: game.players.bottom.rating,
+      opponentRating: ratedOutcome.opponentRating,
+      opponentRatingDelta: ratedOutcome.opponentDelta,
       mode: 'Bot',
       result:
         playerResult === 'win'
@@ -199,18 +265,38 @@ export default function MangalaGame() {
       ratingAfter: ratedOutcome.playerRating,
       ratingDelta: ratedOutcome.playerDelta,
     })
+    recordPublicProfileMatchResult(game.players.top.id, {
+      gameId,
+      playedAt,
+      opponent: game.players.bottom.name,
+      playerRating: game.players.top.rating,
+      opponentRating: game.players.bottom.rating,
+      opponentRatingDelta: ratedOutcome.playerDelta,
+      mode: 'Bot',
+      result:
+        playerResult === 'win'
+          ? 'Loss'
+          : playerResult === 'draw'
+            ? 'Draw'
+            : 'Win',
+      ratingAfter: ratedOutcome.opponentRating,
+      ratingDelta: ratedOutcome.opponentDelta,
+    })
     markRatingApplied()
   }, [
     currentUserRole,
     game.gameStatus,
     game.players.bottom.rating,
+    game.players.bottom.name,
     game.players.top.rating,
+    game.players.top.id,
     game.ratingApplied,
     game.winner,
     game.players.top.name,
     gameId,
     isComputerMatch,
     markRatingApplied,
+    recordPublicProfileMatchResult,
     recordRatedMatchResult,
   ])
 
@@ -269,12 +355,13 @@ export default function MangalaGame() {
               description={sidebarDescription}
               hasMoves={game.matchRecord.moves.length > 0}
               isReviewing={isReviewing}
+              showReset={game.gameStatus === 'finished'}
               onFirst={handleReplayFirst}
               onLast={handleReplayLast}
               onNext={handleReplayNext}
               onPrevious={handleReplayPrevious}
-              onReset={handleReset}
-              resetDisabled={currentUserRole === 'spectator'}
+              onReset={handleRematch}
+              resetDisabled={!canRequestRematch}
             />
           </div>
           <PlayerPanel
@@ -294,4 +381,10 @@ export default function MangalaGame() {
       </div>
     </main>
   )
+}
+
+export default function MangalaGame() {
+  const { gameId } = useParams()
+
+  return <MangalaGameScreen key={gameId} gameId={gameId} />
 }

@@ -2,7 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   buildPersistedMatchSession,
+  readPersistedFinishedMatches,
   readPersistedMatchSession,
+  upsertFinishedMatchSessions,
 } from './gamePersistence.js'
 
 const baseSession = buildPersistedMatchSession({
@@ -55,4 +57,50 @@ test('readPersistedMatchSession normalizes legacy prefixed game ids', () => {
 test('readPersistedMatchSession rejects invalid saved data', () => {
   assert.equal(readPersistedMatchSession('{"foo":"bar"}'), null)
   assert.equal(readPersistedMatchSession('not-json'), null)
+})
+
+test('readPersistedFinishedMatches restores only valid stored finished sessions', () => {
+  const restoredSessions = readPersistedFinishedMatches(
+    JSON.stringify([
+      baseSession,
+      { foo: 'bar' },
+      {
+        ...baseSession,
+        gameId: 'game-67890',
+      },
+    ]),
+  )
+
+  assert.deepEqual(
+    restoredSessions.map((session) => session.gameId),
+    ['12345', '67890'],
+  )
+})
+
+test('upsertFinishedMatchSessions prepends the latest session and keeps unique game ids', () => {
+  const nextSessions = upsertFinishedMatchSessions(
+    [
+      baseSession,
+      {
+        ...baseSession,
+        gameId: '67890',
+      },
+    ],
+    {
+      ...baseSession,
+      gameId: '67890',
+      reviewIndex: 2,
+    },
+  )
+
+  assert.deepEqual(
+    nextSessions.map((session) => ({
+      gameId: session.gameId,
+      reviewIndex: session.reviewIndex,
+    })),
+    [
+      { gameId: '67890', reviewIndex: 2 },
+      { gameId: '12345', reviewIndex: null },
+    ],
+  )
 })
