@@ -148,7 +148,10 @@
 
 .playersPanel {
   grid-template-rows: auto minmax(0, 1fr);
-  max-height: 640px;
+  box-sizing: border-box;
+  height: 500px;
+  max-height: 500px;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -166,17 +169,6 @@
   line-height: 1.1;
 }
 
-.playerCount {
-  min-width: 44px;
-  height: 44px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  background: rgba(224, 179, 123, 0.9);
-  font-weight: 700;
-  color: #5a2f12;
-}
-
 .tableWrap {
   display: grid;
   gap: 6px;
@@ -184,7 +176,9 @@
 
 .playersPanel .tableWrap {
   min-height: 0;
+  height: 100%;
   grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
 }
 
 .matchTableHeader,
@@ -329,11 +323,11 @@
 }
 
 .playerList {
-  align-content: start;
   min-height: 0;
-  max-height: none;
-  overflow: auto;
+  overflow-y: auto;
   padding-right: 2px;
+  padding-bottom: 2px;
+  align-content: start;
 }
 
 .playerRow {

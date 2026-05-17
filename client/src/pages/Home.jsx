@@ -93,8 +93,7 @@ export default function Home() {
     useAppData()
 
   const lobbyPlayers = useMemo(
-    () =>
-      buildLobbyPlayers(currentUser, publicProfileDirectory, activeMatchSummary).slice(0, 8),
+    () => buildLobbyPlayers(currentUser, publicProfileDirectory, activeMatchSummary),
     [activeMatchSummary, currentUser, publicProfileDirectory],
   )
   const liveMatches = useMemo(
@@ -259,8 +258,7 @@ export default function Home() {
 
           <aside className={styles.playersPanel}>
             <div className={styles.sectionHeading}>
-              <h2>Online Players</h2>
-              <span className={styles.playerCount}>{lobbyPlayers.length}</span>
+              <h2>Online Players ({lobbyPlayers.length})</h2>
             </div>
 
             <div className={styles.tableWrap}>
