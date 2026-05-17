@@ -13,6 +13,7 @@ export default function ReplayControls({
   onLast,
   onReset,
   resetDisabled = false,
+  resetLabel = 'Start rematch',
 }) {
   return (
     <section className={styles.replayPanel}>
@@ -38,8 +39,8 @@ export default function ReplayControls({
             type="button"
             className={styles.replayIconButton}
             onClick={onReset}
-            aria-label="Start rematch"
-            title="Start rematch"
+            aria-label={resetLabel}
+            title={resetLabel}
             disabled={resetDisabled}
           >
             ↻

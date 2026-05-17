@@ -4,7 +4,7 @@ import GlobalHeader from './components/GlobalHeader.jsx'
 import Login from './pages/Login.jsx'
 import Home from './pages/Home.jsx'
 import Register from './pages/Register.jsx'
-import MangalaGame from './pages/MangalaGame.jsx'
+import MangalaGame, { PracticeBoardPage } from './pages/MangalaGame.jsx'
 import AccountSettings from './pages/AccountSettings.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 import ProfileGamesPage from './pages/ProfileGamesPage.jsx'
@@ -19,6 +19,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/practice" element={<PracticeBoardPage />} />
         <Route path="/game/:gameId" element={<MangalaGame />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/member/:username" element={<ProfilePage />} />

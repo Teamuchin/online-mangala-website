@@ -145,19 +145,6 @@ export default function Home() {
     closeBotSetup()
   }
 
-  const handleStartLocalMatch = () => {
-    if (redirectToActiveGame()) {
-      return
-    }
-
-    const gameId = createRandomGameId(readStoredMatchIds())
-    navigate(`/game/${gameId}`, {
-      state: {
-        matchMode: 'local',
-      },
-    })
-  }
-
   if (!isAuthenticated) {
     return (
       <main className={styles.home}>
@@ -198,9 +185,9 @@ export default function Home() {
             <button
               type="button"
               className={styles.secondaryAction}
-              onClick={handleStartLocalMatch}
+              onClick={() => navigate('/practice')}
             >
-              Local Match
+              Practice Board
             </button>
             <Link to="/learn" className={styles.ghostAction}>
               Learn &amp; Train

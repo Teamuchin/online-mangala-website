@@ -72,6 +72,7 @@ function scheduleAnimatedMove({
 }
 
 export function useMangalaGame(initialConfig) {
+  const isPracticeBoard = initialConfig?.matchMode === 'practice'
   const restoredSession =
     typeof window === 'undefined'
       ? null
@@ -81,6 +82,7 @@ export function useMangalaGame(initialConfig) {
   )
   const canCreateFreshMatch = Boolean(initialConfig?.matchMode)
   const shouldRestorePersistedSession = Boolean(
+    !isPracticeBoard &&
     restoredSession &&
       restoredSession.gameId === initialConfig?.gameId &&
       (!initialConfig?.matchMode ||
@@ -176,7 +178,13 @@ export function useMangalaGame(initialConfig) {
   )
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !activeGameId || !activeMatchMode || isUnavailable) {
+    if (
+      typeof window === 'undefined' ||
+      !activeGameId ||
+      !activeMatchMode ||
+      isUnavailable ||
+      isPracticeBoard
+    ) {
       return
     }
 
@@ -197,6 +205,7 @@ export function useMangalaGame(initialConfig) {
     animateMoves,
     botSettings,
     game,
+    isPracticeBoard,
     isUnavailable,
     reviewIndex,
     showVisualStones,

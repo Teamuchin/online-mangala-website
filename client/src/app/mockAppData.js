@@ -136,7 +136,7 @@ export const LOCAL_MATCH_PLAYERS = {
 }
 
 export const HOME_PRIMARY_ACTIONS = [
-  { to: '/game/local', className: 'localbtn', label: 'Local Match' },
+  { to: '/practice', className: 'localbtn', label: 'Practice Board' },
   { to: '/game/local', className: 'offlinebtn', label: 'Play Againist Bots' },
 ]
 

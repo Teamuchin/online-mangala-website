@@ -51,7 +51,7 @@ test('local match players keep the seeded game participants intact', () => {
 
 test('home and banner actions preserve their current routes and labels', () => {
   assert.deepEqual(HOME_PRIMARY_ACTIONS, [
-    { to: '/game/local', className: 'localbtn', label: 'Local Match' },
+    { to: '/practice', className: 'localbtn', label: 'Practice Board' },
     { to: '/game/local', className: 'offlinebtn', label: 'Play Againist Bots' },
   ])
 

@@ -10,6 +10,9 @@ export default function PlayerPanel({
   onResign,
   resignDisabled = false,
   ratingChange = null,
+  showClock = true,
+  showRating = true,
+  showResign = true,
 }) {
   const time = formatTime(player.timeLeft)
   const ratingChangeText =
@@ -22,17 +25,25 @@ export default function PlayerPanel({
       } ${compact ? styles.compactPlayerPanel : ''}`}
     >
       <div className={styles.playerHeader}>
-        <div className={`${styles.playerClock} ${isActive ? styles.activeClock : ''}`}>
-          {time}
-        </div>
-        <button
-          type="button"
-          className={styles.resignButton}
-          onClick={() => onResign?.(side)}
-          disabled={resignDisabled}
-        >
-          Resign
-        </button>
+        {showClock ? (
+          <div className={`${styles.playerClock} ${isActive ? styles.activeClock : ''}`}>
+            {time}
+          </div>
+        ) : (
+          <div className={styles.playerHeaderSpacer} aria-hidden="true" />
+        )}
+        {showResign ? (
+          <button
+            type="button"
+            className={styles.resignButton}
+            onClick={() => onResign?.(side)}
+            disabled={resignDisabled}
+          >
+            Resign
+          </button>
+        ) : (
+          <div className={styles.playerHeaderSpacer} aria-hidden="true" />
+        )}
       </div>
       <div className={styles.playerMeta}>
         <div className={styles.playerTitle}>
@@ -45,20 +56,22 @@ export default function PlayerPanel({
             </Link>
           </h2>
         </div>
-        <div className={styles.playerRatingRow}>
-          <span className={styles.playerRating}>{player.rating}</span>
-          {ratingChangeText && (
-            <span
-              className={`${styles.ratingChange} ${
-                ratingChange > 0
-                  ? styles.positiveRatingChange
-                  : styles.negativeRatingChange
-              }`}
-            >
-              {ratingChangeText}
-            </span>
-          )}
-        </div>
+        {showRating ? (
+          <div className={styles.playerRatingRow}>
+            <span className={styles.playerRating}>{player.rating}</span>
+            {ratingChangeText && (
+              <span
+                className={`${styles.ratingChange} ${
+                  ratingChange > 0
+                    ? styles.positiveRatingChange
+                    : styles.negativeRatingChange
+                }`}
+              >
+                {ratingChangeText}
+              </span>
+            )}
+          </div>
+        ) : null}
       </div>
     </section>
   )

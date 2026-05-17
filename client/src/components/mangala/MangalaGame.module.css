@@ -73,6 +73,11 @@
   margin-bottom: 10px;
 }
 
+.playerHeaderSpacer {
+  min-width: 98px;
+  min-height: 1px;
+}
+
 .playerMeta {
   display: grid;
   grid-template-columns: auto 1fr auto;

@@ -41,6 +41,7 @@ function MangalaGameScreen({ gameId }) {
     recordRatedMatchResult,
   } = useAppData()
   const { setSettingsContent } = useGlobalHeader()
+  const isPracticeBoard = location.pathname === '/practice'
   const seededPlayers = createInitialState().players
   const persistedRouteSession =
     typeof window === 'undefined'
@@ -51,12 +52,14 @@ function MangalaGameScreen({ gameId }) {
   const matchingActiveMatchSummary =
     activeMatchSummary?.gameId === gameId ? activeMatchSummary : null
   const matchMode =
+    (isPracticeBoard ? 'practice' : null) ??
     location.state?.matchMode ??
     matchingPersistedSession?.matchMode ??
     matchingActiveMatchSummary?.matchMode ??
     null
   const isLocalMatch = matchMode === 'local'
   const isComputerMatch = matchMode === 'computer'
+  const isPracticeMode = matchMode === 'practice'
   const botSettings =
     isComputerMatch
       ? location.state?.botSettings ??
@@ -68,7 +71,25 @@ function MangalaGameScreen({ gameId }) {
       ? getBotProfileForDifficulty(publicProfileDirectory, botSettings.difficulty)
       : null
   const initialConfig =
-    matchMode === 'local'
+    matchMode === 'practice'
+      ? {
+          gameId,
+          matchMode: 'practice',
+          initialPlayers: {
+            ...seededPlayers,
+            bottom: {
+              ...seededPlayers.bottom,
+              id: 'practice-player-1',
+              name: 'Player 1',
+            },
+            top: {
+              ...seededPlayers.top,
+              id: 'practice-player-2',
+              name: 'Player 2',
+            },
+          },
+        }
+      : matchMode === 'local'
         ? {
             gameId,
             matchMode: 'local',
@@ -125,13 +146,14 @@ function MangalaGameScreen({ gameId }) {
     handleReplayNext,
     handleReplayPrevious,
     handleResign,
+    handleReset,
     handleStoneToggle,
     markRatingApplied,
   } = useMangalaGame(initialConfig)
 
   const currentUserRole = !isAuthenticated
     ? 'spectator'
-    : isLocalMatch
+    : isPracticeMode || isLocalMatch
       ? 'both'
       : currentUser.id === game.players.bottom.id
         ? 'bottom'
@@ -190,7 +212,7 @@ function MangalaGameScreen({ gameId }) {
 
     navigate(`/game/${nextGameId}`, {
       state: {
-        matchMode: 'local',
+        matchMode: isPracticeMode ? 'practice' : 'local',
       },
     })
   }
@@ -326,9 +348,12 @@ function MangalaGameScreen({ gameId }) {
             resignDisabled={
               isReviewing ||
               game.gameStatus !== 'playing' ||
-              (!isLocalMatch && currentUserRole !== 'top')
+              (!isLocalMatch && !isPracticeMode && currentUserRole !== 'top')
             }
             ratingChange={ratedOutcome?.opponentDelta ?? null}
+            showClock={!isPracticeMode}
+            showRating={!isPracticeMode}
+            showResign={!isPracticeMode}
           />
           <div className={styles.boardColumn}>
             <Board
@@ -355,13 +380,14 @@ function MangalaGameScreen({ gameId }) {
               description={sidebarDescription}
               hasMoves={game.matchRecord.moves.length > 0}
               isReviewing={isReviewing}
-              showReset={game.gameStatus === 'finished'}
+              showReset={isPracticeMode || game.gameStatus === 'finished'}
               onFirst={handleReplayFirst}
               onLast={handleReplayLast}
               onNext={handleReplayNext}
               onPrevious={handleReplayPrevious}
-              onReset={handleRematch}
-              resetDisabled={!canRequestRematch}
+              onReset={isPracticeMode ? handleReset : handleRematch}
+              resetDisabled={isPracticeMode ? false : !canRequestRematch}
+              resetLabel={isPracticeMode ? 'Restart match' : 'Start rematch'}
             />
           </div>
           <PlayerPanel
@@ -373,9 +399,12 @@ function MangalaGameScreen({ gameId }) {
             resignDisabled={
               isReviewing ||
               game.gameStatus !== 'playing' ||
-              (!isLocalMatch && currentUserRole !== 'bottom')
+              (!isLocalMatch && !isPracticeMode && currentUserRole !== 'bottom')
             }
             ratingChange={ratedOutcome?.playerDelta ?? null}
+            showClock={!isPracticeMode}
+            showRating={!isPracticeMode}
+            showResign={!isPracticeMode}
           />
         </section>
       </div>
@@ -387,4 +416,8 @@ export default function MangalaGame() {
   const { gameId } = useParams()
 
   return <MangalaGameScreen key={gameId} gameId={gameId} />
+}
+
+export function PracticeBoardPage() {
+  return <MangalaGameScreen key="practice-board" gameId="practice-board" />
 }
