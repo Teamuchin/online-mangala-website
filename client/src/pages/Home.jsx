@@ -183,7 +183,17 @@ export default function Home() {
         </section>
 
         <section className={styles.contentGrid}>
-          <aside className={styles.playersPanel}>
+          <aside
+            className={`${styles.playersPanel} ${
+              rightPanelTab === 'players' && lobbyPlayers.length === 0
+                ? styles.playersPanelEmpty
+                : ''
+            } ${
+              rightPanelTab === 'players' && lobbyPlayers.length > 0
+                ? styles.playersPanelFilled
+                : ''
+            }`}
+          >
             <div className={styles.panelTabs} role="tablist" aria-label="Lobby side panel">
               <button
                 type="button"
@@ -213,27 +223,33 @@ export default function Home() {
             </div>
 
             {rightPanelTab === 'players' ? (
-              <div className={styles.tableWrap}>
-                <div className={styles.playerTableHeader}>
-                  <span>Player</span>
-                  <span>Rating</span>
+              lobbyPlayers.length > 0 ? (
+                <div className={styles.tableWrap}>
+                  <div className={styles.playerTableHeader}>
+                    <span>Player</span>
+                    <span>Rating</span>
+                  </div>
+                  <div className={styles.playerList}>
+                    {lobbyPlayers.map((player) => (
+                      <Link
+                        key={player.id}
+                        to={`/member/${encodeURIComponent(player.username)}`}
+                        className={styles.playerRow}
+                      >
+                        <span className={styles.playerNameCell}>
+                          <strong className={styles.playerName}>{getDisplayName(player)}</strong>
+                          {player.isBot && <span className={styles.botBadge}>AI</span>}
+                        </span>
+                        <span className={styles.playerRating}>{player.elo ?? '-'}</span>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
-                <div className={styles.playerList}>
-                  {lobbyPlayers.map((player) => (
-                    <Link
-                      key={player.id}
-                      to={`/member/${encodeURIComponent(player.username)}`}
-                      className={styles.playerRow}
-                    >
-                      <span className={styles.playerNameCell}>
-                        <strong className={styles.playerName}>{getDisplayName(player)}</strong>
-                        {player.isBot && <span className={styles.botBadge}>AI</span>}
-                      </span>
-                      <span className={styles.playerRating}>{player.elo ?? '-'}</span>
-                    </Link>
-                  ))}
+              ) : (
+                <div className={styles.emptyPlayersState}>
+                  <strong>No available players right now.</strong>
                 </div>
-              </div>
+              )
             ) : (
               <div className={styles.leaderboardBody}>
                 <div className={styles.tableWrap}>
@@ -273,7 +289,7 @@ export default function Home() {
             <section
               className={`${styles.matchesPanel} ${
                 liveMatches.length === 0 ? styles.matchesPanelEmpty : ''
-              }`}
+              } ${liveMatches.length > 0 ? styles.matchesPanelFilled : ''}`}
             >
               <div className={styles.sectionHeading}>
                 <h2>

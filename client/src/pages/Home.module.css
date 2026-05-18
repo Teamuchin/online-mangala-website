@@ -147,8 +147,7 @@
 .playersPanel {
   grid-template-rows: auto minmax(0, 1fr);
   box-sizing: border-box;
-  height: 420px;
-  max-height: 420px;
+  max-height: 380px;
   min-height: 0;
   overflow: hidden;
 }
@@ -156,11 +155,23 @@
 .matchesPanel {
   grid-template-rows: auto minmax(0, 1fr);
   box-sizing: border-box;
-  height: 420px;
-  max-height: 420px;
   max-width: 390px;
   min-height: 0;
   overflow: hidden;
+}
+
+.playersPanelFilled {
+  max-height: 380px;
+}
+
+.playersPanelEmpty {
+  height: auto;
+  max-height: none;
+  min-height: 0;
+}
+
+.matchesPanelFilled {
+  max-height: 380px;
 }
 
 .matchesPanelEmpty {
@@ -204,12 +215,17 @@
   gap: 6px;
 }
 
-.matchesPanel .tableWrap,
+.matchesPanelFilled .tableWrap,
+.playersPanelFilled .tableWrap,
 .playersPanel .tableWrap {
   min-height: 0;
-  height: 100%;
   align-content: start;
   overflow: hidden;
+}
+
+.playersPanelFilled .tableWrap,
+.matchesPanelFilled .tableWrap {
+  max-height: 320px;
 }
 
 .matchTableHeader,
@@ -346,7 +362,17 @@
   color: rgba(90, 47, 18, 0.82);
 }
 
+.emptyPlayersState {
+  padding: 4px 4px 0;
+  color: rgba(90, 47, 18, 0.82);
+}
+
 .emptyMatchesState strong {
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.emptyPlayersState strong {
   font-size: 0.98rem;
   font-weight: 700;
 }
