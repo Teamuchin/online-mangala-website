@@ -177,12 +177,13 @@
 .playersPanel .tableWrap {
   min-height: 0;
   height: 100%;
-  grid-template-rows: auto minmax(0, 1fr);
+  align-content: start;
   overflow: hidden;
 }
 
 .matchTableHeader,
-.playerTableHeader {
+.playerTableHeader,
+.leaderboardHeader {
   display: grid;
   align-items: center;
   gap: 10px;
@@ -202,14 +203,43 @@
   grid-template-columns: minmax(0, 1fr) 72px 56px;
 }
 
+.leaderboardHeader {
+  grid-template-columns: 28px minmax(0, 1fr) 56px;
+}
+
 .matchList,
-.playerList {
+.playerList,
+.leaderboardList {
   display: grid;
   gap: 6px;
 }
 
 .chatPanel {
   min-height: 240px;
+}
+
+.panelTabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.panelTab {
+  border: 1px solid rgba(121, 70, 35, 0.14);
+  border-radius: 999px;
+  padding: 9px 12px;
+  background: rgba(255, 249, 240, 0.66);
+  color: rgba(90, 47, 18, 0.74);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.panelTabActive {
+  background: rgba(224, 179, 123, 0.76);
+  color: #5a2f12;
+  border-color: rgba(121, 70, 35, 0.22);
 }
 
 .chatBody {
@@ -330,6 +360,17 @@
   align-content: start;
 }
 
+.leaderboardBody {
+  min-height: 0;
+  display: grid;
+  gap: 14px;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.leaderboardBody .tableWrap {
+  min-height: 0;
+}
+
 .playerRow {
   padding: 9px 10px;
   border-radius: 12px;
@@ -337,6 +378,23 @@
   background: rgba(255, 247, 236, 0.66);
   display: grid;
   grid-template-columns: minmax(0, 1fr) 72px 56px;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    transform 150ms ease,
+    box-shadow 150ms ease,
+    border-color 150ms ease;
+}
+
+.leaderboardRow {
+  padding: 9px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(121, 70, 35, 0.12);
+  background: rgba(255, 247, 236, 0.66);
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 56px;
   align-items: center;
   gap: 10px;
   text-decoration: none;
@@ -372,7 +430,10 @@
 }
 
 .playerName,
-.playerRating {
+.playerRating,
+.leaderboardName,
+.leaderboardRating,
+.leaderboardRank {
   color: #5a2f12;
 }
 
@@ -386,6 +447,38 @@
   white-space: nowrap;
   font-size: 0.88rem;
   justify-self: end;
+}
+
+.leaderboardName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.92rem;
+}
+
+.leaderboardRank,
+.leaderboardRating {
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.leaderboardRating {
+  justify-self: end;
+}
+
+.showMoreLink {
+  justify-self: start;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(224, 179, 123, 0.72);
+  color: #5a2f12;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.showMoreLink:hover {
+  background: rgba(224, 179, 123, 0.88);
 }
 
 @media (max-width: 980px) {
@@ -435,7 +528,8 @@
   }
 
   .matchTableHeader,
-  .playerTableHeader {
+  .playerTableHeader,
+  .leaderboardHeader {
     display: none;
   }
 
@@ -445,6 +539,10 @@
 
   .playerRow {
     grid-template-columns: minmax(0, 1fr) 56px;
+  }
+
+  .leaderboardRow {
+    grid-template-columns: 24px minmax(0, 1fr) 56px;
   }
 
   .playerStatusText {

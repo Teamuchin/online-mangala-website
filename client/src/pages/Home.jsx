@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { buildWelcomeMessage } from '../app/appState.js'
+import { buildLeaderboardProfiles } from '../app/leaderboard.js'
 import { useAppData } from '../app/useAppData.js'
 import {
   createRandomGameId,
@@ -89,6 +90,7 @@ export default function Home() {
   const [isBotSetupOpen, setIsBotSetupOpen] = useState(false)
   const [botDifficulty, setBotDifficulty] = useState('1')
   const [botFirstMove, setBotFirstMove] = useState('you')
+  const [rightPanelTab, setRightPanelTab] = useState('players')
   const { activeMatchSummary, currentUser, isAuthenticated, publicProfileDirectory } =
     useAppData()
 
@@ -99,6 +101,11 @@ export default function Home() {
   const liveMatches = useMemo(
     () => buildLiveMatches(activeMatchSummary),
     [activeMatchSummary],
+  )
+  const leaderboardPreview = useMemo(
+    () =>
+      buildLeaderboardProfiles(currentUser, publicProfileDirectory, isAuthenticated).slice(0, 5),
+    [currentUser, isAuthenticated, publicProfileDirectory],
   )
 
   const redirectToActiveGame = () => {
@@ -257,42 +264,92 @@ export default function Home() {
           </section>
 
           <aside className={styles.playersPanel}>
-            <div className={styles.sectionHeading}>
-              <h2>Online Players ({lobbyPlayers.length})</h2>
+            <div className={styles.panelTabs} role="tablist" aria-label="Lobby side panel">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={rightPanelTab === 'players'}
+                className={`${styles.panelTab} ${
+                  rightPanelTab === 'players' ? styles.panelTabActive : ''
+                }`}
+                onClick={() => setRightPanelTab('players')}
+              >
+                Online Players ({lobbyPlayers.length})
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={rightPanelTab === 'leaderboard'}
+                className={`${styles.panelTab} ${
+                  rightPanelTab === 'leaderboard' ? styles.panelTabActive : ''
+                }`}
+                onClick={() => setRightPanelTab('leaderboard')}
+              >
+                Leaderboard
+              </button>
             </div>
 
-            <div className={styles.tableWrap}>
-              <div className={styles.playerTableHeader}>
-                <span>Player</span>
-                <span>Status</span>
-                <span>Rating</span>
+            {rightPanelTab === 'players' ? (
+              <div className={styles.tableWrap}>
+                <div className={styles.playerTableHeader}>
+                  <span>Player</span>
+                  <span>Status</span>
+                  <span>Rating</span>
+                </div>
+                <div className={styles.playerList}>
+                  {lobbyPlayers.map((player) => (
+                    <Link
+                      key={player.id}
+                      to={`/member/${encodeURIComponent(player.username)}`}
+                      className={styles.playerRow}
+                    >
+                      <div className={styles.playerIdentity}>
+                        <span
+                          className={`${styles.presenceDot} ${
+                            player.status === 'playing'
+                              ? styles.presencePlaying
+                              : styles.presenceOnline
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <strong className={styles.playerName}>{player.username}</strong>
+                      </div>
+                      <span className={styles.playerStatusText}>
+                        {formatStatusLabel(player.status)}
+                      </span>
+                      <span className={styles.playerRating}>{player.elo ?? '-'}</span>
+                    </Link>
+                  ))}
+                </div>
               </div>
-              <div className={styles.playerList}>
-                {lobbyPlayers.map((player) => (
-                  <Link
-                    key={player.id}
-                    to={`/member/${encodeURIComponent(player.username)}`}
-                    className={styles.playerRow}
-                  >
-                    <div className={styles.playerIdentity}>
-                      <span
-                        className={`${styles.presenceDot} ${
-                          player.status === 'playing'
-                            ? styles.presencePlaying
-                            : styles.presenceOnline
-                        }`}
-                        aria-hidden="true"
-                      />
-                      <strong className={styles.playerName}>{player.username}</strong>
-                    </div>
-                    <span className={styles.playerStatusText}>
-                      {formatStatusLabel(player.status)}
-                    </span>
-                    <span className={styles.playerRating}>{player.elo ?? '-'}</span>
-                  </Link>
-                ))}
+            ) : (
+              <div className={styles.leaderboardBody}>
+                <div className={styles.tableWrap}>
+                  <div className={styles.leaderboardHeader}>
+                    <span>#</span>
+                    <span>Player</span>
+                    <span>Rating</span>
+                  </div>
+                  <div className={styles.leaderboardList}>
+                    {leaderboardPreview.map((player, index) => (
+                      <Link
+                        key={player.id}
+                        to={`/member/${encodeURIComponent(player.username)}`}
+                        className={styles.leaderboardRow}
+                      >
+                        <span className={styles.leaderboardRank}>{index + 1}</span>
+                        <strong className={styles.leaderboardName}>{player.username}</strong>
+                        <span className={styles.leaderboardRating}>{player.elo ?? '-'}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+
+                <Link to="/leaderboard" className={styles.showMoreLink}>
+                  Show More
+                </Link>
               </div>
-            </div>
+            )}
           </aside>
         </section>
       </section>
