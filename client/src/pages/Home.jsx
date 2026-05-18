@@ -183,49 +183,6 @@ export default function Home() {
         </section>
 
         <section className={styles.contentGrid}>
-          <section className={styles.mainColumn}>
-            <section className={styles.matchesPanel}>
-              <div className={styles.sectionHeading}>
-                <h2>Live Matches</h2>
-              </div>
-
-              {liveMatches.length > 0 ? (
-                <div className={styles.tableWrap}>
-                  <div className={styles.matchTableHeader}>
-                    <span>Player 1</span>
-                    <span>Player 2</span>
-                  </div>
-                  <div className={styles.matchList}>
-                    {liveMatches.map((match) => (
-                      <Link key={match.gameId} to={match.url} className={styles.matchCard}>
-                        <span className={styles.matchPlayerCell}>
-                          <strong className={styles.matchPlayerName}>
-                            {getDisplayName(match.bottom) || 'Bottom Player'}{' '}
-                            <span className={styles.matchInlineRating}>
-                              {match.bottom?.rating ?? '-'}
-                            </span>
-                          </strong>
-                        </span>
-                        <span className={styles.matchPlayerCell}>
-                          <strong className={styles.matchPlayerName}>
-                            {getDisplayName(match.top) || 'Top Player'}{' '}
-                            <span className={styles.matchInlineRating}>
-                              {match.top?.rating ?? '-'}
-                            </span>
-                          </strong>
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className={styles.emptyPanel}>
-                  <strong>No matches</strong>
-                </div>
-              )}
-            </section>
-          </section>
-
           <aside className={styles.playersPanel}>
             <div className={styles.panelTabs} role="tablist" aria-label="Lobby side panel">
               <button
@@ -311,6 +268,58 @@ export default function Home() {
               </div>
             )}
           </aside>
+
+          <section className={styles.mainColumn}>
+            <section
+              className={`${styles.matchesPanel} ${
+                liveMatches.length === 0 ? styles.matchesPanelEmpty : ''
+              }`}
+            >
+              <div className={styles.sectionHeading}>
+                <h2>
+                  <span className={styles.sectionHeadingLabel}>
+                    <span className={styles.liveDot} aria-hidden="true" />
+                    Live Matches ({liveMatches.length})
+                  </span>
+                </h2>
+              </div>
+
+              {liveMatches.length > 0 ? (
+                <div className={styles.tableWrap}>
+                  <div className={styles.matchTableHeader}>
+                    <span>Player 1</span>
+                    <span>Player 2</span>
+                  </div>
+                  <div className={styles.matchList}>
+                    {liveMatches.map((match) => (
+                      <Link key={match.gameId} to={match.url} className={styles.matchCard}>
+                        <span className={styles.matchPlayerCell}>
+                          <strong className={styles.matchPlayerName}>
+                            {getDisplayName(match.bottom) || 'Bottom Player'}{' '}
+                            <span className={styles.matchInlineRating}>
+                              {match.bottom?.rating ?? '-'}
+                            </span>
+                          </strong>
+                        </span>
+                        <span className={styles.matchPlayerCell}>
+                          <strong className={styles.matchPlayerName}>
+                            {getDisplayName(match.top) || 'Top Player'}{' '}
+                            <span className={styles.matchInlineRating}>
+                              {match.top?.rating ?? '-'}
+                            </span>
+                          </strong>
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.emptyMatchesState}>
+                  <strong>No matches right now.</strong>
+                </div>
+              )}
+            </section>
+          </section>
         </section>
       </section>
 

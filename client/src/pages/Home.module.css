@@ -127,7 +127,7 @@
 .contentGrid {
   margin-top: 18px;
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(300px, 0.95fr);
+  grid-template-columns: minmax(275px, 0.78fr) minmax(0, 1.82fr);
   gap: 22px;
   align-items: start;
 }
@@ -147,10 +147,26 @@
 .playersPanel {
   grid-template-rows: auto minmax(0, 1fr);
   box-sizing: border-box;
-  height: 500px;
-  max-height: 500px;
+  height: 420px;
+  max-height: 420px;
   min-height: 0;
   overflow: hidden;
+}
+
+.matchesPanel {
+  grid-template-rows: auto minmax(0, 1fr);
+  box-sizing: border-box;
+  height: 420px;
+  max-height: 420px;
+  max-width: 390px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.matchesPanelEmpty {
+  height: auto;
+  max-height: none;
+  min-height: 0;
 }
 
 .sectionHeading {
@@ -163,8 +179,24 @@
 .sectionHeading h2,
 .sectionHeading h2 {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 0.98rem;
+  font-weight: 700;
   line-height: 1.1;
+}
+
+.sectionHeadingLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.liveDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d44434;
+  box-shadow: 0 0 0 5px rgba(212, 68, 52, 0.12);
+  flex: 0 0 auto;
 }
 
 .tableWrap {
@@ -172,6 +204,7 @@
   gap: 6px;
 }
 
+.matchesPanel .tableWrap,
 .playersPanel .tableWrap {
   min-height: 0;
   height: 100%;
@@ -308,12 +341,59 @@
   font-weight: 700;
 }
 
+.emptyMatchesState {
+  padding: 4px 4px 0;
+  color: rgba(90, 47, 18, 0.82);
+}
+
+.emptyMatchesState strong {
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
 .playerList {
   min-height: 0;
   overflow-y: auto;
   padding-right: 2px;
   padding-bottom: 2px;
   align-content: start;
+}
+
+.matchList {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+  padding-bottom: 2px;
+  align-content: start;
+}
+
+.matchList,
+.playerList {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(121, 70, 35, 0.38) rgba(255, 247, 236, 0.42);
+}
+
+.matchList::-webkit-scrollbar,
+.playerList::-webkit-scrollbar {
+  width: 9px;
+}
+
+.matchList::-webkit-scrollbar-track,
+.playerList::-webkit-scrollbar-track {
+  background: rgba(255, 247, 236, 0.42);
+  border-radius: 999px;
+}
+
+.matchList::-webkit-scrollbar-thumb,
+.playerList::-webkit-scrollbar-thumb {
+  background: rgba(121, 70, 35, 0.38);
+  border-radius: 999px;
+  border: 2px solid rgba(255, 247, 236, 0.42);
+}
+
+.matchList::-webkit-scrollbar-thumb:hover,
+.playerList::-webkit-scrollbar-thumb:hover {
+  background: rgba(121, 70, 35, 0.52);
 }
 
 .leaderboardBody {
