@@ -11,14 +11,6 @@ import {
 import BotSetupModal from './BotSetupModal.jsx'
 import styles from './Home.module.css'
 
-function formatStatusLabel(status) {
-  if (status === 'playing') {
-    return 'Playing'
-  }
-
-  return 'Online'
-}
-
 function buildLobbyPlayers(currentUser, publicProfileDirectory, activeMatchSummary) {
   const seenIds = new Set()
   const participants = new Set(
@@ -43,21 +35,9 @@ function buildLobbyPlayers(currentUser, publicProfileDirectory, activeMatchSumma
         status,
       }
     })
-
-  const statusWeight = {
-    playing: 0,
-    online: 1,
-    bot: 2,
-  }
+    .filter((player) => player.status === 'online')
 
   return players.sort((left, right) => {
-    const weightDifference =
-      (statusWeight[left.status] ?? 99) - (statusWeight[right.status] ?? 99)
-
-    if (weightDifference !== 0) {
-      return weightDifference
-    }
-
     return (right.elo ?? 0) - (left.elo ?? 0)
   })
 }
@@ -104,7 +84,7 @@ export default function Home() {
   )
   const leaderboardPreview = useMemo(
     () =>
-      buildLeaderboardProfiles(currentUser, publicProfileDirectory, isAuthenticated).slice(0, 5),
+      buildLeaderboardProfiles(currentUser, publicProfileDirectory, isAuthenticated).slice(0, 8),
     [currentUser, isAuthenticated, publicProfileDirectory],
   )
 
@@ -274,7 +254,10 @@ export default function Home() {
                 }`}
                 onClick={() => setRightPanelTab('players')}
               >
-                Online Players ({lobbyPlayers.length})
+                <span className={styles.panelTabLabel}>
+                  <span className={styles.availableDot} aria-hidden="true" />
+                  Available Players ({lobbyPlayers.length})
+                </span>
               </button>
               <button
                 type="button"
@@ -293,7 +276,6 @@ export default function Home() {
               <div className={styles.tableWrap}>
                 <div className={styles.playerTableHeader}>
                   <span>Player</span>
-                  <span>Status</span>
                   <span>Rating</span>
                 </div>
                 <div className={styles.playerList}>
@@ -303,20 +285,7 @@ export default function Home() {
                       to={`/member/${encodeURIComponent(player.username)}`}
                       className={styles.playerRow}
                     >
-                      <div className={styles.playerIdentity}>
-                        <span
-                          className={`${styles.presenceDot} ${
-                            player.status === 'playing'
-                              ? styles.presencePlaying
-                              : styles.presenceOnline
-                          }`}
-                          aria-hidden="true"
-                        />
-                        <strong className={styles.playerName}>{player.username}</strong>
-                      </div>
-                      <span className={styles.playerStatusText}>
-                        {formatStatusLabel(player.status)}
-                      </span>
+                      <strong className={styles.playerName}>{player.username}</strong>
                       <span className={styles.playerRating}>{player.elo ?? '-'}</span>
                     </Link>
                   ))}

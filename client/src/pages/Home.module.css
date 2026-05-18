@@ -200,7 +200,7 @@
 }
 
 .playerTableHeader {
-  grid-template-columns: minmax(0, 1fr) 72px 56px;
+  grid-template-columns: minmax(0, 1fr) 56px;
 }
 
 .leaderboardHeader {
@@ -234,6 +234,21 @@
   font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
+}
+
+.panelTabLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.availableDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #45a458;
+  box-shadow: 0 0 0 5px rgba(69, 164, 88, 0.12);
+  flex: 0 0 auto;
 }
 
 .panelTabActive {
@@ -377,7 +392,7 @@
   border: 1px solid rgba(121, 70, 35, 0.12);
   background: rgba(255, 247, 236, 0.66);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 72px 56px;
+  grid-template-columns: minmax(0, 1fr) 56px;
   align-items: center;
   gap: 10px;
   text-decoration: none;
@@ -405,41 +420,12 @@
     border-color 150ms ease;
 }
 
-.playerIdentity {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-
-.presenceDot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex: 0 0 auto;
-}
-
-.presencePlaying {
-  background: #d44434;
-  box-shadow: 0 0 0 6px rgba(212, 68, 52, 0.12);
-}
-
-.presenceOnline {
-  background: #45a458;
-  box-shadow: 0 0 0 6px rgba(69, 164, 88, 0.12);
-}
-
 .playerName,
 .playerRating,
 .leaderboardName,
 .leaderboardRating,
 .leaderboardRank {
   color: #5a2f12;
-}
-
-.playerStatusText {
-  font-size: 0.78rem;
-  color: rgba(90, 47, 18, 0.76);
 }
 
 .playerRating {
@@ -545,7 +531,4 @@
     grid-template-columns: 24px minmax(0, 1fr) 56px;
   }
 
-  .playerStatusText {
-    display: none;
-  }
 }
