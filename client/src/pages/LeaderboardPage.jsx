@@ -1,5 +1,6 @@
 import { Link, useSearchParams } from 'react-router-dom'
 import { buildLeaderboardProfiles, getLeaderboardPageCount, getVisibleLeaderboardPages, LEADERBOARD_PAGE_SIZE } from '../app/leaderboard.js'
+import { getDisplayName } from '../app/playerNames.js'
 import { useAppData } from '../app/useAppData.js'
 import styles from './LeaderboardPage.module.css'
 
@@ -54,7 +55,10 @@ export default function LeaderboardPage() {
                           to={`/member/${encodeURIComponent(player.username)}`}
                           className={styles.playerLink}
                         >
-                          {player.username}
+                          <span className={styles.playerNameCell}>
+                            <span>{getDisplayName(player)}</span>
+                            {player.isBot && <span className={styles.botBadge}>AI</span>}
+                          </span>
                         </Link>
                       </td>
                       <td>{player.elo ?? '-'}</td>

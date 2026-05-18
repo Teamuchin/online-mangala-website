@@ -115,6 +115,18 @@
   text-decoration: underline;
 }
 
+.inlineBotBadge {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 2px 6px;
+  background: rgba(90, 47, 18, 0.1);
+  color: rgba(90, 47, 18, 0.8);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .opponentMeta,
 .ratingCell {
   display: inline-flex;

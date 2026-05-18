@@ -61,28 +61,34 @@
 .identityBlock {
   display: flex;
   align-items: center;
-  gap: 16px;
-}
-
-.statusDot {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  flex: 0 0 auto;
-}
-
-.online {
-  background: #3ea733;
-}
-
-.offline {
-  background: #8d826f;
+  gap: 12px;
 }
 
 .identityText h1 {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   margin: 0;
   font-size: clamp(2.2rem, 5vw, 3.2rem);
   line-height: 1;
+}
+
+.botBadge,
+.inlineBotBadge {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: rgba(90, 47, 18, 0.1);
+  color: rgba(90, 47, 18, 0.8);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.inlineBotBadge {
+  padding: 2px 6px;
+  font-size: 0.66rem;
 }
 
 .metaRow {

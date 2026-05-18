@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { buildWelcomeMessage } from '../app/appState.js'
 import { buildLeaderboardProfiles } from '../app/leaderboard.js'
+import { getDisplayName } from '../app/playerNames.js'
 import { useAppData } from '../app/useAppData.js'
 import {
   createRandomGameId,
@@ -199,7 +200,7 @@ export default function Home() {
                       <Link key={match.gameId} to={match.url} className={styles.matchCard}>
                         <span className={styles.matchPlayerCell}>
                           <strong className={styles.matchPlayerName}>
-                            {match.bottom?.name ?? 'Bottom Player'}{' '}
+                            {getDisplayName(match.bottom) || 'Bottom Player'}{' '}
                             <span className={styles.matchInlineRating}>
                               {match.bottom?.rating ?? '-'}
                             </span>
@@ -207,7 +208,7 @@ export default function Home() {
                         </span>
                         <span className={styles.matchPlayerCell}>
                           <strong className={styles.matchPlayerName}>
-                            {match.top?.name ?? 'Top Player'}{' '}
+                            {getDisplayName(match.top) || 'Top Player'}{' '}
                             <span className={styles.matchInlineRating}>
                               {match.top?.rating ?? '-'}
                             </span>
@@ -267,7 +268,10 @@ export default function Home() {
                       to={`/member/${encodeURIComponent(player.username)}`}
                       className={styles.playerRow}
                     >
-                      <strong className={styles.playerName}>{player.username}</strong>
+                      <span className={styles.playerNameCell}>
+                        <strong className={styles.playerName}>{getDisplayName(player)}</strong>
+                        {player.isBot && <span className={styles.botBadge}>AI</span>}
+                      </span>
                       <span className={styles.playerRating}>{player.elo ?? '-'}</span>
                     </Link>
                   ))}
@@ -289,7 +293,12 @@ export default function Home() {
                         className={styles.leaderboardRow}
                       >
                         <span className={styles.leaderboardRank}>{index + 1}</span>
-                        <strong className={styles.leaderboardName}>{player.username}</strong>
+                        <span className={styles.leaderboardNameCell}>
+                          <strong className={styles.leaderboardName}>
+                            {getDisplayName(player)}
+                          </strong>
+                          {player.isBot && <span className={styles.botBadge}>AI</span>}
+                        </span>
                         <span className={styles.leaderboardRating}>{player.elo ?? '-'}</span>
                       </Link>
                     ))}

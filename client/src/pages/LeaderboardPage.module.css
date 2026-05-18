@@ -99,6 +99,24 @@
   text-decoration: underline;
 }
 
+.playerNameCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.botBadge {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 2px 6px;
+  background: rgba(90, 47, 18, 0.1);
+  color: rgba(90, 47, 18, 0.78);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .emptyCell {
   text-align: center !important;
   font-weight: 700;

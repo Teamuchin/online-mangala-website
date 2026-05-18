@@ -1,5 +1,6 @@
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { isGuestUser } from '../app/appState.js'
+import { getDisplayName } from '../app/playerNames.js'
 import { useAppData } from '../app/useAppData.js'
 import { readStoredMatchSessionByGameId } from '../components/mangala/gamePersistence.js'
 import styles from './ProfileGamesPage.module.css'
@@ -121,6 +122,16 @@ function resolveProfile(publicProfileDirectory, currentUser, username) {
   )
 }
 
+function resolveOpponentProfile(publicProfileDirectory, currentUser, opponentName) {
+  if (currentUser.username === opponentName) {
+    return currentUser
+  }
+
+  return (
+    publicProfileDirectory.find((profile) => profile.username === opponentName) ?? null
+  )
+}
+
 export default function ProfileGamesPage() {
   const { username } = useParams()
   const navigate = useNavigate()
@@ -207,20 +218,35 @@ export default function ProfileGamesPage() {
               <tbody>
                 {pagedMatches.length > 0 ? (
                   pagedMatches.map((match) => (
-                    <tr
-                      key={match.id}
-                      className={styles.clickableHistoryRow}
-                      onClick={() => navigate(`/game/${match.id}`)}
-                    >
-                      <td>
-                        <div className={styles.opponentCell}>
-                          <Link
-                            to={`/member/${encodeURIComponent(match.opponent)}`}
-                            className={styles.matchLink}
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            {match.opponent}
-                          </Link>
+                    (() => {
+                      const opponentProfile = resolveOpponentProfile(
+                        publicProfileDirectory,
+                        currentUser,
+                        match.opponent,
+                      )
+                      const opponentRouteName = opponentProfile?.username ?? match.opponent
+                      const opponentDisplayName = opponentProfile
+                        ? getDisplayName(opponentProfile)
+                        : match.opponent
+
+                      return (
+                        <tr
+                          key={match.id}
+                          className={styles.clickableHistoryRow}
+                          onClick={() => navigate(`/game/${match.id}`)}
+                        >
+                          <td>
+                            <div className={styles.opponentCell}>
+                              <Link
+                                to={`/member/${encodeURIComponent(opponentRouteName)}`}
+                                className={styles.matchLink}
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                {opponentDisplayName}
+                              </Link>
+                              {opponentProfile?.isBot && (
+                                <span className={styles.inlineBotBadge}>AI</span>
+                              )}
                           {typeof match.opponentRating === 'number' && (
                             <span className={styles.opponentMeta}>
                               {match.opponentRating}
@@ -237,31 +263,33 @@ export default function ProfileGamesPage() {
                               )}
                             </span>
                           )}
-                        </div>
-                      </td>
-                      <td>
-                        <span className={getResultClassName(styles, match.result)}>
-                          {match.result}
-                        </span>
-                      </td>
-                      <td>
-                        <div className={styles.ratingCell}>
-                          <span>{getPlayerHistoryRating(match)}</span>
-                          {typeof match.ratingDelta === 'number' && !match.isLive && (
-                            <span
-                              className={
-                                match.ratingDelta >= 0
-                                  ? styles.positiveChange
-                                  : styles.negativeChange
-                              }
-                            >
-                              {formatRatingDelta(match.ratingDelta)}
+                            </div>
+                          </td>
+                          <td>
+                            <span className={getResultClassName(styles, match.result)}>
+                              {match.result}
                             </span>
-                          )}
-                        </div>
-                      </td>
-                      <td>{formatDateLabel(match.playedAt)}</td>
-                    </tr>
+                          </td>
+                          <td>
+                            <div className={styles.ratingCell}>
+                              <span>{getPlayerHistoryRating(match)}</span>
+                              {typeof match.ratingDelta === 'number' && !match.isLive && (
+                                <span
+                                  className={
+                                    match.ratingDelta >= 0
+                                      ? styles.positiveChange
+                                      : styles.negativeChange
+                                  }
+                                >
+                                  {formatRatingDelta(match.ratingDelta)}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td>{formatDateLabel(match.playedAt)}</td>
+                        </tr>
+                      )
+                    })()
                   ))
                 ) : (
                   <tr>

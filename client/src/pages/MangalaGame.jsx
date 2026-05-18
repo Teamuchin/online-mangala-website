@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { getDisplayName } from '../app/playerNames.js'
 import { buildRatedMatchOutcome } from '../app/rating.js'
 import { useAppData } from '../app/useAppData.js'
 import { useGlobalHeader } from '../app/useGlobalHeader.js'
@@ -95,13 +96,14 @@ function MangalaGameScreen({ gameId }) {
             matchMode: 'local',
             initialPlayers: {
             ...seededPlayers,
-            bottom: {
-              ...seededPlayers.bottom,
-              id: currentUser.id,
-              name: currentUser.username,
-              rating: currentUser.elo ?? seededPlayers.bottom.rating,
+              bottom: {
+                ...seededPlayers.bottom,
+                id: currentUser.id,
+                name: currentUser.username,
+                username: currentUser.username,
+                rating: currentUser.elo ?? seededPlayers.bottom.rating,
+              },
             },
-          },
         }
       : botSettings
         ? {
@@ -115,11 +117,14 @@ function MangalaGameScreen({ gameId }) {
                 ...seededPlayers.bottom,
                 id: currentUser.id,
                 name: currentUser.username,
+                username: currentUser.username,
                 rating: currentUser.elo ?? seededPlayers.bottom.rating,
               },
               top: {
                 id: selectedBotProfile?.id ?? 'bot-deniz',
                 name: selectedBotProfile?.username ?? 'deniz-bot',
+                username: selectedBotProfile?.username ?? 'deniz-bot',
+                displayName: selectedBotProfile?.displayName ?? getDisplayName(selectedBotProfile),
                 rating: selectedBotProfile?.elo ?? 1000,
                 timeLeft: 300,
                 isBot: true,
