@@ -223,24 +223,6 @@ export default function Home() {
                 </div>
               )}
             </section>
-
-            <section className={styles.chatPanel}>
-              <div className={styles.chatBody}>
-                <div className={styles.chatMessages} />
-                <div className={styles.chatComposer}>
-                  <input
-                    type="text"
-                    value=""
-                    readOnly
-                    placeholder=""
-                    className={styles.chatInput}
-                  />
-                  <button type="button" className={styles.chatSendButton} disabled>
-                    Send
-                  </button>
-                </div>
-              </div>
-            </section>
           </section>
 
           <aside className={styles.playersPanel}>

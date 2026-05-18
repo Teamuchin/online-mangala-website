@@ -23,7 +23,6 @@
 .guestHero,
 .heroPanel,
 .matchesPanel,
-.chatPanel,
 .playersPanel,
 .emptyPanel {
   border: 1px solid rgba(121, 70, 35, 0.1);
@@ -139,8 +138,7 @@
 }
 
 .matchesPanel,
-.playersPanel,
-.chatPanel {
+.playersPanel {
   padding: 20px;
   display: grid;
   gap: 18px;
@@ -214,10 +212,6 @@
   gap: 6px;
 }
 
-.chatPanel {
-  min-height: 240px;
-}
-
 .panelTabs {
   display: flex;
   gap: 8px;
@@ -255,59 +249,6 @@
   background: rgba(224, 179, 123, 0.76);
   color: #5a2f12;
   border-color: rgba(121, 70, 35, 0.22);
-}
-
-.chatBody {
-  display: grid;
-  gap: 10px;
-  min-height: 0;
-  width: 100%;
-  justify-items: stretch;
-}
-
-.chatMessages {
-  min-height: 150px;
-  width: 100%;
-  justify-self: stretch;
-  border-radius: 16px;
-  border: 1px solid rgba(121, 70, 35, 0.12);
-  background: rgba(255, 247, 236, 0.66);
-  padding: 14px;
-  display: flex;
-  align-items: flex-start;
-}
-
-.chatComposer {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
-}
-
-.chatInput {
-  width: 100%;
-  border: 1px solid rgba(121, 70, 35, 0.18);
-  border-radius: 12px;
-  padding: 9px 12px;
-  background: rgba(255, 249, 240, 0.74);
-  color: #5a2f12;
-  font: inherit;
-  font-size: 0.92rem;
-}
-
-.chatInput::placeholder {
-  color: rgba(90, 47, 18, 0.5);
-}
-
-.chatSendButton {
-  border: 1px solid rgba(121, 70, 35, 0.12);
-  border-radius: 12px;
-  padding: 0 14px;
-  background: rgba(224, 179, 123, 0.72);
-  color: rgba(90, 47, 18, 0.58);
-  font: inherit;
-  font-weight: 700;
-  font-size: 0.9rem;
-  cursor: not-allowed;
 }
 
 .matchCard {
@@ -496,10 +437,6 @@
   .heroPanel {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .chatComposer {
-    grid-template-columns: 1fr;
   }
 
   .primaryAction,
