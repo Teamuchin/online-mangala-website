@@ -17,19 +17,6 @@ import { buildReplayDescription } from '../components/mangala/matchRecord.js'
 import { useMangalaGame } from '../components/mangala/useMangalaGame.js'
 import styles from '../components/mangala/MangalaGame.module.css'
 
-function getBotProfileForDifficulty(publicProfileDirectory, difficulty) {
-  const botIdsByDifficulty = {
-    1: 'bot-deniz',
-    2: 'bot-toprak',
-    3: 'bot-ruzgar',
-    4: 'bot-alev',
-  }
-
-  return publicProfileDirectory.find(
-    (profile) => profile.id === botIdsByDifficulty[difficulty],
-  ) ?? null
-}
-
 function MangalaGameScreen({ gameId }) {
   const location = useLocation()
   const navigate = useNavigate()
@@ -37,7 +24,6 @@ function MangalaGameScreen({ gameId }) {
     activeMatchSummary,
     currentUser,
     isAuthenticated,
-    publicProfileDirectory,
     recordPublicProfileMatchResult,
     recordRatedMatchResult,
   } = useAppData()
@@ -60,16 +46,19 @@ function MangalaGameScreen({ gameId }) {
     null
   const isLocalMatch = matchMode === 'local'
   const isComputerMatch = matchMode === 'computer'
+  const isOnlineMatch = matchMode === 'online'
   const isPracticeMode = matchMode === 'practice'
+  const queueSettings =
+    isComputerMatch || isOnlineMatch
+      ? location.state?.queueSettings ??
+        matchingPersistedSession?.queueSettings ??
+        null
+      : null
   const botSettings =
     isComputerMatch
       ? location.state?.botSettings ??
         matchingPersistedSession?.botSettings ??
         null
-      : null
-  const selectedBotProfile =
-    botSettings?.difficulty
-      ? getBotProfileForDifficulty(publicProfileDirectory, botSettings.difficulty)
       : null
   const initialConfig =
     matchMode === 'practice'
@@ -105,11 +94,22 @@ function MangalaGameScreen({ gameId }) {
               },
             },
         }
+      : isOnlineMatch
+        ? {
+            gameId,
+            matchMode: 'online',
+            queueSettings,
+            initialPlayers:
+              location.state?.initialPlayers ??
+              matchingPersistedSession?.game?.players ??
+              seededPlayers,
+          }
       : botSettings
         ? {
             gameId,
             matchMode: 'computer',
             botSettings,
+            queueSettings,
             initialCurrentPlayer: location.state?.startingPlayer ?? 'bottom',
             initialPlayers: {
               ...seededPlayers,
@@ -121,11 +121,13 @@ function MangalaGameScreen({ gameId }) {
                 rating: currentUser.elo ?? seededPlayers.bottom.rating,
               },
               top: {
-                id: selectedBotProfile?.id ?? 'bot-deniz',
-                name: selectedBotProfile?.username ?? 'deniz-bot',
-                username: selectedBotProfile?.username ?? 'deniz-bot',
-                displayName: selectedBotProfile?.displayName ?? getDisplayName(selectedBotProfile),
-                rating: selectedBotProfile?.elo ?? 1000,
+                id: location.state?.botProfile?.id ?? 'bot-deniz',
+                name: location.state?.botProfile?.username ?? 'deniz-bot',
+                username: location.state?.botProfile?.username ?? 'deniz-bot',
+                displayName:
+                  location.state?.botProfile?.displayName ??
+                  getDisplayName(location.state?.botProfile),
+                rating: location.state?.botProfile?.elo ?? 1000,
                 timeLeft: 300,
                 isBot: true,
               },
@@ -165,13 +167,15 @@ function MangalaGameScreen({ gameId }) {
         : currentUser.id === game.players.top.id
           ? 'top'
           : 'spectator'
-  const canRequestRematch = currentUserRole !== 'spectator' && Boolean(matchMode)
+  const canRequestRematch =
+    currentUserRole !== 'spectator' && Boolean(matchMode) && !isOnlineMatch
+  const isRatedMatch = Boolean(queueSettings?.rated)
   const ratedOutcome =
-    isComputerMatch && game.gameStatus === 'finished'
+    isRatedMatch && currentUserRole !== 'spectator' && game.gameStatus === 'finished'
       ? buildRatedMatchOutcome(
-          game.players.bottom.rating,
-          game.players.top.rating,
-          game.winner === 'bottom'
+          game.players[currentUserRole].rating,
+          game.players[currentUserRole === 'bottom' ? 'top' : 'bottom'].rating,
+          game.winner === currentUserRole
             ? 'win'
             : game.winner === 'draw'
               ? 'draw'
@@ -208,7 +212,9 @@ function MangalaGameScreen({ gameId }) {
         state: {
           matchMode: 'computer',
           botSettings,
+          queueSettings,
           startingPlayer: nextStartingPlayer,
+          botProfile: location.state?.botProfile ?? null,
         },
       })
 
@@ -254,23 +260,25 @@ function MangalaGameScreen({ gameId }) {
 
   useEffect(() => {
     if (
-      !isComputerMatch ||
-      currentUserRole !== 'bottom' ||
+      !isRatedMatch ||
+      currentUserRole === 'spectator' ||
       game.gameStatus !== 'finished' ||
       game.ratingApplied
     ) {
       return
     }
 
+    const playerSide = currentUserRole
+    const opponentSide = playerSide === 'bottom' ? 'top' : 'bottom'
     const playerResult =
-      game.winner === 'bottom'
+      game.winner === playerSide
         ? 'win'
         : game.winner === 'draw'
           ? 'draw'
           : 'loss'
     const ratedOutcome = buildRatedMatchOutcome(
-      game.players.bottom.rating,
-      game.players.top.rating,
+      game.players[playerSide].rating,
+      game.players[opponentSide].rating,
       playerResult,
     )
     const playedAt = new Date().toISOString()
@@ -278,11 +286,11 @@ function MangalaGameScreen({ gameId }) {
     recordRatedMatchResult({
       gameId,
       playedAt,
-      opponent: game.players.top.name,
-      playerRating: game.players.bottom.rating,
+      opponent: getDisplayName(game.players[opponentSide]) ?? game.players[opponentSide].name,
+      playerRating: game.players[playerSide].rating,
       opponentRating: ratedOutcome.opponentRating,
       opponentRatingDelta: ratedOutcome.opponentDelta,
-      mode: 'Bot',
+      mode: isComputerMatch ? 'Bot' : 'Online',
       result:
         playerResult === 'win'
           ? 'Win'
@@ -292,39 +300,48 @@ function MangalaGameScreen({ gameId }) {
       ratingAfter: ratedOutcome.playerRating,
       ratingDelta: ratedOutcome.playerDelta,
     })
-    recordPublicProfileMatchResult(game.players.top.id, {
-      gameId,
-      playedAt,
-      opponent: game.players.bottom.name,
-      playerRating: game.players.top.rating,
-      opponentRating: game.players.bottom.rating,
-      opponentRatingDelta: ratedOutcome.playerDelta,
-      mode: 'Bot',
-      result:
-        playerResult === 'win'
-          ? 'Loss'
-          : playerResult === 'draw'
-            ? 'Draw'
-            : 'Win',
-      ratingAfter: ratedOutcome.opponentRating,
-      ratingDelta: ratedOutcome.opponentDelta,
-    })
+
+    if (game.players[opponentSide].id !== currentUser.id) {
+      recordPublicProfileMatchResult(game.players[opponentSide].id, {
+        gameId,
+        playedAt,
+        opponent: getDisplayName(game.players[playerSide]) ?? game.players[playerSide].name,
+        playerRating: game.players[opponentSide].rating,
+        opponentRating: game.players[playerSide].rating,
+        opponentRatingDelta: ratedOutcome.playerDelta,
+        mode: isComputerMatch ? 'Bot' : 'Online',
+        result:
+          playerResult === 'win'
+            ? 'Loss'
+            : playerResult === 'draw'
+              ? 'Draw'
+              : 'Win',
+        ratingAfter: ratedOutcome.opponentRating,
+        ratingDelta: ratedOutcome.opponentDelta,
+      })
+    }
     markRatingApplied()
   }, [
     currentUserRole,
     game.gameStatus,
+    game.players,
     game.players.bottom.rating,
     game.players.bottom.name,
+    game.players.bottom.displayName,
+    game.players.bottom.id,
     game.players.top.rating,
     game.players.top.id,
     game.ratingApplied,
     game.winner,
     game.players.top.name,
+    game.players.top.displayName,
     gameId,
     isComputerMatch,
+    isRatedMatch,
     markRatingApplied,
     recordPublicProfileMatchResult,
     recordRatedMatchResult,
+    currentUser.id,
   ])
 
   if (isUnavailable) {
@@ -375,6 +392,8 @@ function MangalaGameScreen({ gameId }) {
                   ? '__none__'
                   : isComputerMatch
                     ? 'bottom'
+                    : isOnlineMatch
+                      ? currentUserRole
                     : null
               }
               onPitClick={handlePitClick}

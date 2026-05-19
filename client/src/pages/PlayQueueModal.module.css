@@ -1,0 +1,193 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(44, 20, 6, 0.42);
+  z-index: 50;
+}
+
+.modal {
+  width: min(560px, 100%);
+  display: grid;
+  gap: 24px;
+  border-radius: 24px;
+  padding: 28px;
+  background: rgba(255, 247, 235, 0.98);
+  color: #5a2f12;
+  box-shadow: 0 24px 50px rgba(44, 20, 6, 0.22);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.78;
+}
+
+.header h2 {
+  margin: 6px 0 0;
+  font-size: 2rem;
+}
+
+.closeButton,
+.optionButton,
+.startButton,
+.cancelButton {
+  border: none;
+  cursor: pointer;
+}
+
+.closeButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  padding: 0;
+  font-size: 1.8rem;
+  line-height: 1;
+  color: #5a2f12;
+  background: rgba(224, 179, 123, 0.22);
+}
+
+.section {
+  display: grid;
+  gap: 12px;
+}
+
+.label {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.segmentedControl {
+  display: flex;
+  align-items: stretch;
+}
+
+.optionButton {
+  min-width: 88px;
+  flex: 1 1 0;
+  border: 1px solid rgba(90, 47, 18, 0.14);
+  margin-left: -1px;
+  padding: 14px 18px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #5a2f12;
+  background: rgba(189, 139, 89, 0.18);
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.optionButton:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.optionButton:hover:not(.optionButtonActive):not(:disabled) {
+  background: rgba(170, 126, 83, 0.34);
+  border-color: rgba(90, 47, 18, 0.24);
+}
+
+.optionButtonActive {
+  color: #fff7ee;
+  background: #8a4020;
+  border-color: #8a4020;
+  position: relative;
+  z-index: 1;
+}
+
+.segmentStart {
+  margin-left: 0;
+  border-radius: 16px 0 0 16px;
+}
+
+.segmentEnd {
+  border-radius: 0 16px 16px 0;
+}
+
+.queueState {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding-top: 8px;
+}
+
+.queueStatus {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.queueHint {
+  margin: 0;
+  font-size: 0.92rem;
+  color: rgba(90, 47, 18, 0.76);
+}
+
+.queueTimer {
+  min-width: 112px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 800;
+  background: rgba(224, 179, 123, 0.24);
+}
+
+.startButton,
+.cancelButton {
+  justify-self: center;
+  min-width: 160px;
+  margin-top: 8px;
+  border-radius: 999px;
+  padding: 11px 22px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff7ee;
+  background: #8a4020;
+}
+
+.cancelButton {
+  background: rgba(90, 47, 18, 0.92);
+}
+
+@media (max-width: 640px) {
+  .modal {
+    padding: 22px 18px;
+  }
+
+  .header {
+    flex-direction: column;
+  }
+
+  .segmentedControl {
+    flex-direction: column;
+  }
+
+  .optionButton {
+    margin-left: 0;
+    margin-top: -1px;
+  }
+
+  .segmentStart {
+    border-radius: 16px 16px 0 0;
+  }
+
+  .segmentEnd {
+    border-radius: 0 0 16px 16px;
+  }
+}

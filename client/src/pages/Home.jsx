@@ -1,7 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { buildWelcomeMessage } from '../app/appState.js'
 import { buildLeaderboardProfiles } from '../app/leaderboard.js'
+import {
+  buildHumanMatchPayload,
+  buildQueueEntry,
+  findCompatibleHumanEntry,
+  getClosestBotProfile,
+  markHumanQueueMatch,
+  readMatchmakingQueue,
+  removeQueueEntry,
+  upsertQueueEntry,
+} from '../app/matchmaking.js'
 import { getDisplayName } from '../app/playerNames.js'
 import { useAppData } from '../app/useAppData.js'
 import {
@@ -9,8 +19,15 @@ import {
   readStoredMatchIds,
   readStoredMatchSessionByGameId,
 } from '../components/mangala/gamePersistence.js'
-import BotSetupModal from './BotSetupModal.jsx'
+import PlayQueueModal from './PlayQueueModal.jsx'
 import styles from './Home.module.css'
+
+const BOT_FALLBACK_DELAY_MS = 4000
+const HUMAN_ONLY_TIMEOUT_MS = 60_000
+
+function buildQueueStatusText(rated) {
+  return rated ? 'Looking for a rated game...' : 'Looking for an unrated game...'
+}
 
 function buildLobbyPlayers(currentUser, publicProfileDirectory, activeMatchSummary) {
   const seenIds = new Set()
@@ -68,10 +85,15 @@ function buildLiveMatches(activeMatchSummary) {
 
 export default function Home() {
   const navigate = useNavigate()
-  const [isBotSetupOpen, setIsBotSetupOpen] = useState(false)
-  const [botDifficulty, setBotDifficulty] = useState('1')
-  const [botFirstMove, setBotFirstMove] = useState('you')
+  const [isPlayModalOpen, setIsPlayModalOpen] = useState(false)
+  const [queueConfig, setQueueConfig] = useState({ rated: true, allowBots: true })
+  const [queueState, setQueueState] = useState({
+    isSearching: false,
+    elapsedMs: 0,
+    statusText: buildQueueStatusText(true),
+  })
   const [rightPanelTab, setRightPanelTab] = useState('players')
+  const queueStartedAtRef = useRef(null)
   const { activeMatchSummary, currentUser, isAuthenticated, publicProfileDirectory } =
     useAppData()
 
@@ -98,39 +120,185 @@ export default function Home() {
     return false
   }
 
-  const openBotSetup = () => {
+  const openPlayModal = () => {
     if (redirectToActiveGame()) {
       return
     }
 
-    setIsBotSetupOpen(true)
+    setIsPlayModalOpen(true)
   }
 
-  const closeBotSetup = () => setIsBotSetupOpen(false)
+  const resetQueueState = useCallback(() => {
+    queueStartedAtRef.current = null
+    setQueueState({
+      isSearching: false,
+      elapsedMs: 0,
+      statusText: buildQueueStatusText(queueConfig.rated),
+    })
+  }, [queueConfig.rated])
 
-  const handleStartBotMatch = () => {
+  const cancelQueue = useCallback(() => {
+    removeQueueEntry(currentUser.id)
+    resetQueueState()
+  }, [currentUser.id, resetQueueState])
+
+  const closePlayModal = () => {
+    if (queueState.isSearching) {
+      cancelQueue()
+    }
+
+    setIsPlayModalOpen(false)
+  }
+
+  const startBotMatch = useCallback((rated) => {
+    const selectedBotProfile = getClosestBotProfile(publicProfileDirectory, currentUser.elo ?? 1200)
+
+    if (!selectedBotProfile) {
+      resetQueueState()
+      setIsPlayModalOpen(false)
+      return
+    }
+
     const gameId = createRandomGameId(readStoredMatchIds())
-    const startingPlayer =
-      botFirstMove === 'random'
-        ? Math.random() < 0.5
-          ? 'bottom'
-          : 'top'
-        : botFirstMove === 'computer'
-          ? 'top'
-          : 'bottom'
+    const bottomStarts = Math.random() < 0.5
+
+    removeQueueEntry(currentUser.id)
+    resetQueueState()
+    setIsPlayModalOpen(false)
 
     navigate(`/game/${gameId}`, {
       state: {
         botSettings: {
-          difficulty: Number(botDifficulty),
-          firstMove: botFirstMove,
+          difficulty:
+            selectedBotProfile.id === 'bot-alev'
+              ? 4
+              : selectedBotProfile.id === 'bot-ruzgar'
+                ? 3
+                : selectedBotProfile.id === 'bot-toprak'
+                  ? 2
+                  : 1,
+          firstMove: 'random',
         },
+        botProfile: selectedBotProfile,
         matchMode: 'computer',
-        startingPlayer,
+        queueSettings: {
+          rated,
+          allowBots: true,
+        },
+        startingPlayer: bottomStarts ? 'bottom' : 'top',
       },
     })
-    closeBotSetup()
+  }, [currentUser.elo, currentUser.id, navigate, publicProfileDirectory, resetQueueState])
+
+  const startHumanMatch = useCallback((matchedEntry) => {
+    const queueEntry = buildQueueEntry(currentUser, queueConfig)
+    const gameId = createRandomGameId(readStoredMatchIds())
+    const matchPayload = buildHumanMatchPayload(queueEntry, matchedEntry, gameId)
+
+    markHumanQueueMatch(queueEntry, matchedEntry, matchPayload)
+  }, [currentUser, queueConfig])
+
+  const attemptHumanMatch = useCallback(() => {
+    const queueEntry = buildQueueEntry(currentUser, queueConfig)
+    const queuedPlayers = readMatchmakingQueue()
+    const matchedEntry = findCompatibleHumanEntry(queuedPlayers, queueEntry)
+
+    if (!matchedEntry) {
+      return false
+    }
+
+    startHumanMatch(matchedEntry)
+    return true
+  }, [currentUser, queueConfig, startHumanMatch])
+
+  const handleStartQueue = () => {
+    const queueEntry = buildQueueEntry(currentUser, queueConfig)
+
+    upsertQueueEntry(queueEntry)
+    queueStartedAtRef.current = queueEntry.joinedAt
+    setQueueState({
+      isSearching: true,
+      elapsedMs: 0,
+      statusText: buildQueueStatusText(queueConfig.rated),
+    })
+
+    attemptHumanMatch()
   }
+
+  useEffect(() => {
+    if (!queueState.isSearching) {
+      return undefined
+    }
+
+    const processQueue = () => {
+      const queueEntries = readMatchmakingQueue()
+      const currentEntry = queueEntries.find((entry) => entry.userId === currentUser.id)
+
+      if (!currentEntry) {
+        resetQueueState()
+        return
+      }
+
+      const elapsedMs = Date.now() - (queueStartedAtRef.current ?? currentEntry.joinedAt ?? Date.now())
+      setQueueState((existingState) => ({
+        ...existingState,
+        elapsedMs,
+      }))
+
+      if (currentEntry.status === 'matched' && currentEntry.gameId && currentEntry.players) {
+        removeQueueEntry(currentUser.id)
+        resetQueueState()
+        setIsPlayModalOpen(false)
+        navigate(`/game/${currentEntry.gameId}`, {
+          state: {
+            matchMode: 'online',
+            initialPlayers: currentEntry.players,
+            queueSettings: {
+              rated: currentEntry.rated,
+              allowBots: currentEntry.allowBots,
+            },
+          },
+        })
+        return
+      }
+
+      if (attemptHumanMatch()) {
+        return
+      }
+
+      if (queueConfig.allowBots && elapsedMs >= BOT_FALLBACK_DELAY_MS) {
+        startBotMatch(queueConfig.rated)
+        return
+      }
+
+      if (!queueConfig.allowBots && elapsedMs >= HUMAN_ONLY_TIMEOUT_MS) {
+        cancelQueue()
+        setIsPlayModalOpen(false)
+      }
+    }
+
+    processQueue()
+    const intervalId = window.setInterval(processQueue, 300)
+    const handleBeforeUnload = () => {
+      removeQueueEntry(currentUser.id)
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      window.clearInterval(intervalId)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [
+    attemptHumanMatch,
+    cancelQueue,
+    currentUser.id,
+    navigate,
+    queueConfig,
+    queueState.isSearching,
+    resetQueueState,
+    startBotMatch,
+  ])
 
   if (!isAuthenticated) {
     return (
@@ -165,9 +333,9 @@ export default function Home() {
             <button
               type="button"
               className={styles.primaryAction}
-              onClick={activeMatchSummary?.isActive ? redirectToActiveGame : openBotSetup}
+              onClick={activeMatchSummary?.isActive ? redirectToActiveGame : openPlayModal}
             >
-              {activeMatchSummary?.isActive ? 'Resume Current Game' : 'Play Against Bots'}
+              {activeMatchSummary?.isActive ? 'Resume Current Game' : 'Play'}
             </button>
             <button
               type="button"
@@ -339,14 +507,27 @@ export default function Home() {
         </section>
       </section>
 
-      {isBotSetupOpen && (
-        <BotSetupModal
-          difficulty={botDifficulty}
-          firstMove={botFirstMove}
-          onClose={closeBotSetup}
-          onDifficultyChange={setBotDifficulty}
-          onFirstMoveChange={setBotFirstMove}
-          onStart={handleStartBotMatch}
+      {isPlayModalOpen && (
+        <PlayQueueModal
+          allowBots={queueConfig.allowBots}
+          elapsedMs={queueState.elapsedMs}
+          isQueueing={queueState.isSearching}
+          onAllowBotsChange={(allowBots) =>
+            setQueueConfig((existingConfig) => ({
+              ...existingConfig,
+              allowBots,
+            }))
+          }
+          onClose={closePlayModal}
+          onRatedChange={(rated) =>
+            setQueueConfig((existingConfig) => ({
+              ...existingConfig,
+              rated,
+            }))
+          }
+          onStart={handleStartQueue}
+          queueStatusText={queueState.statusText}
+          rated={queueConfig.rated}
         />
       )}
     </main>

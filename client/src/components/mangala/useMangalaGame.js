@@ -96,6 +96,9 @@ export function useMangalaGame(initialConfig) {
   const botSettings = shouldRestorePersistedSession
     ? restoredSession?.botSettings ?? initialConfig?.botSettings ?? null
     : initialConfig?.botSettings ?? null
+  const queueSettings = shouldRestorePersistedSession
+    ? restoredSession?.queueSettings ?? initialConfig?.queueSettings ?? null
+    : initialConfig?.queueSettings ?? null
 
   const [game, setGame] = useState(() =>
     shouldRestorePersistedSession
@@ -196,6 +199,7 @@ export function useMangalaGame(initialConfig) {
       reviewIndex,
       matchMode: activeMatchMode,
       botSettings,
+      queueSettings,
     })
 
     writePersistedMatchSession(session)
@@ -204,6 +208,7 @@ export function useMangalaGame(initialConfig) {
     activeMatchMode,
     animateMoves,
     botSettings,
+    queueSettings,
     game,
     isPracticeBoard,
     isUnavailable,

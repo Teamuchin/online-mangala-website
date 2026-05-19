@@ -20,6 +20,7 @@ export function buildPersistedMatchSession({
   reviewIndex,
   matchMode,
   botSettings,
+  queueSettings,
 }) {
   return {
     version: STORAGE_VERSION,
@@ -30,6 +31,7 @@ export function buildPersistedMatchSession({
     reviewIndex,
     matchMode,
     botSettings,
+    queueSettings,
   }
 }
 
