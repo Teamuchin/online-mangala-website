@@ -24,6 +24,7 @@ function MangalaGameScreen({ gameId }) {
     activeMatchSummary,
     currentUser,
     isAuthenticated,
+    recordMatchHistoryResult,
     recordPublicProfileMatchResult,
     recordRatedMatchResult,
   } = useAppData()
@@ -260,7 +261,7 @@ function MangalaGameScreen({ gameId }) {
 
   useEffect(() => {
     if (
-      !isRatedMatch ||
+      (!isRatedMatch && !queueSettings) ||
       currentUserRole === 'spectator' ||
       game.gameStatus !== 'finished' ||
       game.ratingApplied
@@ -282,24 +283,33 @@ function MangalaGameScreen({ gameId }) {
       playerResult,
     )
     const playedAt = new Date().toISOString()
-
-    recordRatedMatchResult({
+    const mode = isComputerMatch ? 'Bot' : 'Online'
+    const currentPlayerPayload = {
       gameId,
       playedAt,
       opponent: getDisplayName(game.players[opponentSide]) ?? game.players[opponentSide].name,
       playerRating: game.players[playerSide].rating,
-      opponentRating: ratedOutcome.opponentRating,
-      opponentRatingDelta: ratedOutcome.opponentDelta,
-      mode: isComputerMatch ? 'Bot' : 'Online',
+      opponentRating: game.players[opponentSide].rating,
+      mode,
       result:
         playerResult === 'win'
           ? 'Win'
           : playerResult === 'draw'
             ? 'Draw'
             : 'Loss',
-      ratingAfter: ratedOutcome.playerRating,
-      ratingDelta: ratedOutcome.playerDelta,
-    })
+    }
+
+    if (isRatedMatch) {
+      recordRatedMatchResult({
+        ...currentPlayerPayload,
+        opponentRating: ratedOutcome.opponentRating,
+        opponentRatingDelta: ratedOutcome.opponentDelta,
+        ratingAfter: ratedOutcome.playerRating,
+        ratingDelta: ratedOutcome.playerDelta,
+      })
+    } else {
+      recordMatchHistoryResult(currentPlayerPayload)
+    }
 
     if (game.players[opponentSide].id !== currentUser.id) {
       recordPublicProfileMatchResult(game.players[opponentSide].id, {
@@ -308,16 +318,20 @@ function MangalaGameScreen({ gameId }) {
         opponent: getDisplayName(game.players[playerSide]) ?? game.players[playerSide].name,
         playerRating: game.players[opponentSide].rating,
         opponentRating: game.players[playerSide].rating,
-        opponentRatingDelta: ratedOutcome.playerDelta,
-        mode: isComputerMatch ? 'Bot' : 'Online',
+        mode,
         result:
           playerResult === 'win'
             ? 'Loss'
             : playerResult === 'draw'
               ? 'Draw'
               : 'Win',
-        ratingAfter: ratedOutcome.opponentRating,
-        ratingDelta: ratedOutcome.opponentDelta,
+        ...(isRatedMatch
+          ? {
+              opponentRatingDelta: ratedOutcome.playerDelta,
+              ratingAfter: ratedOutcome.opponentRating,
+              ratingDelta: ratedOutcome.opponentDelta,
+            }
+          : {}),
       })
     }
     markRatingApplied()
@@ -339,6 +353,8 @@ function MangalaGameScreen({ gameId }) {
     isComputerMatch,
     isRatedMatch,
     markRatingApplied,
+    queueSettings,
+    recordMatchHistoryResult,
     recordPublicProfileMatchResult,
     recordRatedMatchResult,
     currentUser.id,

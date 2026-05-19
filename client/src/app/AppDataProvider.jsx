@@ -5,6 +5,7 @@ import {
   readStoredActiveMatchSummary,
 } from '../components/mangala/gamePersistence.js'
 import {
+  applyMatchHistoryResult,
   applyRatedMatchResult,
   buildAuthenticatedSessionUpdates,
   buildLoggedOutSessionUpdates,
@@ -149,6 +150,16 @@ export function AppDataProvider({ children }) {
     }
   }
 
+  const recordMatchHistoryResult = (matchResult) => {
+    setCurrentUser((existingUser) => applyMatchHistoryResult(existingUser, matchResult))
+
+    if (!isGuestUser(currentUser)) {
+      setRegisteredUser((existingUser) =>
+        applyMatchHistoryResult(existingUser, matchResult),
+      )
+    }
+  }
+
   const recordPublicProfileMatchResult = (profileId, matchResult) => {
     setPublicProfileDirectory((existingProfiles) =>
       existingProfiles.map((profile) =>
@@ -214,6 +225,7 @@ export function AppDataProvider({ children }) {
     logIn,
     logOut,
     publicProfileDirectory,
+    recordMatchHistoryResult,
     recordPublicProfileMatchResult,
     recordRatedMatchResult,
     registerUser,

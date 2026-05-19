@@ -73,6 +73,20 @@ export function buildRatingHistoryEntry({
   }
 }
 
+export function applyMatchHistoryResult(currentUser, matchResult) {
+  const nextMatchHistory = [
+    buildMatchHistoryEntry(matchResult),
+    ...(currentUser.matchHistory ?? []).filter(
+      (existingMatch) => existingMatch.id !== matchResult.gameId,
+    ),
+  ]
+
+  return {
+    ...currentUser,
+    matchHistory: nextMatchHistory,
+  }
+}
+
 export function applyRatedMatchResult(currentUser, matchResult) {
   const nextMatchHistory = [
     buildMatchHistoryEntry(matchResult),
