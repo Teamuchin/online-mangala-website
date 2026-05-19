@@ -48,6 +48,11 @@
   align-items: start;
 }
 
+.playerColumn {
+  display: grid;
+  gap: 12px;
+}
+
 .boardColumn {
   display: grid;
   gap: 16px;
@@ -200,6 +205,26 @@
 .resignButton:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+.postMatchAction {
+  display: grid;
+}
+
+.postMatchButton {
+  width: 100%;
+  border: 2px solid #6f4326;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #5e3820;
+  background: rgba(255, 248, 235, 0.35);
+  cursor: pointer;
+}
+
+.postMatchButton:hover {
+  background: rgba(255, 248, 235, 0.52);
 }
 
 .boardShell {
