@@ -6,6 +6,7 @@ export default function ReplayControls({
   description,
   hasMoves,
   isReviewing,
+  matchTypeLabel = null,
   showReset = false,
   onFirst,
   onPrevious,
@@ -65,9 +66,14 @@ export default function ReplayControls({
       </div>
 
       <div className={styles.replayStatusRow}>
-        <span className={styles.replayMoveLabel}>
-          {activePositionIndex === 0 ? 'Start' : `Move ${activePositionIndex} / ${totalMoves}`}
-        </span>
+        <div className={styles.replayStatusMeta}>
+          <span className={styles.replayMoveLabel}>
+            {activePositionIndex === 0 ? 'Start' : `Move ${activePositionIndex} / ${totalMoves}`}
+          </span>
+          {matchTypeLabel && (
+            <span className={styles.replayMatchTypeBadge}>{matchTypeLabel}</span>
+          )}
+        </div>
       </div>
 
       <p className={styles.replayDescription}>{description}</p>

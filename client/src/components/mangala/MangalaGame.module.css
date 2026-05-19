@@ -540,12 +540,30 @@
   padding: 0 0 2px;
 }
 
+.replayStatusMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .replayMoveLabel {
   font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(94, 56, 32, 0.8);
+}
+
+.replayMatchTypeBadge {
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(90, 47, 18, 0.1);
+  color: rgba(94, 56, 32, 0.82);
 }
 
 .replayDescription {

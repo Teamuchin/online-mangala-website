@@ -171,6 +171,18 @@ function MangalaGameScreen({ gameId }) {
   const canRequestRematch =
     currentUserRole !== 'spectator' && Boolean(matchMode) && !isOnlineMatch
   const isRatedMatch = Boolean(queueSettings?.rated)
+  const showTopResign =
+    !isPracticeMode &&
+    (isLocalMatch || currentUserRole === 'top')
+  const showBottomResign =
+    !isPracticeMode &&
+    (isLocalMatch || currentUserRole === 'bottom')
+  const matchTypeLabel =
+    queueSettings && typeof queueSettings.rated === 'boolean'
+      ? queueSettings.rated
+        ? 'Rated'
+        : 'Unrated'
+      : null
   const ratedOutcome =
     isRatedMatch && currentUserRole !== 'spectator' && game.gameStatus === 'finished'
       ? buildRatedMatchOutcome(
@@ -391,7 +403,7 @@ function MangalaGameScreen({ gameId }) {
             ratingChange={ratedOutcome?.opponentDelta ?? null}
             showClock={!isPracticeMode}
             showRating={!isPracticeMode}
-            showResign={!isPracticeMode}
+            showResign={showTopResign}
           />
           <div className={styles.boardColumn}>
             <Board
@@ -420,6 +432,7 @@ function MangalaGameScreen({ gameId }) {
               description={sidebarDescription}
               hasMoves={game.matchRecord.moves.length > 0}
               isReviewing={isReviewing}
+              matchTypeLabel={matchTypeLabel}
               showReset={isPracticeMode || game.gameStatus === 'finished'}
               onFirst={handleReplayFirst}
               onLast={handleReplayLast}
@@ -444,7 +457,7 @@ function MangalaGameScreen({ gameId }) {
             ratingChange={ratedOutcome?.playerDelta ?? null}
             showClock={!isPracticeMode}
             showRating={!isPracticeMode}
-            showResign={!isPracticeMode}
+            showResign={showBottomResign}
           />
         </section>
       </div>
