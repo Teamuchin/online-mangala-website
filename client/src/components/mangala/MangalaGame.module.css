@@ -609,6 +609,13 @@
 }
 
 @media (max-width: 900px) {
+  .page {
+    height: auto;
+    min-height: calc(100svh - 72px);
+    align-items: start;
+    overflow-y: auto;
+  }
+
   .matchArena {
     grid-template-columns: 1fr;
   }
@@ -631,44 +638,88 @@
   }
 
   .boardShell {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
-    row-gap: 10px;
-  }
-
-  .leftStore,
-  .rightStore,
-  .topPitRow,
-  .bottomPitRow {
-    grid-column: auto;
-    grid-row: auto;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    column-gap: 8px;
+    row-gap: 8px;
+    padding: 14px 10px;
   }
 
   .storeSurface {
-    min-height: 150px;
+    min-height: 190px;
+    padding-top: 32px;
+    padding-bottom: 24px;
   }
-}
 
-@media (max-width: 640px) {
-  .page {
-    padding-inline: 14px;
+  .storeLabel {
+    top: 8px;
+    font-size: 0.74rem;
+    max-width: calc(100% - 8px);
+  }
+
+  .storeTotal {
+    bottom: 6px;
+    font-size: 1rem;
   }
 
   .pitRow {
     gap: 8px;
   }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 14px;
+  }
+
+  .boardShell {
+    column-gap: 6px;
+    row-gap: 6px;
+    padding: 12px 8px;
+  }
+
+  .pitRow {
+    gap: 6px;
+  }
 
   .pitSurface {
-    --stone-size: 13px;
-    --stone-gap: 3px;
+    --stone-size: 9px;
+    --stone-gap: 1px;
     --stone-step: calc(var(--stone-size) + var(--stone-gap));
+    width: 88%;
   }
 
   .storeSurface {
-    --store-stone-size: 13px;
-    --store-stone-gap: 3px;
+    --store-stone-size: 9px;
+    --store-stone-gap: 1px;
     --store-stone-step: calc(var(--store-stone-size) + var(--store-stone-gap));
-    min-height: 150px;
+    min-height: 160px;
+    padding-top: 28px;
+    padding-bottom: 20px;
   }
 
+  .storeLabel {
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+  }
+
+  .storeCountOnly {
+    font-size: clamp(1.4rem, 7vw, 2rem);
+  }
+
+  .stone,
+  .storeStone {
+    border-width: 0;
+  }
+
+  .movedStone::after,
+  .finalStone::after {
+    width: 4px;
+    height: 4px;
+  }
+
+  .stoneRow,
+  .storeRow {
+    width: 56%;
+  }
 }

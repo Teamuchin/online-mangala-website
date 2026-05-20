@@ -5,7 +5,6 @@ import styles from './MangalaGame.module.css'
 export default function Store({
   className = '',
   count,
-  label,
   showVisualStones,
   movedCount,
   isFinalTarget,
@@ -19,7 +18,6 @@ export default function Store({
     >
       {showVisualStones ? (
         <div className={styles.storeSurface}>
-          <span className={styles.storeLabel}>{label}</span>
           <StoneRows
             rows={rows}
             stoneStates={stoneStates}
@@ -30,7 +28,6 @@ export default function Store({
         </div>
       ) : (
         <div className={`${styles.storeSurface} ${styles.storeSurfaceHidden}`}>
-          <span className={styles.storeLabel}>{label}</span>
           <span className={styles.storeCountOnly}>{count}</span>
         </div>
       )}

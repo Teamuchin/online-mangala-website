@@ -1,10 +1,11 @@
 .home {
   width: 100%;
-  min-height: calc(100vh - 72px);
+  min-height: calc(100svh - 73px);
   background:
     radial-gradient(circle at top, rgba(255, 233, 204, 0.94), transparent 34%),
     linear-gradient(180deg, #f8d9b6 0%, #efc093 48%, #ca8957 100%);
   color: #5a2f12;
+  overflow: hidden;
 }
 
 .shell,
@@ -535,6 +536,10 @@
 }
 
 @media (max-width: 980px) {
+  .home {
+    overflow-y: auto;
+  }
+
   .contentGrid {
     grid-template-columns: 1fr;
   }
