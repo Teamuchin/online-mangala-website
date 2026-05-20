@@ -29,6 +29,9 @@ export default function AccountSettings() {
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const guestMode = isGuestUser(currentUser)
+  const passwordFields = accountSettingsFields.filter(
+    (field) => field.id !== 'username' && field.id !== 'email',
+  )
 
   useEffect(() => {
     setFormState(buildAccountFormState(currentUser))
@@ -117,7 +120,17 @@ export default function AccountSettings() {
         {saveMessage && <p className={styles.saveMessage}>{saveMessage}</p>}
         {errorMessage && <p className={styles.saveMessage}>{errorMessage}</p>}
         <div className={styles.nonButtonInput}>
-          {accountSettingsFields.map((field) => (
+          <div className={styles.readOnlyGroup}>
+            <div className={styles.readOnlyField}>
+              <span className={styles.readOnlyLabel}>Username</span>
+              <span className={styles.readOnlyValue}>{currentUser.username}</span>
+            </div>
+            <div className={styles.readOnlyField}>
+              <span className={styles.readOnlyLabel}>Email</span>
+              <span className={styles.readOnlyValue}>{currentUser.email}</span>
+            </div>
+          </div>
+          {passwordFields.map((field) => (
             <input
               key={field.id}
               id={field.id}
