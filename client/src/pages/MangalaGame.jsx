@@ -1,13 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { useLocation, useParams } from 'react-router-dom'
 import { getDisplayName } from '../app/playerNames.js'
 import { buildRatedMatchOutcome } from '../app/rating.js'
 import { useAppData } from '../app/useAppData.js'
 import { useGlobalHeader } from '../app/useGlobalHeader.js'
 import Board from '../components/mangala/Board.jsx'
 import {
-  createRandomGameId,
-  readStoredMatchIds,
   readStoredMatchSessionByGameId,
 } from '../components/mangala/gamePersistence.js'
 import { createInitialState } from '../components/mangala/gameLogic.js'
@@ -19,7 +17,6 @@ import styles from '../components/mangala/MangalaGame.module.css'
 
 function MangalaGameScreen({ gameId }) {
   const location = useLocation()
-  const navigate = useNavigate()
   const {
     activeMatchSummary,
     currentUser,
@@ -168,10 +165,6 @@ function MangalaGameScreen({ gameId }) {
         : currentUser.id === game.players.top.id
           ? 'top'
           : 'spectator'
-  const previousGameStatusRef = useRef(game.gameStatus)
-  const [rematchOffered, setRematchOffered] = useState(false)
-  const canRequestRematch =
-    currentUserRole !== 'spectator' && Boolean(matchMode) && !isOnlineMatch
   const isRatedMatch = Boolean(queueSettings?.rated)
   const showTopResign =
     !isPracticeMode &&
@@ -179,15 +172,6 @@ function MangalaGameScreen({ gameId }) {
   const showBottomResign =
     !isPracticeMode &&
     (isLocalMatch || currentUserRole === 'bottom')
-  const showStandaloneRematch =
-    !isPracticeMode &&
-    canRequestRematch &&
-    game.gameStatus === 'finished' &&
-    rematchOffered
-  const showTopRematch =
-    showStandaloneRematch && (isLocalMatch || currentUserRole === 'top')
-  const showBottomRematch =
-    showStandaloneRematch && (isLocalMatch || currentUserRole === 'bottom')
   const matchTypeLabel =
     queueSettings && typeof queueSettings.rated === 'boolean'
       ? queueSettings.rated
@@ -215,70 +199,10 @@ function MangalaGameScreen({ gameId }) {
   const stoneToggleRef = useRef(handleStoneToggle)
   const animationToggleRef = useRef(handleAnimationToggle)
 
-  const handleRematch = () => {
-    if (!canRequestRematch) {
-      return
-    }
-
-    const nextGameId = createRandomGameId(readStoredMatchIds())
-
-    if (isComputerMatch) {
-      const nextStartingPlayer =
-        botSettings?.firstMove === 'random'
-          ? Math.random() < 0.5
-            ? 'bottom'
-            : 'top'
-          : botSettings?.firstMove === 'computer'
-            ? 'top'
-            : 'bottom'
-
-      navigate(`/game/${nextGameId}`, {
-        state: {
-          matchMode: 'computer',
-          botSettings,
-          queueSettings,
-          startingPlayer: nextStartingPlayer,
-          botProfile: location.state?.botProfile ?? null,
-        },
-      })
-
-      return
-    }
-
-    navigate(`/game/${nextGameId}`, {
-      state: {
-        matchMode: isPracticeMode ? 'practice' : 'local',
-      },
-    })
-  }
-
   useEffect(() => {
     stoneToggleRef.current = handleStoneToggle
     animationToggleRef.current = handleAnimationToggle
   }, [handleAnimationToggle, handleStoneToggle])
-
-  useEffect(() => {
-    let isCancelled = false
-
-    if (
-      previousGameStatusRef.current === 'playing' &&
-      game.gameStatus === 'finished' &&
-      canRequestRematch &&
-      !isPracticeMode
-    ) {
-      queueMicrotask(() => {
-        if (!isCancelled) {
-          setRematchOffered(true)
-        }
-      })
-    }
-
-    previousGameStatusRef.current = game.gameStatus
-
-    return () => {
-      isCancelled = true
-    }
-  }, [canRequestRematch, game.gameStatus, isPracticeMode])
 
   useEffect(() => {
     setSettingsContent(
@@ -440,17 +364,6 @@ function MangalaGameScreen({ gameId }) {
               showRating={!isPracticeMode}
               showResign={showTopResign}
             />
-            {showTopRematch && (
-              <div className={styles.postMatchAction}>
-                <button
-                  type="button"
-                  className={styles.postMatchButton}
-                  onClick={handleRematch}
-                >
-                  Rematch
-                </button>
-              </div>
-            )}
           </div>
           <div className={styles.boardColumn}>
             <Board
@@ -485,9 +398,9 @@ function MangalaGameScreen({ gameId }) {
               onLast={handleReplayLast}
               onNext={handleReplayNext}
               onPrevious={handleReplayPrevious}
-              onReset={isPracticeMode ? handleReset : handleRematch}
-              resetDisabled={isPracticeMode ? false : !canRequestRematch}
-              resetLabel={isPracticeMode ? 'Restart match' : 'Start rematch'}
+              onReset={handleReset}
+              resetDisabled={false}
+              resetLabel="Restart match"
             />
           </div>
           <div className={styles.playerColumn}>
@@ -507,17 +420,6 @@ function MangalaGameScreen({ gameId }) {
               showRating={!isPracticeMode}
               showResign={showBottomResign}
             />
-            {showBottomRematch && (
-              <div className={styles.postMatchAction}>
-                <button
-                  type="button"
-                  className={styles.postMatchButton}
-                  onClick={handleRematch}
-                >
-                  Rematch
-                </button>
-              </div>
-            )}
           </div>
         </section>
       </div>

@@ -14,7 +14,7 @@ export default function ReplayControls({
   onLast,
   onReset,
   resetDisabled = false,
-  resetLabel = 'Start rematch',
+  resetLabel = 'Restart match',
 }) {
   return (
     <section className={styles.replayPanel}>
