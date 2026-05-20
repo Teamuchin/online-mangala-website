@@ -5,6 +5,10 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAppData } from '../app/useAppData.js'
 import { registerRequest } from '../app/authApi.js'
 
+const USERNAME_REGEX = /^[A-Za-z0-9_-]{3,15}$/
+const PASSWORD_MIN_LENGTH = 6
+const PASSWORD_MAX_LENGTH = 32
+
 function formatMemberSince(isoDateString) {
   const parsedDate = new Date(isoDateString)
 
@@ -35,6 +39,18 @@ export default function Register() {
 
     if (!username || !email || !password) {
       setErrorMessage('Please fill in username, email, and password.')
+      return
+    }
+
+    if (!USERNAME_REGEX.test(username)) {
+      setErrorMessage(
+        'Username must be 3-15 characters and use only letters, numbers, underscores, or hyphens.',
+      )
+      return
+    }
+
+    if (password.length < PASSWORD_MIN_LENGTH || password.length > PASSWORD_MAX_LENGTH) {
+      setErrorMessage(`Password must be ${PASSWORD_MIN_LENGTH}-${PASSWORD_MAX_LENGTH} characters long.`)
       return
     }
 

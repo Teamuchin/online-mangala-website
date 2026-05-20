@@ -4,14 +4,16 @@ const db = require('../db');
 const {
   findUserByCredentialQuery,
   findUserByEmailQuery,
+  findUserByUsernameQuery,
   findUserByIdQuery,
-  findUserByEmailExcludingIdQuery,
   createUserQuery,
-  updateUserProfileQuery,
   updateUserPasswordQuery,
 } = require('./queries');
 
 const SALT_ROUNDS = 10;
+const USERNAME_REGEX = /^[A-Za-z0-9_-]{3,15}$/;
+const PASSWORD_MIN_LENGTH = 6;
+const PASSWORD_MAX_LENGTH = 32;
 
 function signAuthToken(user) {
   return jwt.sign(
@@ -34,7 +36,8 @@ function sanitizeProfileUser(userRow) {
     id: userRow.id,
     username: userRow.username,
     email: userRow.email,
-    bio: userRow.bio || '',
+    elo: userRow.elo,
+    is_bot: userRow.is_bot,
     created_at: userRow.created_at,
   };
 }
@@ -49,18 +52,32 @@ async function register(req, res) {
       return res.status(400).json({ message: 'username, email and password are required' });
     }
 
+    if (!USERNAME_REGEX.test(username)) {
+      return res.status(400).json({
+        message: 'Username must be 3-15 characters and use only letters, numbers, underscores, or hyphens',
+      });
+    }
+
     if (!isValidEmail(email)) {
       return res.status(400).json({ message: 'Invalid email address' });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+    if (password.length < PASSWORD_MIN_LENGTH || password.length > PASSWORD_MAX_LENGTH) {
+      return res.status(400).json({
+        message: `Password must be ${PASSWORD_MIN_LENGTH}-${PASSWORD_MAX_LENGTH} characters long`,
+      });
     }
 
     const existingUserResult = await db.query(findUserByEmailQuery, [email]);
 
     if (existingUserResult.rows.length > 0) {
       return res.status(409).json({ message: 'Email is already registered' });
+    }
+
+    const existingUsernameResult = await db.query(findUserByUsernameQuery, [username]);
+
+    if (existingUsernameResult.rows.length > 0) {
+      return res.status(409).json({ message: 'Username is already taken' });
     }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
@@ -111,23 +128,12 @@ async function login(req, res) {
 async function updateMe(req, res) {
   try {
     const userId = String(req.auth?.userId || '').trim();
-    const username = String(req.body?.username || '').trim();
-    const email = normalizeEmail(req.body?.email);
-    const bio = String(req.body?.bio || '').trim();
     const currentPassword = String(req.body?.currentPassword || '');
     const newPassword = String(req.body?.newPassword || '');
     const confirmPassword = String(req.body?.confirmPassword || '');
 
     if (!userId) {
       return res.status(401).json({ message: 'Unauthorized' });
-    }
-
-    if (!username || !email) {
-      return res.status(400).json({ message: 'username and email are required' });
-    }
-
-    if (!isValidEmail(email)) {
-      return res.status(400).json({ message: 'Invalid email address' });
     }
 
     const existingUserResult = await db.query(findUserByIdQuery, [userId]);
@@ -149,43 +155,42 @@ async function updateMe(req, res) {
       return res.status(401).json({ message: 'Password is incorrect' });
     }
 
-    const duplicateEmailResult = await db.query(findUserByEmailExcludingIdQuery, [email, userId]);
-
-    if (duplicateEmailResult.rows.length > 0) {
-      return res.status(409).json({ message: 'Email is already in use by another account' });
-    }
-
     const wantsPasswordChange = newPassword || confirmPassword;
 
-    if (wantsPasswordChange) {
-      if (!newPassword || !confirmPassword) {
-        return res.status(400).json({ message: 'Fill new password and confirm password to change password' });
-      }
+    if (!wantsPasswordChange) {
+      const user = sanitizeProfileUser(existingUserResult.rows[0]);
+      const token = signAuthToken(user);
 
-      if (newPassword !== confirmPassword) {
-        return res.status(400).json({ message: 'New password and confirmation do not match' });
-      }
-
-      if (newPassword.length < 6) {
-        return res.status(400).json({ message: 'New password must be at least 6 characters long' });
-      }
-
-      const newPasswordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-      await db.query(updateUserPasswordQuery, [userId, newPasswordHash]);
+      return res.status(200).json({
+        message: 'No account details changed',
+        user,
+        token,
+      });
     }
 
-    const updatedUserResult = await db.query(updateUserProfileQuery, [
-      userId,
-      username,
-      email,
-      bio,
-    ]);
+    if (!newPassword || !confirmPassword) {
+      return res.status(400).json({ message: 'Fill new password and confirm password to change password' });
+    }
 
-    const user = sanitizeProfileUser(updatedUserResult.rows[0]);
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ message: 'New password and confirmation do not match' });
+    }
+
+    if (newPassword.length < PASSWORD_MIN_LENGTH || newPassword.length > PASSWORD_MAX_LENGTH) {
+      return res.status(400).json({
+        message: `New password must be ${PASSWORD_MIN_LENGTH}-${PASSWORD_MAX_LENGTH} characters long`,
+      });
+    }
+
+    const newPasswordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    await db.query(updateUserPasswordQuery, [userId, newPasswordHash]);
+
+    const refreshedUserResult = await db.query(findUserByIdQuery, [userId]);
+    const user = sanitizeProfileUser(refreshedUserResult.rows[0]);
     const token = signAuthToken(user);
 
     return res.status(200).json({
-      message: 'Account updated successfully',
+      message: 'Password updated successfully',
       user,
       token,
     });

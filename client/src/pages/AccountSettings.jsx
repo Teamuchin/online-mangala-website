@@ -92,7 +92,7 @@ export default function AccountSettings() {
         newPassword: '',
         confirmPassword: '',
       }))
-      setSaveMessage('Profile details saved.')
+      setSaveMessage(response.message || 'Changes saved.')
     } catch (error) {
       if (
         error.message === 'Unauthorized' ||
