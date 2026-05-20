@@ -10,7 +10,7 @@
 }
 
 .inner {
-  width: max(1240px, 100%);
+  width: min(1240px, 100%);
   margin-left: auto;
   margin-right: auto;
   min-height: 72px;

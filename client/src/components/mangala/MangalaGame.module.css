@@ -617,24 +617,70 @@
   }
 
   .matchArena {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 10px;
+    row-gap: 0;
   }
 
   .boardColumn {
     order: 1;
+    grid-column: 1 / -1;
   }
 
-  .topPanel.compactPlayerPanel {
-    order: 0;
+  .matchArena > .playerColumn:first-child {
+    grid-column: 1;
   }
 
-  .bottomPanel.compactPlayerPanel {
-    order: 2;
+  .matchArena > .playerColumn:last-child {
+    grid-column: 2;
   }
 
   .matchSidebar,
   .sidebarRow {
     grid-template-columns: 1fr;
+  }
+
+  .playerColumn {
+    gap: 8px;
+  }
+
+  .compactPlayerPanel {
+    min-height: 0;
+    padding: 10px 12px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .playerHeader {
+    margin-bottom: 6px;
+  }
+
+  .playerMeta {
+    gap: 6px;
+  }
+
+  .playerMeta h2 {
+    font-size: 0.94rem;
+  }
+
+  .playerClock {
+    min-width: 72px;
+    padding: 5px 8px;
+    font-size: clamp(1.2rem, 4vw, 1.6rem);
+  }
+
+  .playerHeaderSpacer {
+    min-width: 72px;
+  }
+
+  .resignButton {
+    padding: 5px 8px;
+    font-size: 0.78rem;
+  }
+
+  .playerRating,
+  .ratingChange {
+    font-size: 0.82rem;
   }
 
   .boardShell {
@@ -643,6 +689,8 @@
     column-gap: 8px;
     row-gap: 8px;
     padding: 14px 10px;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
   }
 
   .storeSurface {
@@ -672,10 +720,49 @@
     padding: 14px;
   }
 
+  .matchArena {
+    column-gap: 8px;
+  }
+
+  .compactPlayerPanel {
+    padding: 8px 10px;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .playerHeader {
+    margin-bottom: 4px;
+  }
+
+  .playerMeta h2 {
+    font-size: 0.86rem;
+  }
+
+  .playerClock {
+    min-width: 54px;
+    padding: 4px 6px;
+    font-size: 1rem;
+  }
+
+  .playerHeaderSpacer {
+    min-width: 54px;
+  }
+
+  .resignButton {
+    padding: 4px 6px;
+    font-size: 0.72rem;
+  }
+
+  .playerRating,
+  .ratingChange {
+    font-size: 0.76rem;
+  }
+
   .boardShell {
     column-gap: 6px;
     row-gap: 6px;
     padding: 12px 8px;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
   }
 
   .pitRow {
