@@ -23,7 +23,7 @@ function formatMemberSince(isoDateString) {
 }
 
 export default function AccountSettings() {
-  const { accountSettingsFields, assets, currentUser, updateCurrentUser } = useAppData()
+  const { accountSettingsFields, currentUser, updateCurrentUser } = useAppData()
   const [formState, setFormState] = useState(() => buildAccountFormState(currentUser))
   const [saveMessage, setSaveMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
@@ -35,13 +35,13 @@ export default function AccountSettings() {
   }, [currentUser])
 
   const handleFieldChange = (event) => {
-    const { id, value, files, type } = event.target
+    const { id, value } = event.target
     setSaveMessage('')
     setErrorMessage('')
 
     setFormState((currentFormState) => ({
       ...currentFormState,
-      [id]: type === 'file' ? files?.[0] ?? null : value,
+      [id]: value,
     }))
   }
 
@@ -80,7 +80,6 @@ export default function AccountSettings() {
         id: String(response.user.id),
         username: response.user.username,
         email: response.user.email,
-        bio: response.user.bio || '',
         memberSince: formatMemberSince(response.user.created_at),
       })
 
@@ -89,7 +88,6 @@ export default function AccountSettings() {
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
-        profilePicture: null,
       }))
       setSaveMessage('Profile details saved.')
     } catch (error) {
@@ -131,22 +129,6 @@ export default function AccountSettings() {
               onChange={handleFieldChange}
             />
           ))}
-          <div className={styles.profilePictureInput}>
-            <img
-              src={currentUser.profilePicture || assets.profilePicturePlaceholder}
-              alt="Profile Picture"
-              className={styles.profilePicturePreview}
-            />
-            <input
-              id="profilePicture"
-              type="file"
-              name="profilePicture"
-              placeholder="Profile Picture"
-              className={styles.textinput}
-              accept="image/*"
-              onChange={handleFieldChange}
-            />
-          </div>
         </div>
         <input
           type="submit"

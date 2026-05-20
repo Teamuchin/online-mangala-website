@@ -65,7 +65,6 @@ export function buildQueueEntry(user, settings) {
     username: user.username,
     displayName: user.displayName ?? null,
     rating: user.elo ?? 1200,
-    profilePicture: user.profilePicture ?? null,
     rated: settings.rated,
     allowBots: settings.allowBots,
     joinedAt: Date.now(),

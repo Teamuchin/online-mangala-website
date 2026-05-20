@@ -15,7 +15,6 @@ export default function GlobalHeader() {
     logOut,
   } = useAppData()
   const { settingsContent } = useGlobalHeader()
-  const showProfilePanel = isAuthenticated && !isGuestUser(currentUser)
   const showAccountSettings = isAuthenticated && !isGuestUser(currentUser)
   const isOnGamePage = location.pathname.startsWith('/game/')
   const showBackToGame = activeMatchSummary?.isActive && !isOnGamePage
@@ -39,33 +38,18 @@ export default function GlobalHeader() {
         </div>
 
         <nav className={styles.actions} aria-label="Global navigation">
-          {showProfilePanel ? (
-            <div className={styles.menu}>
-              <a
-                href={profileHref}
-                className={styles.actionLink}
-                aria-label="Open profile"
-                onClick={(event) => event.currentTarget.blur()}
-              >
-                <span className={styles.actionIcon} aria-hidden="true">
-                  ◎
-                </span>
-                <span className={styles.actionText}>{currentUser.username}</span>
-              </a>
-              <div className={`${styles.panel} ${styles.profilePanel}`}>
-                <img
-                  src={currentUser.profilePicture || assets.profilePicturePlaceholder}
-                  alt={`${currentUser.username} profile`}
-                  className={styles.profileImage}
-                />
-                <h3 className={styles.profileName}>{currentUser.username}</h3>
-                <p className={styles.profileElo}>ELO: {currentUser.elo ?? 'N/A'}</p>
-                <p className={styles.profileBio}>{currentUser.bio || 'No bio yet.'}</p>
-                <Link to="/login" className={styles.panelLink} onClick={logOut}>
-                  Log out
-                </Link>
-              </div>
-            </div>
+          {isAuthenticated && !isGuestUser(currentUser) ? (
+            <a
+              href={profileHref}
+              className={styles.actionLink}
+              aria-label="Open profile"
+              onClick={(event) => event.currentTarget.blur()}
+            >
+              <span className={styles.actionIcon} aria-hidden="true">
+                ◎
+              </span>
+              <span className={styles.actionText}>{currentUser.username}</span>
+            </a>
           ) : (
             <a href="/login" className={styles.actionLink}>
               <span className={styles.actionIcon} aria-hidden="true">
@@ -104,6 +88,11 @@ export default function GlobalHeader() {
                 <a href="/account" className={styles.panelLink}>
                   Account Settings
                 </a>
+              ) : null}
+              {isAuthenticated ? (
+                <Link to="/login" className={styles.panelLink} onClick={logOut}>
+                  Log out
+                </Link>
               ) : null}
               {settingsContent}
             </div>

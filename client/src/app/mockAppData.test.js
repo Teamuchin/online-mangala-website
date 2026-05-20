@@ -18,7 +18,6 @@ test('app brand and seeded current user stay aligned with the current UI copy', 
   assert.equal(INITIAL_CURRENT_USER.elo, 1200)
   assert.equal(INITIAL_CURRENT_USER.email, 'username@example.com')
   assert.equal(INITIAL_CURRENT_USER.memberSince, 'May 2026')
-  assert.equal(INITIAL_CURRENT_USER.profilePicture, '/assets/profile-picture-placeholder.png')
   assert.deepEqual(INITIAL_CURRENT_USER.matchHistory, [])
   assert.deepEqual(INITIAL_CURRENT_USER.ratingHistory, [
     {
@@ -36,10 +35,6 @@ test('asset paths expose the static files referenced by the UI', () => {
   assert.equal(APP_ASSETS.languageIcon, '/languagebtn.svg')
   assert.equal(APP_ASSETS.settingsIcon, '/settingsbtn.png')
   assert.equal(APP_ASSETS.decorationBoard, '/decorationboard.png')
-  assert.equal(
-    APP_ASSETS.profilePicturePlaceholder,
-    '/assets/profile-picture-placeholder.png',
-  )
 })
 
 test('local match players keep the seeded game participants intact', () => {
@@ -75,7 +70,7 @@ test('banner slogans and account settings fields preserve the current page struc
     { accent: 'However', text: 'you want' },
   ])
 
-  assert.equal(ACCOUNT_SETTINGS_FIELDS.length, 6)
+  assert.equal(ACCOUNT_SETTINGS_FIELDS.length, 5)
   assert.deepEqual(ACCOUNT_SETTINGS_FIELDS[0], {
     id: 'username',
     name: 'usercredential',
@@ -84,10 +79,10 @@ test('banner slogans and account settings fields preserve the current page struc
     className: 'textinput',
   })
   assert.deepEqual(ACCOUNT_SETTINGS_FIELDS.at(-1), {
-    id: 'bio',
-    name: 'bio',
-    type: 'text',
-    placeholder: 'Bio',
-    className: 'bioinput',
+    id: 'confirmPassword',
+    name: 'confirmUserpwd',
+    type: 'password',
+    placeholder: 'Confirm New Password',
+    className: 'textinput',
   })
 })

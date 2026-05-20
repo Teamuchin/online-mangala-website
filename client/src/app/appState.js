@@ -118,11 +118,9 @@ export function buildAccountFormState(currentUser) {
   return {
     username: currentUser.username,
     email: currentUser.email,
-    bio: currentUser.bio,
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
-    profilePicture: null,
   }
 }
 
@@ -130,7 +128,6 @@ export function buildProfileUpdatesFromForm(formState) {
   return {
     username: formState.username,
     email: formState.email,
-    bio: formState.bio,
   }
 }
 
