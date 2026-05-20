@@ -1,5 +1,5 @@
 export function getDisplayName(entity) {
-  return entity?.displayName ?? entity?.username ?? entity?.name ?? ''
+  return entity?.username ?? entity?.name ?? ''
 }
 
 export function getRouteName(entity) {

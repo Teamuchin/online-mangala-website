@@ -63,7 +63,6 @@ export function buildQueueEntry(user, settings) {
   return {
     userId: user.id,
     username: user.username,
-    displayName: user.displayName ?? null,
     rating: user.elo ?? 1200,
     rated: settings.rated,
     allowBots: settings.allowBots,
@@ -88,7 +87,6 @@ export function buildQueuedPlayer(entry) {
     id: entry.userId,
     name: entry.username,
     username: entry.username,
-    displayName: entry.displayName ?? undefined,
     rating: entry.rating,
     timeLeft: 300,
   }

@@ -52,7 +52,6 @@ export const BOT_PROFILES = [
   {
     id: 'bot-deniz',
     username: 'deniz-bot',
-    displayName: 'Deniz',
     elo: 1000,
     email: '',
     memberSince: 'May 2026',
@@ -63,7 +62,6 @@ export const BOT_PROFILES = [
   {
     id: 'bot-toprak',
     username: 'toprak-bot',
-    displayName: 'Toprak',
     elo: 1200,
     email: '',
     memberSince: 'May 2026',
@@ -74,7 +72,6 @@ export const BOT_PROFILES = [
   {
     id: 'bot-ruzgar',
     username: 'ruzgar-bot',
-    displayName: 'Ruzgar',
     elo: 1400,
     email: '',
     memberSince: 'May 2026',
@@ -85,7 +82,6 @@ export const BOT_PROFILES = [
   {
     id: 'bot-alev',
     username: 'alev-bot',
-    displayName: 'Alev',
     elo: 1600,
     email: '',
     memberSince: 'May 2026',
