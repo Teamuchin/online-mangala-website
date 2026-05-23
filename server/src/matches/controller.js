@@ -67,7 +67,7 @@ async function createMatch(req, res) {
       return res.status(400).json({ message: 'Rating changes must be integers' });
     }
 
-    if (!['active', 'finished', 'aborted'].includes(status)) {
+    if (!['active', 'finished'].includes(status)) {
       return res.status(400).json({ message: 'Invalid match status' });
     }
 
@@ -80,7 +80,7 @@ async function createMatch(req, res) {
 
     if (
       resultReason !== null &&
-      !['normal', 'resign', 'timeout', 'aborted'].includes(resultReason)
+      !['normal', 'resign', 'timeout'].includes(resultReason)
     ) {
       return res.status(400).json({ message: 'Invalid result reason' });
     }

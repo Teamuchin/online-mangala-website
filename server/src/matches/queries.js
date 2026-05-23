@@ -15,10 +15,10 @@ CREATE TABLE IF NOT EXISTS matches (
   finished_at TIMESTAMPTZ,
   moves JSONB NOT NULL DEFAULT '[]'::jsonb,
   game_state JSONB NOT NULL DEFAULT '{}'::jsonb,
-  CONSTRAINT matches_status_check CHECK (status IN ('active', 'finished', 'aborted')),
+  CONSTRAINT matches_status_check CHECK (status IN ('active', 'finished')),
   CONSTRAINT matches_winner_side_check CHECK (winner_side IN ('bottom', 'top', 'draw') OR winner_side IS NULL),
   CONSTRAINT matches_result_reason_check CHECK (
-    result_reason IN ('normal', 'resign', 'timeout', 'aborted') OR result_reason IS NULL
+    result_reason IN ('normal', 'resign', 'timeout') OR result_reason IS NULL
   ),
   CONSTRAINT matches_distinct_players_check CHECK (bottom_player_id <> top_player_id)
 );
