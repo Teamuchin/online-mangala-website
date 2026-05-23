@@ -24,6 +24,48 @@ CREATE TABLE IF NOT EXISTS matches (
 );
 `;
 
+const createMatchQuery = `
+INSERT INTO matches (
+  id,
+  bottom_player_id,
+  top_player_id,
+  is_rated,
+  status,
+  winner_side,
+  result_reason,
+  bottom_rating_before,
+  top_rating_before,
+  bottom_rating_change,
+  top_rating_change,
+  started_at,
+  finished_at,
+  moves,
+  game_state
+)
+VALUES (
+  $1, $2, $3, $4, $5, $6, $7,
+  $8, $9, $10, $11, $12, $13, $14, $15
+)
+RETURNING *;
+`;
+
+const findMatchByIdQuery = `
+SELECT *
+FROM matches
+WHERE id = $1
+LIMIT 1;
+`;
+
+const findMatchesByUserIdQuery = `
+SELECT *
+FROM matches
+WHERE bottom_player_id = $1 OR top_player_id = $1
+ORDER BY COALESCE(finished_at, started_at) DESC;
+`;
+
 module.exports = {
   createMatchesTableQuery,
+  createMatchQuery,
+  findMatchByIdQuery,
+  findMatchesByUserIdQuery,
 };
