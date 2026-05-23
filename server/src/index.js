@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const db = require('./db');
 const authRoutes = require('./routes/auth');
+const { createMatchesTableQuery } = require('./matches/queries');
 const {
   createUsersTableQuery,
   dropBioColumnQuery,
@@ -40,6 +41,8 @@ async function startServer() {
     await db.query(ensureUsernameTypeQuery);
     await db.query(ensureUsernameUniqueIndexQuery);
     console.log('Users table is ready');
+    await db.query(createMatchesTableQuery);
+    console.log('Matches table is ready');
 
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => console.log(`Running on http://localhost:${PORT}`));
