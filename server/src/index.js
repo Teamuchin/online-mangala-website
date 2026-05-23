@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const db = require('./db');
 const authRoutes = require('./routes/auth');
+const matchRoutes = require('./routes/matches');
 const { createMatchesTableQuery } = require('./matches/queries');
 const {
   createUsersTableQuery,
@@ -18,6 +19,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
+app.use('/api/matches', matchRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {
