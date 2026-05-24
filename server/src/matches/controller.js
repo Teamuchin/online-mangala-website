@@ -3,6 +3,7 @@ const {
   createMatchQuery,
   findMatchByIdQuery,
   findMatchesByUserIdQuery,
+  updateMatchQuery,
 } = require('./queries');
 
 function parseInteger(value) {
@@ -10,105 +11,164 @@ function parseInteger(value) {
   return Number.isInteger(parsed) ? parsed : null;
 }
 
+function normalizeMatchPayload(input, options = {}) {
+  const {
+    requireId = true,
+    existingMatch = null,
+  } = options;
+
+  const source = input ?? {};
+  const matchId = requireId
+    ? String(source.id || '').trim()
+    : String(existingMatch?.id || '').trim();
+
+  const bottomPlayerId =
+    source.bottom_player_id === undefined
+      ? existingMatch?.bottom_player_id ?? null
+      : parseInteger(source.bottom_player_id);
+  const topPlayerId =
+    source.top_player_id === undefined
+      ? existingMatch?.top_player_id ?? null
+      : parseInteger(source.top_player_id);
+  const bottomRatingBefore =
+    source.bottom_rating_before === undefined
+      ? existingMatch?.bottom_rating_before ?? null
+      : parseInteger(source.bottom_rating_before);
+  const topRatingBefore =
+    source.top_rating_before === undefined
+      ? existingMatch?.top_rating_before ?? null
+      : parseInteger(source.top_rating_before);
+  const bottomRatingChange =
+    source.bottom_rating_change === undefined
+      ? existingMatch?.bottom_rating_change ?? 0
+      : parseInteger(source.bottom_rating_change);
+  const topRatingChange =
+    source.top_rating_change === undefined
+      ? existingMatch?.top_rating_change ?? 0
+      : parseInteger(source.top_rating_change);
+
+  return {
+    id: matchId,
+    bottomPlayerId,
+    topPlayerId,
+    isRated:
+      source.is_rated === undefined
+        ? Boolean(existingMatch?.is_rated)
+        : Boolean(source.is_rated),
+    status: source.status ?? existingMatch?.status ?? null,
+    winnerSide:
+      source.winner_side === undefined
+        ? existingMatch?.winner_side ?? null
+        : source.winner_side,
+    resultReason:
+      source.result_reason === undefined
+        ? existingMatch?.result_reason ?? null
+        : source.result_reason,
+    bottomRatingBefore,
+    topRatingBefore,
+    bottomRatingChange,
+    topRatingChange,
+    startedAt:
+      source.started_at === undefined
+        ? existingMatch?.started_at ?? new Date().toISOString()
+        : source.started_at,
+    finishedAt:
+      source.finished_at === undefined
+        ? existingMatch?.finished_at ?? null
+        : source.finished_at,
+    moves: source.moves === undefined ? existingMatch?.moves ?? [] : source.moves,
+    gameState:
+      source.game_state === undefined ? existingMatch?.game_state ?? {} : source.game_state,
+  };
+}
+
+function validateMatchPayload(payload, { requireId = true } = {}) {
+  if (requireId && !payload.id) {
+    return 'Match id is required';
+  }
+
+  if (!payload.bottomPlayerId || !payload.topPlayerId) {
+    return 'Both player ids are required';
+  }
+
+  if (payload.bottomPlayerId === payload.topPlayerId) {
+    return 'A match requires two different players';
+  }
+
+  if (payload.bottomRatingBefore === null || payload.topRatingBefore === null) {
+    return 'Starting ratings are required';
+  }
+
+  if (payload.bottomRatingChange === null || payload.topRatingChange === null) {
+    return 'Rating changes must be integers';
+  }
+
+  if (!['active', 'finished'].includes(payload.status)) {
+    return 'Invalid match status';
+  }
+
+  if (
+    payload.winnerSide !== null &&
+    !['bottom', 'top', 'draw'].includes(payload.winnerSide)
+  ) {
+    return 'Invalid winner side';
+  }
+
+  if (
+    payload.resultReason !== null &&
+    !['normal', 'resign', 'timeout'].includes(payload.resultReason)
+  ) {
+    return 'Invalid result reason';
+  }
+
+  if (!Array.isArray(payload.moves)) {
+    return 'Moves must be an array';
+  }
+
+  if (
+    !payload.gameState ||
+    typeof payload.gameState !== 'object' ||
+    Array.isArray(payload.gameState)
+  ) {
+    return 'Game state must be an object';
+  }
+
+  return null;
+}
+
 async function createMatch(req, res) {
   try {
     const authenticatedUserId = parseInteger(req.auth?.userId);
-    const {
-      id,
-      bottom_player_id: rawBottomPlayerId,
-      top_player_id: rawTopPlayerId,
-      is_rated: rawIsRated,
-      status,
-      winner_side: winnerSide = null,
-      result_reason: resultReason = null,
-      bottom_rating_before: rawBottomRatingBefore,
-      top_rating_before: rawTopRatingBefore,
-      bottom_rating_change: rawBottomRatingChange = 0,
-      top_rating_change: rawTopRatingChange = 0,
-      started_at: startedAt = new Date().toISOString(),
-      finished_at: finishedAt = null,
-      moves = [],
-      game_state: gameState = {},
-    } = req.body ?? {};
-
-    const matchId = String(id || '').trim();
-    const bottomPlayerId = parseInteger(rawBottomPlayerId);
-    const topPlayerId = parseInteger(rawTopPlayerId);
-    const bottomRatingBefore = parseInteger(rawBottomRatingBefore);
-    const topRatingBefore = parseInteger(rawTopRatingBefore);
-    const bottomRatingChange = parseInteger(rawBottomRatingChange);
-    const topRatingChange = parseInteger(rawTopRatingChange);
-    const isRated = Boolean(rawIsRated);
-
-    if (!matchId) {
-      return res.status(400).json({ message: 'Match id is required' });
-    }
-
-    if (!bottomPlayerId || !topPlayerId) {
-      return res.status(400).json({ message: 'Both player ids are required' });
-    }
+    const payload = normalizeMatchPayload(req.body, { requireId: true });
+    const validationError = validateMatchPayload(payload, { requireId: true });
 
     if (
-      authenticatedUserId !== bottomPlayerId &&
-      authenticatedUserId !== topPlayerId
+      authenticatedUserId !== payload.bottomPlayerId &&
+      authenticatedUserId !== payload.topPlayerId
     ) {
       return res.status(403).json({ message: 'You cannot create a match for other players' });
     }
 
-    if (bottomPlayerId === topPlayerId) {
-      return res.status(400).json({ message: 'A match requires two different players' });
-    }
-
-    if (bottomRatingBefore === null || topRatingBefore === null) {
-      return res.status(400).json({ message: 'Starting ratings are required' });
-    }
-
-    if (bottomRatingChange === null || topRatingChange === null) {
-      return res.status(400).json({ message: 'Rating changes must be integers' });
-    }
-
-    if (!['active', 'finished'].includes(status)) {
-      return res.status(400).json({ message: 'Invalid match status' });
-    }
-
-    if (
-      winnerSide !== null &&
-      !['bottom', 'top', 'draw'].includes(winnerSide)
-    ) {
-      return res.status(400).json({ message: 'Invalid winner side' });
-    }
-
-    if (
-      resultReason !== null &&
-      !['normal', 'resign', 'timeout'].includes(resultReason)
-    ) {
-      return res.status(400).json({ message: 'Invalid result reason' });
-    }
-
-    if (!Array.isArray(moves)) {
-      return res.status(400).json({ message: 'Moves must be an array' });
-    }
-
-    if (!gameState || typeof gameState !== 'object' || Array.isArray(gameState)) {
-      return res.status(400).json({ message: 'Game state must be an object' });
+    if (validationError) {
+      return res.status(400).json({ message: validationError });
     }
 
     const result = await db.query(createMatchQuery, [
-      matchId,
-      bottomPlayerId,
-      topPlayerId,
-      isRated,
-      status,
-      winnerSide,
-      resultReason,
-      bottomRatingBefore,
-      topRatingBefore,
-      bottomRatingChange,
-      topRatingChange,
-      startedAt,
-      finishedAt,
-      JSON.stringify(moves),
-      JSON.stringify(gameState),
+      payload.id,
+      payload.bottomPlayerId,
+      payload.topPlayerId,
+      payload.isRated,
+      payload.status,
+      payload.winnerSide,
+      payload.resultReason,
+      payload.bottomRatingBefore,
+      payload.topRatingBefore,
+      payload.bottomRatingChange,
+      payload.topRatingChange,
+      payload.startedAt,
+      payload.finishedAt,
+      JSON.stringify(payload.moves),
+      JSON.stringify(payload.gameState),
     ]);
 
     return res.status(201).json(result.rows[0]);
@@ -123,6 +183,77 @@ async function createMatch(req, res) {
       return res.status(409).json({ message: 'Match id already exists' });
     }
 
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+async function updateMatch(req, res) {
+  try {
+    const authenticatedUserId = parseInteger(req.auth?.userId);
+    const matchId = String(req.params?.id || '').trim();
+
+    if (!matchId) {
+      return res.status(400).json({ message: 'Match id is required' });
+    }
+
+    const existingMatchResult = await db.query(findMatchByIdQuery, [matchId]);
+
+    if (existingMatchResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Match not found' });
+    }
+
+    const existingMatch = existingMatchResult.rows[0];
+
+    if (
+      authenticatedUserId !== existingMatch.bottom_player_id &&
+      authenticatedUserId !== existingMatch.top_player_id
+    ) {
+      return res.status(403).json({ message: 'You cannot update a match for other players' });
+    }
+
+    if (
+      req.body?.bottom_player_id !== undefined &&
+      parseInteger(req.body.bottom_player_id) !== existingMatch.bottom_player_id
+    ) {
+      return res.status(400).json({ message: 'Match players cannot be changed' });
+    }
+
+    if (
+      req.body?.top_player_id !== undefined &&
+      parseInteger(req.body.top_player_id) !== existingMatch.top_player_id
+    ) {
+      return res.status(400).json({ message: 'Match players cannot be changed' });
+    }
+
+    const payload = normalizeMatchPayload(req.body, {
+      requireId: false,
+      existingMatch,
+    });
+    const validationError = validateMatchPayload(payload, { requireId: false });
+
+    if (validationError) {
+      return res.status(400).json({ message: validationError });
+    }
+
+    const result = await db.query(updateMatchQuery, [
+      matchId,
+      payload.isRated,
+      payload.status,
+      payload.winnerSide,
+      payload.resultReason,
+      payload.bottomRatingBefore,
+      payload.topRatingBefore,
+      payload.bottomRatingChange,
+      payload.topRatingChange,
+      payload.startedAt,
+      payload.finishedAt,
+      JSON.stringify(payload.moves),
+      JSON.stringify(payload.gameState),
+    ]);
+
+    return res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error('Update match error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
@@ -166,6 +297,7 @@ async function getMatchesByUserId(req, res) {
 
 module.exports = {
   createMatch,
+  updateMatch,
   getMatchById,
   getMatchesByUserId,
 };

@@ -63,9 +63,29 @@ WHERE bottom_player_id = $1 OR top_player_id = $1
 ORDER BY COALESCE(finished_at, started_at) DESC;
 `;
 
+const updateMatchQuery = `
+UPDATE matches
+SET
+  is_rated = $2,
+  status = $3,
+  winner_side = $4,
+  result_reason = $5,
+  bottom_rating_before = $6,
+  top_rating_before = $7,
+  bottom_rating_change = $8,
+  top_rating_change = $9,
+  started_at = $10,
+  finished_at = $11,
+  moves = $12,
+  game_state = $13
+WHERE id = $1
+RETURNING *;
+`;
+
 module.exports = {
   createMatchesTableQuery,
   createMatchQuery,
   findMatchByIdQuery,
   findMatchesByUserIdQuery,
+  updateMatchQuery,
 };
