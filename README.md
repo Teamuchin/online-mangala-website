@@ -1,23 +1,33 @@
-board-game-project/
-├── backend/                # Node.js + Express
-│   ├── src/
-│   │   ├── controllers/    # Game logic (move validation, win conditions)
-│   │   ├── models/         # Database schemas (Players, Game State)
-│   │   ├── routes/         # API Paths (/api/play, /api/auth)
-│   │   └── server.js       # Main entry point
-│   └── package.json
-├── frontend/               # Vite + React
-│   ├── public/             # Icons, manifest, robots.txt
-│   ├── src/
-│   │   ├── assets/         # Board textures, game piece images
-│   │   ├── components/     # UI pieces (Square, Piece, ScoreBoard)
-│   │   ├── hooks/          # Custom logic (useBoardState, useSocket)
-│   │   ├── pages/          # Home, GameBoard, Profile
-│   │   ├── services/       # API calls (axios/fetch helper functions)
-│   │   ├── App.jsx         # Routing and Global Providers
-│   │   └── main.jsx        # Entry point (Vite default)
-│   ├── index.html          # Vite root HTML
-│   ├── package.json
-│   └── vite.config.js      # Vite configuration
-└── .gitignore              # Ignore node_modules & .env
-backend test1
+Online Mangala Website
+
+A web-based Mangala game project with a React frontend, an Express backend, and a PostgreSQL database.
+
+Current stack
+
+- Frontend: React 19, Vite, React Router
+- Backend: Node.js, Express, PostgreSQL, JWT auth
+- Database: PostgreSQL 16 via Docker Compose
+
+Project structure
+
+- `client/` frontend app
+- `server/` backend API and database logic
+- `docs/` small project notes such as developer commands
+- `docker-compose.yml` PostgreSQL container setup
+
+Run locally
+
+1. Start the database:
+   `docker compose up -d`
+
+2. Start the frontend in one terminal:
+   `cd client`
+   `npm run dev`
+
+3. Start the backend in another terminal:
+   `cd server`
+   `npm run dev`
+
+Useful note
+
+- Developer commands are collected in [docs/dev-commands.md](docs/dev-commands.md).
