@@ -15,6 +15,7 @@ function normalizeGameId(gameId) {
 export function buildPersistedMatchSession({
   game,
   gameId,
+  backendMatchId = null,
   showVisualStones,
   animateMoves,
   reviewIndex,
@@ -26,6 +27,7 @@ export function buildPersistedMatchSession({
     version: STORAGE_VERSION,
     game,
     gameId: normalizeGameId(gameId),
+    backendMatchId,
     showVisualStones,
     animateMoves,
     reviewIndex,

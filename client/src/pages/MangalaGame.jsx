@@ -240,6 +240,7 @@ function buildInitialConfigFromBackendMatch({ backendMatch, currentUser, gameId 
 
   return {
     gameId,
+    backendMatchId: backendMatch.id,
     matchMode,
     queueSettings: {
       rated: Boolean(backendMatch.is_rated),
@@ -394,6 +395,8 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
       : isOnlineMatch
         ? {
             gameId,
+            backendMatchId:
+              location.state?.backendMatchId ?? matchingPersistedSession?.backendMatchId ?? null,
             matchMode: 'online',
             queueSettings,
             initialPlayers:
@@ -500,11 +503,9 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
   const inFlightSyncSignatureRef = useRef('')
   const syncTargetMatchId =
     backendMatch?.id ??
-    ((matchMode === 'online' || matchMode === 'computer') &&
-    !isPracticeMode &&
-    !isLocalMatch
-      ? gameId
-      : null)
+    location.state?.backendMatchId ??
+    matchingPersistedSession?.backendMatchId ??
+    null
 
   useEffect(() => {
     startedAtRef.current = backendMatch?.started_at ?? new Date().toISOString()

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { buildWelcomeMessage } from '../app/appState.js'
 import { buildLeaderboardProfiles } from '../app/leaderboard.js'
+import { createMatchRequest } from '../app/matchApi.js'
 import {
   buildHumanMatchPayload,
   buildQueueEntry,
@@ -24,9 +25,45 @@ import styles from './Home.module.css'
 
 const BOT_FALLBACK_DELAY_MS = 4000
 const HUMAN_ONLY_TIMEOUT_MS = 60_000
+const INITIAL_MATCH_BOARD = {
+  bottomPits: [4, 4, 4, 4, 4, 4],
+  bottomStore: 0,
+  topPits: [4, 4, 4, 4, 4, 4],
+  topStore: 0,
+}
 
 function buildQueueStatusText(rated) {
   return rated ? 'Looking for a rated game...' : 'Looking for an unrated game...'
+}
+
+function buildBackendMatchPayload(matchPayload, rated) {
+  const bottomPlayerId = Number.parseInt(matchPayload.players.bottom.id, 10)
+  const topPlayerId = Number.parseInt(matchPayload.players.top.id, 10)
+
+  if (!Number.isInteger(bottomPlayerId) || !Number.isInteger(topPlayerId)) {
+    throw new Error('Only registered human players can create backend matches right now.')
+  }
+
+  return {
+    id: matchPayload.gameId,
+    bottom_player_id: bottomPlayerId,
+    top_player_id: topPlayerId,
+    is_rated: rated,
+    status: 'active',
+    winner_side: null,
+    result_reason: null,
+    bottom_rating_before: matchPayload.players.bottom.rating,
+    top_rating_before: matchPayload.players.top.rating,
+    bottom_rating_change: 0,
+    top_rating_change: 0,
+    started_at: new Date().toISOString(),
+    finished_at: null,
+    moves: [],
+    game_state: {
+      currentPlayer: 'bottom',
+      board: INITIAL_MATCH_BOARD,
+    },
+  }
 }
 
 function buildLobbyPlayers(currentUser, publicProfileDirectory, activeMatchSummary) {
@@ -94,6 +131,7 @@ export default function Home() {
   })
   const [rightPanelTab, setRightPanelTab] = useState('players')
   const queueStartedAtRef = useRef(null)
+  const isCreatingHumanMatchRef = useRef(false)
   const { activeMatchSummary, currentUser, isAuthenticated, publicProfileDirectory } =
     useAppData()
 
@@ -190,15 +228,41 @@ export default function Home() {
     })
   }, [currentUser.elo, currentUser.id, navigate, publicProfileDirectory, resetQueueState])
 
-  const startHumanMatch = useCallback((matchedEntry) => {
+  const startHumanMatch = useCallback(async (matchedEntry) => {
+    if (isCreatingHumanMatchRef.current) {
+      return false
+    }
+
+    isCreatingHumanMatchRef.current = true
+
     const queueEntry = buildQueueEntry(currentUser, queueConfig)
     const gameId = createRandomGameId(readStoredMatchIds())
     const matchPayload = buildHumanMatchPayload(queueEntry, matchedEntry, gameId)
+    const token =
+      typeof window === 'undefined'
+        ? ''
+        : window.localStorage.getItem('mangala.authToken') ?? ''
 
-    markHumanQueueMatch(queueEntry, matchedEntry, matchPayload)
+    try {
+      await createMatchRequest(
+        buildBackendMatchPayload(matchPayload, queueConfig.rated),
+        token,
+      )
+      markHumanQueueMatch(queueEntry, matchedEntry, matchPayload)
+      return true
+    } catch (error) {
+      console.error('Create human match error:', error)
+      return false
+    } finally {
+      isCreatingHumanMatchRef.current = false
+    }
   }, [currentUser, queueConfig])
 
-  const attemptHumanMatch = useCallback(() => {
+  const attemptHumanMatch = useCallback(async () => {
+    if (isCreatingHumanMatchRef.current) {
+      return false
+    }
+
     const queueEntry = buildQueueEntry(currentUser, queueConfig)
     const queuedPlayers = readMatchmakingQueue()
     const matchedEntry = findCompatibleHumanEntry(queuedPlayers, queueEntry)
@@ -207,8 +271,7 @@ export default function Home() {
       return false
     }
 
-    startHumanMatch(matchedEntry)
-    return true
+    return startHumanMatch(matchedEntry)
   }, [currentUser, queueConfig, startHumanMatch])
 
   const handleStartQueue = () => {
@@ -222,7 +285,7 @@ export default function Home() {
       statusText: buildQueueStatusText(queueConfig.rated),
     })
 
-    attemptHumanMatch()
+    void attemptHumanMatch()
   }
 
   useEffect(() => {
@@ -251,6 +314,7 @@ export default function Home() {
         setIsPlayModalOpen(false)
         navigate(`/game/${currentEntry.gameId}`, {
           state: {
+            backendMatchId: currentEntry.gameId,
             matchMode: 'online',
             initialPlayers: currentEntry.players,
             queueSettings: {
@@ -262,7 +326,11 @@ export default function Home() {
         return
       }
 
-      if (attemptHumanMatch()) {
+      if (!isCreatingHumanMatchRef.current) {
+        void attemptHumanMatch()
+      }
+
+      if (isCreatingHumanMatchRef.current) {
         return
       }
 

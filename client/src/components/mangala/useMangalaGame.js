@@ -99,6 +99,9 @@ export function useMangalaGame(initialConfig) {
   const queueSettings = shouldRestorePersistedSession
     ? restoredSession?.queueSettings ?? initialConfig?.queueSettings ?? null
     : initialConfig?.queueSettings ?? null
+  const backendMatchId = shouldRestorePersistedSession
+    ? restoredSession?.backendMatchId ?? initialConfig?.backendMatchId ?? null
+    : initialConfig?.backendMatchId ?? null
 
   const [game, setGame] = useState(() =>
     shouldRestorePersistedSession
@@ -194,6 +197,7 @@ export function useMangalaGame(initialConfig) {
     const session = buildPersistedMatchSession({
       game,
       gameId: activeGameId,
+      backendMatchId,
       showVisualStones,
       animateMoves,
       reviewIndex,
@@ -208,6 +212,7 @@ export function useMangalaGame(initialConfig) {
     activeMatchMode,
     animateMoves,
     botSettings,
+    backendMatchId,
     queueSettings,
     game,
     isPracticeBoard,
