@@ -1,3 +1,11 @@
+const MATCH_SELECT_FIELDS = `
+  matches.*,
+  bottom_user.username AS bottom_player_username,
+  bottom_user.is_bot AS bottom_player_is_bot,
+  top_user.username AS top_player_username,
+  top_user.is_bot AS top_player_is_bot
+`;
+
 const createMatchesTableQuery = `
 CREATE TABLE IF NOT EXISTS matches (
   id TEXT PRIMARY KEY,
@@ -50,16 +58,20 @@ RETURNING *;
 `;
 
 const findMatchByIdQuery = `
-SELECT *
+SELECT ${MATCH_SELECT_FIELDS}
 FROM matches
-WHERE id = $1
+JOIN users AS bottom_user ON bottom_user.id = matches.bottom_player_id
+JOIN users AS top_user ON top_user.id = matches.top_player_id
+WHERE matches.id = $1
 LIMIT 1;
 `;
 
 const findMatchesByUserIdQuery = `
-SELECT *
+SELECT ${MATCH_SELECT_FIELDS}
 FROM matches
-WHERE bottom_player_id = $1 OR top_player_id = $1
+JOIN users AS bottom_user ON bottom_user.id = matches.bottom_player_id
+JOIN users AS top_user ON top_user.id = matches.top_player_id
+WHERE matches.bottom_player_id = $1 OR matches.top_player_id = $1
 ORDER BY COALESCE(finished_at, started_at) DESC;
 `;
 

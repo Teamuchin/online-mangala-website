@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
+import { getMatchByIdRequest } from '../app/matchApi.js'
 import { getDisplayName } from '../app/playerNames.js'
 import { buildRatedMatchOutcome } from '../app/rating.js'
 import { useAppData } from '../app/useAppData.js'
@@ -9,13 +10,211 @@ import {
   readStoredMatchSessionByGameId,
 } from '../components/mangala/gamePersistence.js'
 import { createInitialState } from '../components/mangala/gameLogic.js'
+import { buildPositionSnapshot, buildReplayDescription } from '../components/mangala/matchRecord.js'
 import ReplayControls from '../components/mangala/ReplayControls.jsx'
 import PlayerPanel from '../components/mangala/PlayerPanel.jsx'
-import { buildReplayDescription } from '../components/mangala/matchRecord.js'
 import { useMangalaGame } from '../components/mangala/useMangalaGame.js'
 import styles from '../components/mangala/MangalaGame.module.css'
 
-function MangalaGameScreen({ gameId }) {
+const RESERVED_LOCAL_GAME_IDS = new Set(['local'])
+
+function mapWinnerSideToWinner(winnerSide) {
+  if (winnerSide === 'bottom' || winnerSide === 'top' || winnerSide === 'draw') {
+    return winnerSide
+  }
+
+  return null
+}
+
+function buildFlatBoard(boardState) {
+  if (Array.isArray(boardState) && boardState.length === 14) {
+    return [...boardState]
+  }
+
+  if (!boardState || typeof boardState !== 'object') {
+    return null
+  }
+
+  const {
+    bottomPits = [],
+    topPits = [],
+    bottomStore = 0,
+    topStore = 0,
+  } = boardState
+
+  if (
+    !Array.isArray(bottomPits) ||
+    !Array.isArray(topPits) ||
+    bottomPits.length !== 6 ||
+    topPits.length !== 6
+  ) {
+    return null
+  }
+
+  return [
+    ...bottomPits,
+    bottomStore,
+    ...topPits,
+    topStore,
+  ]
+}
+
+function buildTurnMessageFromState({ players, currentPlayer, gameStatus, winner }) {
+  if (gameStatus === 'finished') {
+    if (winner === 'draw') {
+      return 'The match ends in a draw.'
+    }
+
+    if (winner && players[winner]) {
+      return `${players[winner].name} wins.`
+    }
+  }
+
+  return `${players[currentPlayer].name} to move`
+}
+
+function buildPlayersFromBackendMatch(backendMatch, currentUser) {
+  const bottomId = String(backendMatch.bottom_player_id)
+  const topId = String(backendMatch.top_player_id)
+  const bottomName =
+    String(currentUser?.id) === bottomId
+      ? currentUser.username
+      : backendMatch.bottom_player_username ?? `Player ${bottomId}`
+  const topName =
+    String(currentUser?.id) === topId
+      ? currentUser.username
+      : backendMatch.top_player_username ?? `Player ${topId}`
+
+  return {
+    bottom: {
+      id: bottomId,
+      name: bottomName,
+      username: bottomName,
+      rating: backendMatch.bottom_rating_before,
+      timeLeft: 300,
+      isBot: backendMatch.bottom_player_is_bot === true,
+    },
+    top: {
+      id: topId,
+      name: topName,
+      username: topName,
+      rating: backendMatch.top_rating_before,
+      timeLeft: 300,
+      isBot: backendMatch.top_player_is_bot === true,
+    },
+  }
+}
+
+function buildMatchRecordFromBackendMatch({
+  backendMatch,
+  initialBoard,
+  players,
+  currentPlayer,
+  gameStatus,
+  winner,
+}) {
+  const rawMoves = Array.isArray(backendMatch?.moves) ? backendMatch.moves : []
+  const positions = [
+    buildPositionSnapshot({
+      board: initialBoard,
+      currentPlayer,
+      gameStatus: rawMoves.length === 0 ? gameStatus : 'playing',
+      winner: rawMoves.length === 0 ? winner : null,
+      players,
+    }),
+  ]
+
+  const moves = []
+  let latestCurrentPlayer = currentPlayer
+
+  rawMoves.forEach((move, index) => {
+    const boardAfter = buildFlatBoard(move?.boardAfter)
+
+    if (!boardAfter) {
+      return
+    }
+
+    const movePlayer = move?.player ?? move?.playerSide ?? latestCurrentPlayer
+    const nextPlayer = move?.nextPlayer ?? latestCurrentPlayer
+    const moveGameStatus =
+      index === rawMoves.length - 1 ? gameStatus : move?.gameStatus ?? 'playing'
+    const moveWinner = index === rawMoves.length - 1 ? winner : move?.winner ?? null
+
+    moves.push({
+      moveNumber: move?.moveNumber ?? moves.length + 1,
+      player: movePlayer,
+      fromPit: move?.fromPit ?? move?.pitIndex ?? 0,
+      landedAt: move?.landedAt ?? move?.lastLandingIndex ?? null,
+      captured: move?.captured ?? 0,
+      extraTurn: move?.extraTurn === true,
+      gameStatus: moveGameStatus,
+      winner: moveWinner,
+    })
+
+    positions.push(
+      buildPositionSnapshot({
+        board: boardAfter,
+        currentPlayer: nextPlayer,
+        gameStatus: moveGameStatus,
+        winner: moveWinner,
+        players,
+      }),
+    )
+
+    latestCurrentPlayer = nextPlayer
+  })
+
+  return {
+    positions,
+    moves,
+  }
+}
+
+function buildInitialConfigFromBackendMatch({ backendMatch, currentUser, gameId }) {
+  const matchMode =
+    backendMatch.bottom_player_is_bot === true || backendMatch.top_player_is_bot === true
+      ? 'computer'
+      : 'online'
+  const players = buildPlayersFromBackendMatch(backendMatch, currentUser)
+  const winner = mapWinnerSideToWinner(backendMatch.winner_side)
+  const currentPlayer =
+    backendMatch?.game_state?.currentPlayer === 'top' ? 'top' : 'bottom'
+  const initialBoard =
+    buildFlatBoard(backendMatch?.game_state?.board) ?? createInitialState().board
+  const gameStatus = backendMatch.status === 'finished' ? 'finished' : 'playing'
+  const initialMatchRecord = buildMatchRecordFromBackendMatch({
+    backendMatch,
+    initialBoard,
+    players,
+    currentPlayer,
+    gameStatus,
+    winner,
+  })
+
+  return {
+    gameId,
+    matchMode,
+    queueSettings: {
+      rated: Boolean(backendMatch.is_rated),
+      allowBots:
+        backendMatch.bottom_player_is_bot === true || backendMatch.top_player_is_bot === true,
+    },
+    initialPlayers: players,
+    initialCurrentPlayer: currentPlayer,
+    initialBoard,
+    initialGameStatus: gameStatus,
+    initialWinner: winner,
+    initialTurnMessage: buildTurnMessageFromState({
+      players,
+      currentPlayer,
+      gameStatus,
+      winner,
+    }),
+    initialMatchRecord,
+  }
+}
+
+function MangalaGameScreen({ gameId, backendMatch = null }) {
   const location = useLocation()
   const {
     activeMatchSummary,
@@ -36,7 +235,16 @@ function MangalaGameScreen({ gameId }) {
     persistedRouteSession?.gameId === gameId ? persistedRouteSession : null
   const matchingActiveMatchSummary =
     activeMatchSummary?.gameId === gameId ? activeMatchSummary : null
+  const backendInitialConfig =
+    backendMatch && !matchingPersistedSession
+      ? buildInitialConfigFromBackendMatch({
+          backendMatch,
+          currentUser,
+          gameId,
+        })
+      : null
   const matchMode =
+    backendInitialConfig?.matchMode ??
     (isPracticeBoard ? 'practice' : null) ??
     location.state?.matchMode ??
     matchingPersistedSession?.matchMode ??
@@ -59,7 +267,8 @@ function MangalaGameScreen({ gameId }) {
         null
       : null
   const initialConfig =
-    matchMode === 'practice'
+    backendInitialConfig ??
+    (matchMode === 'practice'
       ? {
           gameId,
           matchMode: 'practice',
@@ -131,7 +340,7 @@ function MangalaGameScreen({ gameId }) {
       : {
             gameId,
             matchMode: null,
-          }
+          })
 
   const {
     game,
@@ -424,8 +633,91 @@ function MangalaGameScreen({ gameId }) {
 
 export default function MangalaGame() {
   const { gameId } = useParams()
+  const location = useLocation()
+  const [backendMatch, setBackendMatch] = useState(null)
+  const [isLoadingBackendMatch, setIsLoadingBackendMatch] = useState(false)
+  const [backendMatchError, setBackendMatchError] = useState('')
 
-  return <MangalaGameScreen key={gameId} gameId={gameId} />
+  const shouldFetchBackendMatch =
+    Boolean(gameId) &&
+    !location.pathname.startsWith('/practice') &&
+    !location.state?.matchMode &&
+    !readStoredMatchSessionByGameId(gameId) &&
+    !RESERVED_LOCAL_GAME_IDS.has(gameId)
+
+  useEffect(() => {
+    let isCancelled = false
+
+    if (!shouldFetchBackendMatch) {
+      setBackendMatch(null)
+      setBackendMatchError('')
+      setIsLoadingBackendMatch(false)
+      return undefined
+    }
+
+    setIsLoadingBackendMatch(true)
+    setBackendMatchError('')
+
+    getMatchByIdRequest(gameId)
+      .then((match) => {
+        if (isCancelled) {
+          return
+        }
+
+        setBackendMatch(match)
+      })
+      .catch((error) => {
+        if (isCancelled) {
+          return
+        }
+
+        setBackendMatch(null)
+        setBackendMatchError(error.message || 'Could not load match.')
+      })
+      .finally(() => {
+        if (!isCancelled) {
+          setIsLoadingBackendMatch(false)
+        }
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [gameId, shouldFetchBackendMatch])
+
+  if (isLoadingBackendMatch) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.layout}>
+          <section className={styles.unavailableState}>
+            <h1>Loading match</h1>
+            <p>Fetching the latest game state...</p>
+          </section>
+        </div>
+      </main>
+    )
+  }
+
+  if (backendMatchError) {
+    return (
+      <main className={styles.page}>
+        <div className={styles.layout}>
+          <section className={styles.unavailableState}>
+            <h1>Game unavailable</h1>
+            <p>{backendMatchError}</p>
+          </section>
+        </div>
+      </main>
+    )
+  }
+
+  return (
+    <MangalaGameScreen
+      key={`${gameId}-${backendMatch?.id ?? 'local'}`}
+      gameId={gameId}
+      backendMatch={backendMatch}
+    />
+  )
 }
 
 export function PracticeBoardPage() {

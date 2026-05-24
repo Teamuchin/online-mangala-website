@@ -138,27 +138,36 @@ export function createInitialState(options = {}) {
   const {
     initialPlayers = INITIAL_PLAYERS,
     initialCurrentPlayer = 'bottom',
+    initialBoard = INITIAL_BOARD,
+    initialGameStatus = 'playing',
+    initialWinner = null,
+    initialTurnMessage = null,
+    initialMatchRecord = null,
+    initialMoveHistory = [],
+    lastTimerStartedAt = null,
   } = options
   const players = structuredClone(initialPlayers)
   const now = Date.now()
   const initialState = {
-    board: [...INITIAL_BOARD],
+    board: [...initialBoard],
     currentPlayer: initialCurrentPlayer,
     selectedPit: null,
     moveInProgress: false,
     ratingApplied: false,
-    gameStatus: 'playing',
-    winner: null,
-    turnMessage: `${players[initialCurrentPlayer].name} to move`,
+    gameStatus: initialGameStatus,
+    winner: initialWinner,
+    turnMessage: initialTurnMessage ?? `${players[initialCurrentPlayer].name} to move`,
     lastMove: null,
     players,
-    moveHistory: [],
-    lastTimerStartedAt: now,
+    moveHistory: [...initialMoveHistory],
+    lastTimerStartedAt: lastTimerStartedAt ?? now,
   }
 
   return {
     ...initialState,
-    matchRecord: createMatchRecord(initialState),
+    matchRecord: initialMatchRecord
+      ? structuredClone(initialMatchRecord)
+      : createMatchRecord(initialState),
   }
 }
 
