@@ -2,22 +2,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { buildWelcomeMessage } from '../app/appState.js'
 import { buildLeaderboardProfiles } from '../app/leaderboard.js'
-import { createMatchRequest } from '../app/matchApi.js'
 import {
-  buildHumanMatchPayload,
-  buildQueueEntry,
-  findCompatibleHumanEntry,
   getClosestBotProfile,
-  markHumanQueueMatch,
-  readMatchmakingQueue,
-  removeQueueEntry,
-  upsertQueueEntry,
 } from '../app/matchmaking.js'
+import {
+  getMatchmakingStatusRequest,
+  joinMatchmakingQueueRequest,
+  leaveMatchmakingQueueRequest,
+} from '../app/matchmakingApi.js'
 import { getDisplayName } from '../app/playerNames.js'
 import { useAppData } from '../app/useAppData.js'
 import {
-  createRandomGameId,
-  readStoredMatchIds,
   readStoredMatchSessionByGameId,
 } from '../components/mangala/gamePersistence.js'
 import PlayQueueModal from './PlayQueueModal.jsx'
@@ -25,45 +20,9 @@ import styles from './Home.module.css'
 
 const BOT_FALLBACK_DELAY_MS = 4000
 const HUMAN_ONLY_TIMEOUT_MS = 60_000
-const INITIAL_MATCH_BOARD = {
-  bottomPits: [4, 4, 4, 4, 4, 4],
-  bottomStore: 0,
-  topPits: [4, 4, 4, 4, 4, 4],
-  topStore: 0,
-}
 
 function buildQueueStatusText(rated) {
   return rated ? 'Looking for a rated game...' : 'Looking for an unrated game...'
-}
-
-function buildBackendMatchPayload(matchPayload, rated) {
-  const bottomPlayerId = Number.parseInt(matchPayload.players.bottom.id, 10)
-  const topPlayerId = Number.parseInt(matchPayload.players.top.id, 10)
-
-  if (!Number.isInteger(bottomPlayerId) || !Number.isInteger(topPlayerId)) {
-    throw new Error('Only registered human players can create backend matches right now.')
-  }
-
-  return {
-    id: matchPayload.gameId,
-    bottom_player_id: bottomPlayerId,
-    top_player_id: topPlayerId,
-    is_rated: rated,
-    status: 'active',
-    winner_side: null,
-    result_reason: null,
-    bottom_rating_before: matchPayload.players.bottom.rating,
-    top_rating_before: matchPayload.players.top.rating,
-    bottom_rating_change: 0,
-    top_rating_change: 0,
-    started_at: new Date().toISOString(),
-    finished_at: null,
-    moves: [],
-    game_state: {
-      currentPlayer: 'bottom',
-      board: INITIAL_MATCH_BOARD,
-    },
-  }
 }
 
 function buildLobbyPlayers(currentUser, publicProfileDirectory, activeMatchSummary) {
@@ -131,7 +90,6 @@ export default function Home() {
   })
   const [rightPanelTab, setRightPanelTab] = useState('players')
   const queueStartedAtRef = useRef(null)
-  const isCreatingHumanMatchRef = useRef(false)
   const { activeMatchSummary, currentUser, isAuthenticated, publicProfileDirectory } =
     useAppData()
 
@@ -176,9 +134,19 @@ export default function Home() {
   }, [queueConfig.rated])
 
   const cancelQueue = useCallback(() => {
-    removeQueueEntry(currentUser.id)
+    const token =
+      typeof window === 'undefined'
+        ? ''
+        : window.localStorage.getItem('mangala.authToken') ?? ''
+
+    if (token) {
+      void leaveMatchmakingQueueRequest(token).catch((error) => {
+        console.error('Leave matchmaking queue error:', error)
+      })
+    }
+
     resetQueueState()
-  }, [currentUser.id, resetQueueState])
+  }, [resetQueueState])
 
   const closePlayModal = () => {
     if (queueState.isSearching) {
@@ -197,10 +165,9 @@ export default function Home() {
       return
     }
 
-    const gameId = createRandomGameId(readStoredMatchIds())
+    const gameId = globalThis.crypto.randomUUID().replaceAll('-', '').slice(0, 12)
     const bottomStarts = Math.random() < 0.5
 
-    removeQueueEntry(currentUser.id)
     resetQueueState()
     setIsPlayModalOpen(false)
 
@@ -226,66 +193,54 @@ export default function Home() {
         startingPlayer: bottomStarts ? 'bottom' : 'top',
       },
     })
-  }, [currentUser.elo, currentUser.id, navigate, publicProfileDirectory, resetQueueState])
+  }, [currentUser.elo, navigate, publicProfileDirectory, resetQueueState])
 
-  const startHumanMatch = useCallback(async (matchedEntry) => {
-    if (isCreatingHumanMatchRef.current) {
-      return false
-    }
-
-    isCreatingHumanMatchRef.current = true
-
-    const queueEntry = buildQueueEntry(currentUser, queueConfig)
-    const gameId = createRandomGameId(readStoredMatchIds())
-    const matchPayload = buildHumanMatchPayload(queueEntry, matchedEntry, gameId)
+  const handleStartQueue = async () => {
     const token =
       typeof window === 'undefined'
         ? ''
         : window.localStorage.getItem('mangala.authToken') ?? ''
 
+    if (!token) {
+      return
+    }
+
     try {
-      await createMatchRequest(
-        buildBackendMatchPayload(matchPayload, queueConfig.rated),
+      const queueResponse = await joinMatchmakingQueueRequest(
+        {
+          rated: queueConfig.rated,
+          allowBots: queueConfig.allowBots,
+        },
         token,
       )
-      markHumanQueueMatch(queueEntry, matchedEntry, matchPayload)
-      return true
+
+      queueStartedAtRef.current = queueResponse.joinedAt ?? Date.now()
+      if (queueResponse.status === 'matched' && queueResponse.gameId && queueResponse.players) {
+        resetQueueState()
+        setIsPlayModalOpen(false)
+        navigate(`/game/${queueResponse.gameId}`, {
+          state: {
+            backendMatchId: queueResponse.gameId,
+            matchMode: 'online',
+            initialPlayers: queueResponse.players,
+            queueSettings: {
+              rated: queueResponse.rated,
+              allowBots: queueResponse.allowBots,
+            },
+          },
+        })
+        return
+      }
     } catch (error) {
-      console.error('Create human match error:', error)
-      return false
-    } finally {
-      isCreatingHumanMatchRef.current = false
-    }
-  }, [currentUser, queueConfig])
-
-  const attemptHumanMatch = useCallback(async () => {
-    if (isCreatingHumanMatchRef.current) {
-      return false
+      console.error('Join matchmaking queue error:', error)
+      return
     }
 
-    const queueEntry = buildQueueEntry(currentUser, queueConfig)
-    const queuedPlayers = readMatchmakingQueue()
-    const matchedEntry = findCompatibleHumanEntry(queuedPlayers, queueEntry)
-
-    if (!matchedEntry) {
-      return false
-    }
-
-    return startHumanMatch(matchedEntry)
-  }, [currentUser, queueConfig, startHumanMatch])
-
-  const handleStartQueue = () => {
-    const queueEntry = buildQueueEntry(currentUser, queueConfig)
-
-    upsertQueueEntry(queueEntry)
-    queueStartedAtRef.current = queueEntry.joinedAt
     setQueueState({
       isSearching: true,
       elapsedMs: 0,
       statusText: buildQueueStatusText(queueConfig.rated),
     })
-
-    void attemptHumanMatch()
   }
 
   useEffect(() => {
@@ -293,48 +248,60 @@ export default function Home() {
       return undefined
     }
 
-    const processQueue = () => {
-      const queueEntries = readMatchmakingQueue()
-      const currentEntry = queueEntries.find((entry) => entry.userId === currentUser.id)
+    const token =
+      typeof window === 'undefined'
+        ? ''
+        : window.localStorage.getItem('mangala.authToken') ?? ''
 
-      if (!currentEntry) {
+    if (!token) {
+      resetQueueState()
+      return undefined
+    }
+
+    const processQueue = async () => {
+      let currentStatus
+
+      try {
+        currentStatus = await getMatchmakingStatusRequest(token)
+      } catch (error) {
+        console.error('Get matchmaking status error:', error)
+        return
+      }
+
+      if (currentStatus.status === 'idle') {
         resetQueueState()
         return
       }
 
-      const elapsedMs = Date.now() - (queueStartedAtRef.current ?? currentEntry.joinedAt ?? Date.now())
+      const elapsedMs = Date.now() - (queueStartedAtRef.current ?? currentStatus.joinedAt ?? Date.now())
       setQueueState((existingState) => ({
         ...existingState,
         elapsedMs,
       }))
 
-      if (currentEntry.status === 'matched' && currentEntry.gameId && currentEntry.players) {
-        removeQueueEntry(currentUser.id)
+      if (currentStatus.status === 'matched' && currentStatus.gameId && currentStatus.players) {
         resetQueueState()
         setIsPlayModalOpen(false)
-        navigate(`/game/${currentEntry.gameId}`, {
+        navigate(`/game/${currentStatus.gameId}`, {
           state: {
-            backendMatchId: currentEntry.gameId,
+            backendMatchId: currentStatus.gameId,
             matchMode: 'online',
-            initialPlayers: currentEntry.players,
+            initialPlayers: currentStatus.players,
             queueSettings: {
-              rated: currentEntry.rated,
-              allowBots: currentEntry.allowBots,
+              rated: currentStatus.rated,
+              allowBots: currentStatus.allowBots,
             },
           },
         })
         return
       }
 
-      if (!isCreatingHumanMatchRef.current) {
-        void attemptHumanMatch()
-      }
-
-      if (isCreatingHumanMatchRef.current) {
-        return
-      }
-
       if (queueConfig.allowBots && elapsedMs >= BOT_FALLBACK_DELAY_MS) {
+        try {
+          await leaveMatchmakingQueueRequest(token)
+        } catch (error) {
+          console.error('Leave matchmaking queue error:', error)
+        }
         startBotMatch(queueConfig.rated)
         return
       }
@@ -345,10 +312,12 @@ export default function Home() {
       }
     }
 
-    processQueue()
-    const intervalId = window.setInterval(processQueue, 300)
+    void processQueue()
+    const intervalId = window.setInterval(() => {
+      void processQueue()
+    }, 1000)
     const handleBeforeUnload = () => {
-      removeQueueEntry(currentUser.id)
+      void leaveMatchmakingQueueRequest(token).catch(() => {})
     }
 
     window.addEventListener('beforeunload', handleBeforeUnload)
@@ -358,9 +327,7 @@ export default function Home() {
       window.removeEventListener('beforeunload', handleBeforeUnload)
     }
   }, [
-    attemptHumanMatch,
     cancelQueue,
-    currentUser.id,
     navigate,
     queueConfig,
     queueState.isSearching,
