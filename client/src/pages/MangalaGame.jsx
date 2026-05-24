@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
-import { getMatchByIdRequest } from '../app/matchApi.js'
+import { getMatchByIdRequest, updateMatchRequest } from '../app/matchApi.js'
 import { getDisplayName } from '../app/playerNames.js'
 import { buildRatedMatchOutcome } from '../app/rating.js'
 import { useAppData } from '../app/useAppData.js'
@@ -59,6 +59,19 @@ function buildFlatBoard(boardState) {
   ]
 }
 
+function buildBoardStatePayload(board) {
+  if (!Array.isArray(board) || board.length !== 14) {
+    return null
+  }
+
+  return {
+    bottomPits: board.slice(0, 6),
+    bottomStore: board[6],
+    topPits: board.slice(7, 13),
+    topStore: board[13],
+  }
+}
+
 function buildTurnMessageFromState({ players, currentPlayer, gameStatus, winner }) {
   if (gameStatus === 'finished') {
     if (winner === 'draw') {
@@ -71,6 +84,22 @@ function buildTurnMessageFromState({ players, currentPlayer, gameStatus, winner 
   }
 
   return `${players[currentPlayer].name} to move`
+}
+
+function inferResultReason(game) {
+  if (game.gameStatus !== 'finished') {
+    return null
+  }
+
+  if (game.turnMessage.includes('resignation')) {
+    return 'resign'
+  }
+
+  if (game.turnMessage.includes('on time')) {
+    return 'timeout'
+  }
+
+  return 'normal'
 }
 
 function buildPlayersFromBackendMatch(backendMatch, currentUser) {
@@ -103,6 +132,24 @@ function buildPlayersFromBackendMatch(backendMatch, currentUser) {
       isBot: backendMatch.top_player_is_bot === true,
     },
   }
+}
+
+function buildBackendMovesPayload(game) {
+  return game.matchRecord.moves.map((move, index) => {
+    const positionAfter = game.matchRecord.positions[index + 1]
+
+    return {
+      moveNumber: move.moveNumber,
+      playerSide: move.player,
+      pitIndex: move.fromPit,
+      captured: move.captured,
+      extraTurn: move.extraTurn,
+      nextPlayer: positionAfter?.currentPlayer ?? game.currentPlayer,
+      boardAfter: buildBoardStatePayload(positionAfter?.board ?? game.board),
+      gameStatus: positionAfter?.gameStatus ?? game.gameStatus,
+      winner: positionAfter?.winner ?? game.winner,
+    }
+  })
 }
 
 function buildMatchRecordFromBackendMatch({
@@ -211,6 +258,49 @@ function buildInitialConfigFromBackendMatch({ backendMatch, currentUser, gameId 
       winner,
     }),
     initialMatchRecord,
+  }
+}
+
+function buildMatchSyncPayload({
+  backendMatch,
+  gameId,
+  game,
+  isRatedMatch,
+  currentUserRole,
+  ratedOutcome,
+  startedAt,
+  finishedAt,
+}) {
+  const winnerSide = mapWinnerSideToWinner(game.winner)
+  let bottomRatingChange = 0
+  let topRatingChange = 0
+
+  if (isRatedMatch && game.gameStatus === 'finished' && ratedOutcome) {
+    if (currentUserRole === 'bottom') {
+      bottomRatingChange = ratedOutcome.playerDelta
+      topRatingChange = ratedOutcome.opponentDelta
+    } else if (currentUserRole === 'top') {
+      bottomRatingChange = ratedOutcome.opponentDelta
+      topRatingChange = ratedOutcome.playerDelta
+    }
+  }
+
+  return {
+    id: backendMatch?.id ?? gameId,
+    status: game.gameStatus === 'finished' ? 'finished' : 'active',
+    winner_side: winnerSide,
+    result_reason: inferResultReason(game),
+    bottom_rating_before: backendMatch?.bottom_rating_before ?? game.players.bottom.rating,
+    top_rating_before: backendMatch?.top_rating_before ?? game.players.top.rating,
+    bottom_rating_change: bottomRatingChange,
+    top_rating_change: topRatingChange,
+    started_at: startedAt,
+    finished_at: game.gameStatus === 'finished' ? finishedAt : null,
+    moves: buildBackendMovesPayload(game),
+    game_state: {
+      currentPlayer: game.currentPlayer,
+      board: buildBoardStatePayload(game.board),
+    },
   }
 }
 
@@ -404,6 +494,24 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
   const sidebarDescription = isReviewing ? replayDescription : game.turnMessage
   const stoneToggleRef = useRef(handleStoneToggle)
   const animationToggleRef = useRef(handleAnimationToggle)
+  const startedAtRef = useRef(backendMatch?.started_at ?? new Date().toISOString())
+  const finishedAtRef = useRef(backendMatch?.finished_at ?? null)
+  const lastSyncedSignatureRef = useRef('')
+  const inFlightSyncSignatureRef = useRef('')
+  const syncTargetMatchId =
+    backendMatch?.id ??
+    ((matchMode === 'online' || matchMode === 'computer') &&
+    !isPracticeMode &&
+    !isLocalMatch
+      ? gameId
+      : null)
+
+  useEffect(() => {
+    startedAtRef.current = backendMatch?.started_at ?? new Date().toISOString()
+    finishedAtRef.current = backendMatch?.finished_at ?? null
+    lastSyncedSignatureRef.current = ''
+    inFlightSyncSignatureRef.current = ''
+  }, [backendMatch?.finished_at, backendMatch?.id, backendMatch?.started_at])
 
   useEffect(() => {
     stoneToggleRef.current = handleStoneToggle
@@ -532,6 +640,74 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
     recordPublicProfileMatchResult,
     recordRatedMatchResult,
     currentUser.id,
+  ])
+
+  useEffect(() => {
+    if (!syncTargetMatchId) {
+      return
+    }
+
+    if (currentUserRole !== 'bottom' && currentUserRole !== 'top') {
+      return
+    }
+
+    const token =
+      typeof window === 'undefined'
+        ? ''
+        : window.localStorage.getItem('mangala.authToken') ?? ''
+
+    if (!token) {
+      return
+    }
+
+    if (game.gameStatus === 'finished' && !finishedAtRef.current) {
+      finishedAtRef.current = new Date().toISOString()
+    }
+
+    if (game.gameStatus !== 'finished' && finishedAtRef.current) {
+      finishedAtRef.current = null
+    }
+
+    const payload = buildMatchSyncPayload({
+      backendMatch,
+      gameId: syncTargetMatchId,
+      game,
+      isRatedMatch,
+      currentUserRole,
+      ratedOutcome,
+      startedAt: startedAtRef.current,
+      finishedAt: finishedAtRef.current,
+    })
+    const signature = JSON.stringify(payload)
+
+    if (
+      signature === lastSyncedSignatureRef.current ||
+      signature === inFlightSyncSignatureRef.current
+    ) {
+      return
+    }
+
+    inFlightSyncSignatureRef.current = signature
+
+    updateMatchRequest(syncTargetMatchId, payload, token)
+      .then(() => {
+        lastSyncedSignatureRef.current = signature
+      })
+      .catch((error) => {
+        console.error('Match sync error:', error)
+      })
+      .finally(() => {
+        if (inFlightSyncSignatureRef.current === signature) {
+          inFlightSyncSignatureRef.current = ''
+        }
+      })
+  }, [
+    backendMatch,
+    syncTargetMatchId,
+    currentUserRole,
+    game,
+    isRatedMatch,
+    ratedOutcome,
   ])
 
   if (isUnavailable) {
