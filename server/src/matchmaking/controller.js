@@ -4,6 +4,7 @@ const { findUserByIdQuery } = require('../auth/queries');
 const { createMatchQuery } = require('../matches/queries');
 const {
   cleanupQueueEntries,
+  consumeQueueEntry,
   findCompatibleQueueEntry,
   getQueueEntry,
   removeQueueEntry,
@@ -100,6 +101,12 @@ async function createBackendMatch(players, rated) {
   return gameId;
 }
 
+function buildAndConsumeMatchedResponse(userId, entry) {
+  const response = buildMatchedResponse(entry);
+  consumeQueueEntry(userId);
+  return response;
+}
+
 async function joinQueue(req, res) {
   try {
     const userId = String(req.auth?.userId || '').trim();
@@ -121,7 +128,7 @@ async function joinQueue(req, res) {
     const existingEntry = getQueueEntry(userId);
 
     if (existingEntry?.status === 'matched') {
-      return res.status(200).json(buildMatchedResponse(existingEntry));
+      return res.status(200).json(buildAndConsumeMatchedResponse(userId, existingEntry));
     }
 
     const currentEntry = {
@@ -170,7 +177,7 @@ async function joinQueue(req, res) {
     setQueueEntry(currentMatchedEntry);
     setQueueEntry(opponentMatchedEntry);
 
-    return res.status(200).json(buildMatchedResponse(currentMatchedEntry));
+    return res.status(200).json(buildAndConsumeMatchedResponse(userId, currentMatchedEntry));
   } catch (error) {
     console.error('Join queue error:', error);
     return res.status(500).json({ message: 'Internal server error' });
@@ -194,7 +201,7 @@ function getQueueStatus(req, res) {
     }
 
     if (entry.status === 'matched') {
-      return res.status(200).json(buildMatchedResponse(entry));
+      return res.status(200).json(buildAndConsumeMatchedResponse(userId, entry));
     }
 
     return res.status(200).json(buildSearchingResponse(entry));

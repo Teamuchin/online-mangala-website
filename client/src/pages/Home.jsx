@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { buildWelcomeMessage } from '../app/appState.js'
 import { buildLeaderboardProfiles } from '../app/leaderboard.js'
+import { getMatchByIdRequest } from '../app/matchApi.js'
 import {
   getClosestBotProfile,
 } from '../app/matchmaking.js'
@@ -13,6 +14,7 @@ import {
 import { getDisplayName } from '../app/playerNames.js'
 import { useAppData } from '../app/useAppData.js'
 import {
+  clearStoredActiveMatchSession,
   readStoredMatchSessionByGameId,
 } from '../components/mangala/gamePersistence.js'
 import PlayQueueModal from './PlayQueueModal.jsx'
@@ -107,17 +109,44 @@ export default function Home() {
     [currentUser, isAuthenticated, publicProfileDirectory],
   )
 
-  const redirectToActiveGame = () => {
-    if (activeMatchSummary?.isActive) {
-      navigate(activeMatchSummary.url)
+  const validateActiveMatchSummary = useCallback(async () => {
+    if (!activeMatchSummary?.isActive) {
+      return null
+    }
+
+    if (activeMatchSummary.matchMode !== 'online') {
+      return activeMatchSummary
+    }
+
+    try {
+      const backendMatch = await getMatchByIdRequest(activeMatchSummary.gameId)
+
+      if (backendMatch.status !== 'active') {
+        clearStoredActiveMatchSession(activeMatchSummary.gameId)
+        return null
+      }
+
+      return activeMatchSummary
+    } catch (error) {
+      console.error('Validate active match error:', error)
+      clearStoredActiveMatchSession(activeMatchSummary.gameId)
+      return null
+    }
+  }, [activeMatchSummary])
+
+  const redirectToActiveGame = useCallback(async () => {
+    const validatedActiveMatch = await validateActiveMatchSummary()
+
+    if (validatedActiveMatch?.isActive) {
+      navigate(validatedActiveMatch.url)
       return true
     }
 
     return false
-  }
+  }, [navigate, validateActiveMatchSummary])
 
-  const openPlayModal = () => {
-    if (redirectToActiveGame()) {
+  const openPlayModal = async () => {
+    if (await redirectToActiveGame()) {
       return
     }
 
@@ -196,6 +225,10 @@ export default function Home() {
   }, [currentUser.elo, navigate, publicProfileDirectory, resetQueueState])
 
   const handleStartQueue = async () => {
+    if (await redirectToActiveGame()) {
+      return
+    }
+
     const token =
       typeof window === 'undefined'
         ? ''
@@ -368,7 +401,7 @@ export default function Home() {
             <button
               type="button"
               className={styles.primaryAction}
-              onClick={activeMatchSummary?.isActive ? redirectToActiveGame : openPlayModal}
+              onClick={openPlayModal}
             >
               {activeMatchSummary?.isActive ? 'Resume Current Game' : 'Play'}
             </button>

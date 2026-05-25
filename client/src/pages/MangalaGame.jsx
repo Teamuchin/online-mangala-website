@@ -11,12 +11,14 @@ import {
 } from '../components/mangala/gamePersistence.js'
 import { createInitialState } from '../components/mangala/gameLogic.js'
 import { buildPositionSnapshot, buildReplayDescription } from '../components/mangala/matchRecord.js'
+import { buildResolvedLastMove } from '../components/mangala/movePresentation.js'
 import ReplayControls from '../components/mangala/ReplayControls.jsx'
 import PlayerPanel from '../components/mangala/PlayerPanel.jsx'
 import { useMangalaGame } from '../components/mangala/useMangalaGame.js'
 import styles from '../components/mangala/MangalaGame.module.css'
 
 const RESERVED_LOCAL_GAME_IDS = new Set(['local'])
+const BACKEND_MATCH_POLL_INTERVAL_MS = 1500
 
 function mapWinnerSideToWinner(winnerSide) {
   if (winnerSide === 'bottom' || winnerSide === 'top' || winnerSide === 'draw') {
@@ -120,7 +122,7 @@ function buildPlayersFromBackendMatch(backendMatch, currentUser) {
       name: bottomName,
       username: bottomName,
       rating: backendMatch.bottom_rating_before,
-      timeLeft: 300,
+      timeLeft: backendMatch?.game_state?.bottomTimeLeft ?? 300,
       isBot: backendMatch.bottom_player_is_bot === true,
     },
     top: {
@@ -128,7 +130,7 @@ function buildPlayersFromBackendMatch(backendMatch, currentUser) {
       name: topName,
       username: topName,
       rating: backendMatch.top_rating_before,
-      timeLeft: 300,
+      timeLeft: backendMatch?.game_state?.topTimeLeft ?? 300,
       isBot: backendMatch.top_player_is_bot === true,
     },
   }
@@ -137,18 +139,43 @@ function buildPlayersFromBackendMatch(backendMatch, currentUser) {
 function buildBackendMovesPayload(game) {
   return game.matchRecord.moves.map((move, index) => {
     const positionAfter = game.matchRecord.positions[index + 1]
+    const resolvedLastMove = index === game.matchRecord.moves.length - 1 ? game.lastMove : null
 
     return {
       moveNumber: move.moveNumber,
       playerSide: move.player,
+      fromPit: move.fromPit,
       pitIndex: move.fromPit,
       captured: move.captured,
       extraTurn: move.extraTurn,
+      initialPitCount: resolvedLastMove?.initialPitCount ?? null,
+      dropCounts: resolvedLastMove?.dropCounts ?? {},
+      dropSequence: resolvedLastMove?.dropSequence ?? [],
+      capturedStones: resolvedLastMove?.capturedStones ?? [],
+      lastLandingIndex:
+        resolvedLastMove?.lastLandingIndex ?? move?.landedAt ?? null,
       nextPlayer: positionAfter?.currentPlayer ?? game.currentPlayer,
       boardAfter: buildBoardStatePayload(positionAfter?.board ?? game.board),
       gameStatus: positionAfter?.gameStatus ?? game.gameStatus,
       winner: positionAfter?.winner ?? game.winner,
     }
+  })
+}
+
+function buildHydratedLastMove(rawMove) {
+  if (!rawMove) {
+    return null
+  }
+
+  return buildResolvedLastMove({
+    fromPit: rawMove.fromPit ?? rawMove.pitIndex ?? 0,
+    initialPitCount: rawMove.initialPitCount ?? 0,
+    dropCounts: rawMove.dropCounts ?? {},
+    dropSequence: rawMove.dropSequence ?? [],
+    capturedStones: rawMove.capturedStones ?? [],
+    lastLandingIndex: rawMove.lastLandingIndex ?? rawMove.landedAt ?? null,
+    captured: rawMove.captured ?? 0,
+    extraTurn: rawMove.extraTurn === true,
   })
 }
 
@@ -237,10 +264,15 @@ function buildInitialConfigFromBackendMatch({ backendMatch, currentUser, gameId 
     gameStatus,
     winner,
   })
+  const latestMove =
+    Array.isArray(backendMatch?.moves) && backendMatch.moves.length > 0
+      ? backendMatch.moves[backendMatch.moves.length - 1]
+      : null
 
   return {
     gameId,
     backendMatchId: backendMatch.id,
+    forceFreshState: true,
     matchMode,
     queueSettings: {
       rated: Boolean(backendMatch.is_rated),
@@ -258,6 +290,8 @@ function buildInitialConfigFromBackendMatch({ backendMatch, currentUser, gameId 
       gameStatus,
       winner,
     }),
+    initialSelectedPit: latestMove?.fromPit ?? latestMove?.pitIndex ?? null,
+    initialLastMove: buildHydratedLastMove(latestMove),
     initialMatchRecord,
   }
 }
@@ -301,6 +335,8 @@ function buildMatchSyncPayload({
     game_state: {
       currentPlayer: game.currentPlayer,
       board: buildBoardStatePayload(game.board),
+      bottomTimeLeft: game.players.bottom.timeLeft,
+      topTimeLeft: game.players.top.timeLeft,
     },
   }
 }
@@ -327,7 +363,7 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
   const matchingActiveMatchSummary =
     activeMatchSummary?.gameId === gameId ? activeMatchSummary : null
   const backendInitialConfig =
-    backendMatch && !matchingPersistedSession
+    backendMatch
       ? buildInitialConfigFromBackendMatch({
           backendMatch,
           currentUser,
@@ -814,53 +850,101 @@ export default function MangalaGame() {
   const [backendMatch, setBackendMatch] = useState(null)
   const [isLoadingBackendMatch, setIsLoadingBackendMatch] = useState(false)
   const [backendMatchError, setBackendMatchError] = useState('')
-
-  const shouldFetchBackendMatch =
-    Boolean(gameId) &&
-    !location.pathname.startsWith('/practice') &&
+  const persistedMatchSession =
+    typeof window === 'undefined' || typeof gameId !== 'string'
+      ? null
+      : readStoredMatchSessionByGameId(gameId)
+  const targetBackendMatchId =
+    location.state?.backendMatchId ??
+    persistedMatchSession?.backendMatchId ??
+    (!location.pathname.startsWith('/practice') &&
     !location.state?.matchMode &&
-    !readStoredMatchSessionByGameId(gameId) &&
     !RESERVED_LOCAL_GAME_IDS.has(gameId)
+      ? gameId
+      : null)
+  const backendMatchRevision = backendMatch
+    ? JSON.stringify({
+        status: backendMatch.status,
+        winnerSide: backendMatch.winner_side,
+        resultReason: backendMatch.result_reason,
+        finishedAt: backendMatch.finished_at,
+        currentPlayer: backendMatch.game_state?.currentPlayer ?? null,
+        board: backendMatch.game_state?.board ?? null,
+        moves: backendMatch.moves ?? [],
+      })
+    : 'local'
 
   useEffect(() => {
     let isCancelled = false
 
-    if (!shouldFetchBackendMatch) {
+    if (!targetBackendMatchId) {
       setBackendMatch(null)
       setBackendMatchError('')
       setIsLoadingBackendMatch(false)
       return undefined
     }
 
-    setIsLoadingBackendMatch(true)
-    setBackendMatchError('')
+    const fetchMatch = async ({ showLoading = false } = {}) => {
+      if (showLoading) {
+        setIsLoadingBackendMatch(true)
+      }
 
-    getMatchByIdRequest(gameId)
-      .then((match) => {
+      try {
+        const match = await getMatchByIdRequest(targetBackendMatchId)
+
         if (isCancelled) {
           return
         }
 
-        setBackendMatch(match)
-      })
-      .catch((error) => {
+        setBackendMatch((currentMatch) => {
+          const currentRevision = currentMatch
+            ? JSON.stringify({
+                status: currentMatch.status,
+                winnerSide: currentMatch.winner_side,
+                resultReason: currentMatch.result_reason,
+                finishedAt: currentMatch.finished_at,
+                currentPlayer: currentMatch.game_state?.currentPlayer ?? null,
+                board: currentMatch.game_state?.board ?? null,
+                moves: currentMatch.moves ?? [],
+              })
+            : null
+          const nextRevision = JSON.stringify({
+            status: match.status,
+            winnerSide: match.winner_side,
+            resultReason: match.result_reason,
+            finishedAt: match.finished_at,
+            currentPlayer: match.game_state?.currentPlayer ?? null,
+            board: match.game_state?.board ?? null,
+            moves: match.moves ?? [],
+          })
+
+          return currentRevision === nextRevision ? currentMatch : match
+        })
+        setBackendMatchError('')
+      } catch (error) {
         if (isCancelled) {
           return
         }
 
         setBackendMatch(null)
         setBackendMatchError(error.message || 'Could not load match.')
-      })
-      .finally(() => {
-        if (!isCancelled) {
+      } finally {
+        if (!isCancelled && showLoading) {
           setIsLoadingBackendMatch(false)
         }
-      })
+      }
+    }
+
+    void fetchMatch({ showLoading: true })
+    const intervalId = window.setInterval(() => {
+      void fetchMatch()
+    }, BACKEND_MATCH_POLL_INTERVAL_MS)
 
     return () => {
       isCancelled = true
+      window.clearInterval(intervalId)
     }
-  }, [gameId, shouldFetchBackendMatch])
+  }, [targetBackendMatchId])
 
   if (isLoadingBackendMatch) {
     return (
@@ -890,7 +974,7 @@ export default function MangalaGame() {
 
   return (
     <MangalaGameScreen
-      key={`${gameId}-${backendMatch?.id ?? 'local'}`}
+      key={`${gameId}-${backendMatch?.id ?? 'local'}-${backendMatchRevision}`}
       gameId={gameId}
       backendMatch={backendMatch}
     />

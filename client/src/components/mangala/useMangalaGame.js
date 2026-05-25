@@ -83,6 +83,7 @@ export function useMangalaGame(initialConfig) {
   const canCreateFreshMatch = Boolean(initialConfig?.matchMode)
   const shouldRestorePersistedSession = Boolean(
     !isPracticeBoard &&
+    !initialConfig?.forceFreshState &&
     restoredSession &&
       restoredSession.gameId === initialConfig?.gameId &&
       (!initialConfig?.matchMode ||

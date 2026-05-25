@@ -31,6 +31,17 @@ function removeQueueEntry(userId) {
   queueEntries.delete(String(userId));
 }
 
+function consumeQueueEntry(userId) {
+  const normalizedUserId = String(userId);
+  const entry = queueEntries.get(normalizedUserId) ?? null;
+
+  if (entry) {
+    queueEntries.delete(normalizedUserId);
+  }
+
+  return entry;
+}
+
 function findCompatibleQueueEntry(currentEntry) {
   cleanupQueueEntries();
 
@@ -49,6 +60,7 @@ function findCompatibleQueueEntry(currentEntry) {
 
 module.exports = {
   cleanupQueueEntries,
+  consumeQueueEntry,
   findCompatibleQueueEntry,
   getQueueEntry,
   removeQueueEntry,

@@ -225,6 +225,13 @@ async function updateMatch(req, res) {
       return res.status(400).json({ message: 'Match players cannot be changed' });
     }
 
+    // Once a match is finished, backend state becomes authoritative and immutable.
+    // This prevents a stale polling client from overwriting the final result
+    // with an older "active" snapshot before it rehydrates from the backend.
+    if (existingMatch.status === 'finished') {
+      return res.status(200).json(existingMatch);
+    }
+
     const payload = normalizeMatchPayload(req.body, {
       requireId: false,
       existingMatch,

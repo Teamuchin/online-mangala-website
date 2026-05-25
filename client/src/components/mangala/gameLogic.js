@@ -144,6 +144,8 @@ export function createInitialState(options = {}) {
     initialTurnMessage = null,
     initialMatchRecord = null,
     initialMoveHistory = [],
+    initialSelectedPit = null,
+    initialLastMove = null,
     lastTimerStartedAt = null,
   } = options
   const players = structuredClone(initialPlayers)
@@ -151,13 +153,13 @@ export function createInitialState(options = {}) {
   const initialState = {
     board: [...initialBoard],
     currentPlayer: initialCurrentPlayer,
-    selectedPit: null,
+    selectedPit: initialSelectedPit,
     moveInProgress: false,
     ratingApplied: false,
     gameStatus: initialGameStatus,
     winner: initialWinner,
     turnMessage: initialTurnMessage ?? `${players[initialCurrentPlayer].name} to move`,
-    lastMove: null,
+    lastMove: initialLastMove ? structuredClone(initialLastMove) : null,
     players,
     moveHistory: [...initialMoveHistory],
     lastTimerStartedAt: lastTimerStartedAt ?? now,

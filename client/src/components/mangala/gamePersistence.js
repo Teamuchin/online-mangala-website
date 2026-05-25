@@ -258,3 +258,28 @@ export function writePersistedMatchSession(session) {
     }),
   )
 }
+
+export function clearStoredActiveMatchSession(gameId = null) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  const activeSession = readPersistedMatchSession(
+    window.localStorage.getItem(ACTIVE_MATCH_STORAGE_KEY),
+  )
+
+  if (!activeSession) {
+    return
+  }
+
+  if (gameId && activeSession.gameId !== normalizeGameId(gameId)) {
+    return
+  }
+
+  window.localStorage.removeItem(ACTIVE_MATCH_STORAGE_KEY)
+  window.dispatchEvent(
+    new CustomEvent(ACTIVE_MATCH_UPDATED_EVENT, {
+      detail: null,
+    }),
+  )
+}
