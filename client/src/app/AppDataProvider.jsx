@@ -53,7 +53,7 @@ function buildCurrentUserFromBackendUser(user, fallbackUser = staticAppData.init
   }
 }
 
-function buildPublicProfiles(users, currentUser, botProfiles) {
+function buildPublicProfiles(users, currentUser) {
   const profilesByUsername = new Map()
 
   users.forEach((user) => {
@@ -68,12 +68,6 @@ function buildPublicProfiles(users, currentUser, botProfiles) {
     }
 
     profilesByUsername.set(profile.username, profile)
-  })
-
-  botProfiles.forEach((botProfile) => {
-    if (!profilesByUsername.has(botProfile.username)) {
-      profilesByUsername.set(botProfile.username, botProfile)
-    }
   })
 
   return Array.from(profilesByUsername.values())
@@ -127,7 +121,7 @@ export function AppDataProvider({ children }) {
   )
 
   const publicProfileDirectory = useMemo(
-    () => buildPublicProfiles(publicUsers, currentUser, staticAppData.botProfiles),
+    () => buildPublicProfiles(publicUsers, currentUser),
     [currentUser, publicUsers],
   )
 
