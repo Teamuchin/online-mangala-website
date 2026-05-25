@@ -9,19 +9,6 @@ import styles from './AccountSettings.module.css'
 import { useAppData } from '../app/useAppData.js'
 import { updateMeRequest } from '../app/authApi.js'
 
-function formatMemberSince(isoDateString) {
-  const parsedDate = new Date(isoDateString)
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return 'May 2026'
-  }
-
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    year: 'numeric',
-  }).format(parsedDate)
-}
-
 export default function AccountSettings() {
   const { accountSettingsFields, currentUser, updateCurrentUser } = useAppData()
   const [formState, setFormState] = useState(() => buildAccountFormState(currentUser))
@@ -78,13 +65,7 @@ export default function AccountSettings() {
       const response = await updateMeRequest(payload, token)
 
       window.localStorage.setItem('mangala.authToken', response.token)
-
-      updateCurrentUser({
-        id: String(response.user.id),
-        username: response.user.username,
-        email: response.user.email,
-        memberSince: formatMemberSince(response.user.created_at),
-      })
+      updateCurrentUser(response.user)
 
       setFormState((currentFormState) => ({
         ...currentFormState,

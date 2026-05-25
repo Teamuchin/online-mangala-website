@@ -5,19 +5,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAppData } from '../app/useAppData.js'
 import { loginRequest } from '../app/authApi.js'
 
-function formatMemberSince(isoDateString) {
-  const parsedDate = new Date(isoDateString)
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return 'May 2026'
-  }
-
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    year: 'numeric',
-  }).format(parsedDate)
-}
-
 export default function Login() {
   const navigate = useNavigate()
   const { continueAsGuest, logIn } = useAppData()
@@ -46,13 +33,7 @@ export default function Login() {
       })
 
       window.localStorage.setItem('mangala.authToken', response.token)
-
-      logIn({
-        id: String(response.user.id),
-        username: response.user.username,
-        email: response.user.email,
-        memberSince: formatMemberSince(response.user.created_at),
-      })
+      logIn(response.user)
 
       navigate('/')
     } catch (error) {

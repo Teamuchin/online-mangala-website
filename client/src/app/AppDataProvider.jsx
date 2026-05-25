@@ -1,13 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ACTIVE_MATCH_UPDATED_EVENT,
   areActiveMatchSummariesEqual,
   readStoredActiveMatchSummary,
 } from '../components/mangala/gamePersistence.js'
+import { getMeRequest } from './authApi.js'
 import {
-  applyMatchHistoryResult,
-  applyRatedMatchResult,
-  buildAuthenticatedSessionUpdates,
   buildLoggedOutSessionUpdates,
   isGuestUser,
   mergeStoredAuthState,
@@ -15,11 +13,71 @@ import {
   updateUserProfile,
 } from './appState.js'
 import { AppDataContext, staticAppData } from './appDataContext.js'
+import { buildProfileFromBackendUser } from './profileData.js'
+import { getLeaderboardUsersRequest } from './userApi.js'
 
 const AUTH_STATE_STORAGE_KEY = 'mangala.authState'
 const CURRENT_USER_STORAGE_KEY = 'mangala.currentUser'
-const PUBLIC_PROFILE_DIRECTORY_STORAGE_KEY = 'mangala.publicProfileDirectory'
-const REGISTERED_USER_STORAGE_KEY = 'mangala.registeredUser'
+
+function formatMemberSince(createdAt) {
+  if (!createdAt) {
+    return 'May 2026'
+  }
+
+  const parsedDate = new Date(createdAt)
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return 'May 2026'
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    year: 'numeric',
+  }).format(parsedDate)
+}
+
+function buildCurrentUserFromBackendUser(user, fallbackUser = staticAppData.initialCurrentUser) {
+  if (!user) {
+    return fallbackUser
+  }
+
+  return {
+    ...fallbackUser,
+    id: String(user.id),
+    username: user.username,
+    email: user.email ?? fallbackUser.email,
+    elo: user.elo,
+    isBot: user.is_bot === true,
+    memberSince: formatMemberSince(user.created_at),
+    createdAt: user.created_at,
+  }
+}
+
+function buildPublicProfiles(users, currentUser, botProfiles) {
+  const profilesByUsername = new Map()
+
+  users.forEach((user) => {
+    const profile = buildProfileFromBackendUser(user)
+
+    if (String(profile.id) === String(currentUser.id)) {
+      profilesByUsername.set(profile.username, {
+        ...profile,
+        username: currentUser.username,
+      })
+      return
+    }
+
+    profilesByUsername.set(profile.username, profile)
+  })
+
+  botProfiles.forEach((botProfile) => {
+    if (!profilesByUsername.has(botProfile.username)) {
+      profilesByUsername.set(botProfile.username, botProfile)
+    }
+  })
+
+  return Array.from(profilesByUsername.values())
+}
 
 function readStoredUser(storageKey, fallbackUser) {
   if (typeof window === 'undefined') {
@@ -39,46 +97,11 @@ function readStoredUser(storageKey, fallbackUser) {
   }
 }
 
-function readStoredPublicProfileDirectory(fallbackProfiles) {
-  if (typeof window === 'undefined') {
-    return fallbackProfiles
-  }
-
-  const storedProfiles = window.localStorage.getItem(PUBLIC_PROFILE_DIRECTORY_STORAGE_KEY)
-
-  if (!storedProfiles) {
-    return fallbackProfiles
-  }
-
-  try {
-    const parsedProfiles = JSON.parse(storedProfiles)
-
-    if (!Array.isArray(parsedProfiles)) {
-      return fallbackProfiles
-    }
-
-    return fallbackProfiles.map((fallbackProfile) => {
-      const storedProfile = parsedProfiles.find((profile) => profile.id === fallbackProfile.id)
-
-      return storedProfile
-        ? mergeStoredUser(fallbackProfile, storedProfile)
-        : fallbackProfile
-    })
-  } catch {
-    return fallbackProfiles
-  }
-}
-
 export function AppDataProvider({ children }) {
-  const [registeredUser, setRegisteredUser] = useState(() =>
-    readStoredUser(REGISTERED_USER_STORAGE_KEY, staticAppData.initialCurrentUser),
-  )
   const [currentUser, setCurrentUser] = useState(() =>
     readStoredUser(CURRENT_USER_STORAGE_KEY, staticAppData.initialCurrentUser),
   )
-  const [publicProfileDirectory, setPublicProfileDirectory] = useState(() =>
-    readStoredPublicProfileDirectory(staticAppData.publicProfileDirectory),
-  )
+  const [publicUsers, setPublicUsers] = useState([])
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     if (typeof window === 'undefined') {
       return true
@@ -103,90 +126,53 @@ export function AppDataProvider({ children }) {
     readStoredActiveMatchSummary(),
   )
 
+  const publicProfileDirectory = useMemo(
+    () => buildPublicProfiles(publicUsers, currentUser, staticAppData.botProfiles),
+    [currentUser, publicUsers],
+  )
+
   const updateCurrentUser = (updates) => {
     setCurrentUser((existingUser) => updateUserProfile(existingUser, updates))
-
-    if (!isGuestUser(currentUser)) {
-      setRegisteredUser((existingUser) => updateUserProfile(existingUser, updates))
-    }
   }
 
-  const logIn = (userOverrides = {}) => {
-    const session = buildAuthenticatedSessionUpdates(
-      registeredUser,
-      userOverrides,
-    )
-
-    setCurrentUser(session.currentUser)
-    setIsAuthenticated(session.isAuthenticated)
+  const logIn = (user) => {
+    setCurrentUser((existingUser) => buildCurrentUserFromBackendUser(user, existingUser))
+    setIsAuthenticated(true)
   }
 
-  const registerUser = (userOverrides = {}) => {
-    const session = buildAuthenticatedSessionUpdates(
-      registeredUser,
-      userOverrides,
-    )
-
-    setRegisteredUser(session.currentUser)
-    setCurrentUser(session.currentUser)
-    setIsAuthenticated(session.isAuthenticated)
+  const registerUser = (user) => {
+    setCurrentUser((existingUser) => buildCurrentUserFromBackendUser(user, existingUser))
+    setIsAuthenticated(true)
   }
 
   const continueAsGuest = () => {
-    logIn(staticAppData.guestCurrentUser)
+    setCurrentUser(staticAppData.guestCurrentUser)
+    setIsAuthenticated(true)
   }
 
   const logOut = () => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('mangala.authToken')
+    }
+
+    setCurrentUser(staticAppData.initialCurrentUser)
     setIsAuthenticated(buildLoggedOutSessionUpdates().isAuthenticated)
   }
 
   const recordRatedMatchResult = (matchResult) => {
-    setCurrentUser((existingUser) => applyRatedMatchResult(existingUser, matchResult))
-
-    if (!isGuestUser(currentUser)) {
-      setRegisteredUser((existingUser) =>
-        applyRatedMatchResult(existingUser, matchResult),
-      )
-    }
+    setCurrentUser((existingUser) => ({
+      ...existingUser,
+      elo: matchResult.ratingAfter,
+    }))
   }
 
-  const recordMatchHistoryResult = (matchResult) => {
-    setCurrentUser((existingUser) => applyMatchHistoryResult(existingUser, matchResult))
+  const recordMatchHistoryResult = () => {}
 
-    if (!isGuestUser(currentUser)) {
-      setRegisteredUser((existingUser) =>
-        applyMatchHistoryResult(existingUser, matchResult),
-      )
-    }
-  }
-
-  const recordPublicProfileMatchResult = (profileId, matchResult) => {
-    setPublicProfileDirectory((existingProfiles) =>
-      existingProfiles.map((profile) =>
-        profile.id === profileId
-          ? applyRatedMatchResult(profile, matchResult)
-          : profile,
-      ),
-    )
-  }
+  const recordPublicProfileMatchResult = () => {}
 
   useEffect(() => {
     window.localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(currentUser))
   }, [currentUser])
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      REGISTERED_USER_STORAGE_KEY,
-      JSON.stringify(registeredUser),
-    )
-  }, [registeredUser])
-
-  useEffect(() => {
-    window.localStorage.setItem(
-      PUBLIC_PROFILE_DIRECTORY_STORAGE_KEY,
-      JSON.stringify(publicProfileDirectory),
-    )
-  }, [publicProfileDirectory])
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -215,6 +201,65 @@ export function AppDataProvider({ children }) {
       window.removeEventListener('storage', syncActiveMatch)
     }
   }, [])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    const loadPublicUsers = async () => {
+      try {
+        const users = await getLeaderboardUsersRequest()
+
+        if (!isCancelled) {
+          setPublicUsers(users)
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          console.error('Load public users error:', error)
+        }
+      }
+    }
+
+    void loadPublicUsers()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    const token =
+      typeof window === 'undefined'
+        ? ''
+        : window.localStorage.getItem('mangala.authToken') ?? ''
+
+    if (!token || !isAuthenticated || isGuestUser(currentUser)) {
+      return undefined
+    }
+
+    const loadCurrentUser = async () => {
+      try {
+        const response = await getMeRequest(token)
+
+        if (!isCancelled) {
+          setCurrentUser((existingUser) =>
+            buildCurrentUserFromBackendUser(response.user, existingUser),
+          )
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          console.error('Load current user error:', error)
+        }
+      }
+    }
+
+    void loadCurrentUser()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [currentUser.email, isAuthenticated])
 
   const value = {
     ...staticAppData,

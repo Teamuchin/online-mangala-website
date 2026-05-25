@@ -9,19 +9,6 @@ const USERNAME_REGEX = /^[A-Za-z0-9_-]{3,15}$/
 const PASSWORD_MIN_LENGTH = 6
 const PASSWORD_MAX_LENGTH = 32
 
-function formatMemberSince(isoDateString) {
-  const parsedDate = new Date(isoDateString)
-
-  if (Number.isNaN(parsedDate.getTime())) {
-    return 'May 2026'
-  }
-
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    year: 'numeric',
-  }).format(parsedDate)
-}
-
 export default function Register() {
   const navigate = useNavigate()
   const { registerUser } = useAppData()
@@ -70,13 +57,7 @@ export default function Register() {
       })
 
       window.localStorage.setItem('mangala.authToken', response.token)
-
-      registerUser({
-        id: String(response.user.id),
-        username: response.user.username,
-        email: response.user.email,
-        memberSince: formatMemberSince(response.user.created_at),
-      })
+      registerUser(response.user)
       navigate('/')
     } catch (error) {
       setErrorMessage(error.message || 'Registration failed. Please try again.')

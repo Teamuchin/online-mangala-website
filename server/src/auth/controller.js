@@ -200,8 +200,30 @@ async function updateMe(req, res) {
   }
 }
 
+async function getMe(req, res) {
+  try {
+    const userId = String(req.auth?.userId || '').trim();
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const userResult = await db.query(findUserByIdQuery, [userId]);
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.status(200).json({ user: sanitizeProfileUser(userResult.rows[0]) });
+  } catch (error) {
+    console.error('Get me error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
 module.exports = {
   register,
   login,
+  getMe,
   updateMe,
 };

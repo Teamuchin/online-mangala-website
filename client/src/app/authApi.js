@@ -29,14 +29,15 @@ function normalizeToken(token = '') {
 
 async function request(path, payload, options = {}) {
   const token = options.token ? normalizeToken(options.token) : ''
+  const hasBody = payload !== undefined
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: options.method || 'POST',
     headers: {
-      'Content-Type': 'application/json',
+      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify(payload),
+    ...(hasBody ? { body: JSON.stringify(payload) } : {}),
   })
 
   const data = await response.json().catch(() => ({}))
@@ -58,4 +59,8 @@ export function loginRequest(payload) {
 
 export function updateMeRequest(payload, token) {
   return request('/api/auth/me', payload, { method: 'PATCH', token })
+}
+
+export function getMeRequest(token) {
+  return request('/api/auth/me', undefined, { method: 'GET', token })
 }
