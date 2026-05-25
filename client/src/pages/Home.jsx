@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { buildWelcomeMessage } from '../app/appState.js'
-import { buildLeaderboardProfiles } from '../app/leaderboard.js'
 import { getMatchByIdRequest } from '../app/matchApi.js'
 import {
   getClosestBotProfile,
@@ -12,6 +11,8 @@ import {
   leaveMatchmakingQueueRequest,
 } from '../app/matchmakingApi.js'
 import { getDisplayName } from '../app/playerNames.js'
+import { buildProfileFromBackendUser } from '../app/profileData.js'
+import { getLeaderboardUsersRequest } from '../app/userApi.js'
 import { useAppData } from '../app/useAppData.js'
 import {
   clearStoredActiveMatchSession,
@@ -90,6 +91,7 @@ export default function Home() {
     elapsedMs: 0,
     statusText: buildQueueStatusText(true),
   })
+  const [leaderboardUsers, setLeaderboardUsers] = useState([])
   const [rightPanelTab, setRightPanelTab] = useState('players')
   const queueStartedAtRef = useRef(null)
   const { activeMatchSummary, currentUser, isAuthenticated, publicProfileDirectory } =
@@ -105,8 +107,17 @@ export default function Home() {
   )
   const leaderboardPreview = useMemo(
     () =>
-      buildLeaderboardProfiles(currentUser, publicProfileDirectory, isAuthenticated).slice(0, 8),
-    [currentUser, isAuthenticated, publicProfileDirectory],
+      leaderboardUsers
+        .map((user) =>
+          String(user.id) === String(currentUser.id)
+            ? {
+                ...user,
+                username: currentUser.username,
+              }
+            : user,
+        )
+        .slice(0, 8),
+    [currentUser.id, currentUser.username, leaderboardUsers],
   )
 
   const validateActiveMatchSummary = useCallback(async () => {
@@ -275,6 +286,32 @@ export default function Home() {
       statusText: buildQueueStatusText(queueConfig.rated),
     })
   }
+
+  useEffect(() => {
+    let isCancelled = false
+
+    const loadLeaderboard = async () => {
+      try {
+        const users = await getLeaderboardUsersRequest()
+
+        if (isCancelled) {
+          return
+        }
+
+        setLeaderboardUsers(users.map((user) => buildProfileFromBackendUser(user)))
+      } catch (error) {
+        if (!isCancelled) {
+          console.error('Load homepage leaderboard error:', error)
+        }
+      }
+    }
+
+    void loadLeaderboard()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     if (!queueState.isSearching) {
