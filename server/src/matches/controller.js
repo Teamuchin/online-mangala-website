@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const db = require('../db');
 const { updateUserEloQuery } = require('../auth/queries');
 const { buildRatedMatchOutcome } = require('./rating');
@@ -14,6 +15,10 @@ function parseInteger(value) {
   return Number.isInteger(parsed) ? parsed : null;
 }
 
+function createMatchId() {
+  return crypto.randomBytes(6).toString('hex');
+}
+
 function normalizeMatchPayload(input, options = {}) {
   const {
     requireId = true,
@@ -21,9 +26,10 @@ function normalizeMatchPayload(input, options = {}) {
   } = options;
 
   const source = input ?? {};
+  const providedMatchId = String(source.id || '').trim();
   const matchId = requireId
-    ? String(source.id || '').trim()
-    : String(existingMatch?.id || '').trim();
+    ? providedMatchId
+    : providedMatchId || String(existingMatch?.id || '').trim();
 
   const bottomPlayerId =
     source.bottom_player_id === undefined
@@ -208,8 +214,8 @@ function buildServerRatedResult(existingMatch, payload) {
 async function createMatch(req, res) {
   try {
     const authenticatedUserId = parseInteger(req.auth?.userId);
-    const payload = normalizeMatchPayload(req.body, { requireId: true });
-    const validationError = validateMatchPayload(payload, { requireId: true });
+    const payload = normalizeMatchPayload(req.body, { requireId: false });
+    const validationError = validateMatchPayload(payload, { requireId: false });
 
     if (
       authenticatedUserId !== payload.bottomPlayerId &&
@@ -220,6 +226,10 @@ async function createMatch(req, res) {
 
     if (validationError) {
       return res.status(400).json({ message: validationError });
+    }
+
+    if (!payload.id) {
+      payload.id = createMatchId();
     }
 
     const result = await db.query(createMatchQuery, [

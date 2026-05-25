@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { buildWelcomeMessage } from '../app/appState.js'
-import { getActiveMatchesRequest, getMatchByIdRequest } from '../app/matchApi.js'
+import {
+  createMatchRequest,
+  getActiveMatchesRequest,
+  getMatchByIdRequest,
+} from '../app/matchApi.js'
 import {
   getClosestBotProfile,
 } from '../app/matchmaking.js'
@@ -24,6 +28,12 @@ import styles from './Home.module.css'
 const BOT_FALLBACK_DELAY_MS = 4000
 const HUMAN_ONLY_TIMEOUT_MS = 60_000
 const HOME_ACTIVE_MATCHES_POLL_INTERVAL_MS = 3000
+const INITIAL_MATCH_BOARD = {
+  bottomPits: [4, 4, 4, 4, 4, 4],
+  bottomStore: 0,
+  topPits: [4, 4, 4, 4, 4, 4],
+  topStore: 0,
+}
 
 function getBotDifficulty(botProfile) {
   const normalizedUsername = String(botProfile?.username || '').toLowerCase()
@@ -38,6 +48,11 @@ function getBotDifficulty(botProfile) {
     default:
       return 1
   }
+}
+
+function parseParticipantId(value) {
+  const parsed = Number.parseInt(String(value ?? ''), 10)
+  return Number.isInteger(parsed) ? parsed : null
 }
 
 function buildQueueStatusText(rated) {
@@ -224,7 +239,7 @@ export default function Home() {
     setIsPlayModalOpen(false)
   }
 
-  const startBotMatch = useCallback((rated) => {
+  const startBotMatch = useCallback(async (rated) => {
     const selectedBotProfile = getClosestBotProfile(publicProfileDirectory, currentUser.elo ?? 1200)
 
     if (!selectedBotProfile) {
@@ -233,27 +248,67 @@ export default function Home() {
       return
     }
 
-    const gameId = globalThis.crypto.randomUUID().replaceAll('-', '').slice(0, 12)
     const bottomStarts = Math.random() < 0.5
+    const currentUserId = parseParticipantId(currentUser.id)
+    const botUserId = parseParticipantId(selectedBotProfile.id)
+    const token =
+      typeof window === 'undefined'
+        ? ''
+        : window.localStorage.getItem('mangala.authToken') ?? ''
 
-    resetQueueState()
-    setIsPlayModalOpen(false)
+    if (!token || !currentUserId || !botUserId) {
+      console.error('Bot match requires real backend player ids.')
+      return
+    }
 
-    navigate(`/game/${gameId}`, {
-      state: {
-        botSettings: {
-          difficulty: getBotDifficulty(selectedBotProfile),
-          firstMove: 'random',
+    try {
+      const createdMatch = await createMatchRequest(
+        {
+          bottom_player_id: currentUserId,
+          top_player_id: botUserId,
+          is_rated: rated,
+          status: 'active',
+          winner_side: null,
+          result_reason: null,
+          bottom_rating_before: currentUser.elo ?? 1200,
+          top_rating_before: selectedBotProfile.elo ?? 1200,
+          bottom_rating_change: 0,
+          top_rating_change: 0,
+          started_at: new Date().toISOString(),
+          finished_at: null,
+          moves: [],
+          game_state: {
+            currentPlayer: bottomStarts ? 'bottom' : 'top',
+            board: INITIAL_MATCH_BOARD,
+            bottomTimeLeft: 300,
+            topTimeLeft: 300,
+          },
         },
-        botProfile: selectedBotProfile,
-        matchMode: 'computer',
-        queueSettings: {
-          rated,
-          allowBots: true,
+        token,
+      )
+
+      resetQueueState()
+      setIsPlayModalOpen(false)
+
+      navigate(`/game/${createdMatch.id}`, {
+        state: {
+          backendMatchId: createdMatch.id,
+          botSettings: {
+            difficulty: getBotDifficulty(selectedBotProfile),
+            firstMove: 'random',
+          },
+          botProfile: selectedBotProfile,
+          matchMode: 'computer',
+          queueSettings: {
+            rated,
+            allowBots: true,
+          },
+          startingPlayer: bottomStarts ? 'bottom' : 'top',
         },
-        startingPlayer: bottomStarts ? 'bottom' : 'top',
-      },
-    })
+      })
+    } catch (error) {
+      console.error('Create bot match error:', error)
+    }
   }, [currentUser.elo, navigate, publicProfileDirectory, resetQueueState])
 
   const handleStartQueue = async () => {
