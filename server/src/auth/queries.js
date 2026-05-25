@@ -75,6 +75,13 @@ SET password_hash = $2
 WHERE id = $1;
 `;
 
+const updateUserEloQuery = `
+UPDATE users
+SET elo = $2
+WHERE id = $1
+RETURNING id, username, email, elo, is_bot, created_at;
+`;
+
 module.exports = {
   createUsersTableQuery,
   dropBioColumnQuery,
@@ -88,4 +95,5 @@ module.exports = {
   findUserByIdQuery,
   createUserQuery,
   updateUserPasswordQuery,
+  updateUserEloQuery,
 };

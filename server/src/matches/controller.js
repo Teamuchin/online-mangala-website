@@ -1,4 +1,6 @@
 const db = require('../db');
+const { updateUserEloQuery } = require('../auth/queries');
+const { buildRatedMatchOutcome } = require('./rating');
 const {
   createMatchQuery,
   findMatchByIdQuery,
@@ -136,6 +138,72 @@ function validateMatchPayload(payload, { requireId = true } = {}) {
   return null;
 }
 
+function buildFinishedRatedEloUpdates(payload) {
+  if (!payload.isRated || payload.status !== 'finished') {
+    return null;
+  }
+
+  return {
+    bottom: {
+      userId: payload.bottomPlayerId,
+      nextElo: payload.bottomRatingBefore + payload.bottomRatingChange,
+    },
+    top: {
+      userId: payload.topPlayerId,
+      nextElo: payload.topRatingBefore + payload.topRatingChange,
+    },
+  };
+}
+
+function buildServerRatedResult(existingMatch, payload) {
+  if (!existingMatch?.is_rated || payload.status !== 'finished') {
+    return null;
+  }
+
+  const bottomRatingBefore = existingMatch.bottom_rating_before;
+  const topRatingBefore = existingMatch.top_rating_before;
+
+  if (payload.winnerSide === 'bottom') {
+    const ratedOutcome = buildRatedMatchOutcome(bottomRatingBefore, topRatingBefore, 'win');
+
+    return {
+      bottomRatingBefore,
+      topRatingBefore,
+      bottomRatingChange: ratedOutcome.playerDelta,
+      topRatingChange: ratedOutcome.opponentDelta,
+    };
+  }
+
+  if (payload.winnerSide === 'top') {
+    const ratedOutcome = buildRatedMatchOutcome(topRatingBefore, bottomRatingBefore, 'win');
+
+    return {
+      bottomRatingBefore,
+      topRatingBefore,
+      bottomRatingChange: ratedOutcome.opponentDelta,
+      topRatingChange: ratedOutcome.playerDelta,
+    };
+  }
+
+  if (payload.winnerSide === 'draw') {
+    const ratedOutcome = buildRatedMatchOutcome(bottomRatingBefore, topRatingBefore, 'draw');
+
+    return {
+      bottomRatingBefore,
+      topRatingBefore,
+      bottomRatingChange: ratedOutcome.playerDelta,
+      topRatingChange: ratedOutcome.opponentDelta,
+    };
+  }
+
+  return {
+    bottomRatingBefore,
+    topRatingBefore,
+    bottomRatingChange: 0,
+    topRatingChange: 0,
+  };
+}
+
 async function createMatch(req, res) {
   try {
     const authenticatedUserId = parseInteger(req.auth?.userId);
@@ -242,23 +310,62 @@ async function updateMatch(req, res) {
       return res.status(400).json({ message: validationError });
     }
 
-    const result = await db.query(updateMatchQuery, [
-      matchId,
-      payload.isRated,
-      payload.status,
-      payload.winnerSide,
-      payload.resultReason,
-      payload.bottomRatingBefore,
-      payload.topRatingBefore,
-      payload.bottomRatingChange,
-      payload.topRatingChange,
-      payload.startedAt,
-      payload.finishedAt,
-      JSON.stringify(payload.moves),
-      JSON.stringify(payload.gameState),
-    ]);
+    const serverRatedResult = buildServerRatedResult(existingMatch, payload);
 
-    return res.status(200).json(result.rows[0]);
+    if (serverRatedResult) {
+      payload.bottomRatingBefore = serverRatedResult.bottomRatingBefore;
+      payload.topRatingBefore = serverRatedResult.topRatingBefore;
+      payload.bottomRatingChange = serverRatedResult.bottomRatingChange;
+      payload.topRatingChange = serverRatedResult.topRatingChange;
+    } else {
+      payload.bottomRatingBefore = existingMatch.bottom_rating_before;
+      payload.topRatingBefore = existingMatch.top_rating_before;
+    }
+
+    const client = await db.getClient();
+
+    try {
+      await client.query('BEGIN');
+
+      await client.query(updateMatchQuery, [
+        matchId,
+        payload.isRated,
+        payload.status,
+        payload.winnerSide,
+        payload.resultReason,
+        payload.bottomRatingBefore,
+        payload.topRatingBefore,
+        payload.bottomRatingChange,
+        payload.topRatingChange,
+        payload.startedAt,
+        payload.finishedAt,
+        JSON.stringify(payload.moves),
+        JSON.stringify(payload.gameState),
+      ]);
+
+      const eloUpdates = buildFinishedRatedEloUpdates(payload);
+
+      if (eloUpdates) {
+        await client.query(updateUserEloQuery, [
+          eloUpdates.bottom.userId,
+          eloUpdates.bottom.nextElo,
+        ]);
+        await client.query(updateUserEloQuery, [
+          eloUpdates.top.userId,
+          eloUpdates.top.nextElo,
+        ]);
+      }
+
+      const refreshedMatchResult = await client.query(findMatchByIdQuery, [matchId]);
+
+      await client.query('COMMIT');
+      return res.status(200).json(refreshedMatchResult.rows[0]);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error('Update match error:', error);
     return res.status(500).json({ message: 'Internal server error' });

@@ -300,25 +300,10 @@ function buildMatchSyncPayload({
   backendMatch,
   gameId,
   game,
-  isRatedMatch,
-  currentUserRole,
-  ratedOutcome,
   startedAt,
   finishedAt,
 }) {
   const winnerSide = mapWinnerSideToWinner(game.winner)
-  let bottomRatingChange = 0
-  let topRatingChange = 0
-
-  if (isRatedMatch && game.gameStatus === 'finished' && ratedOutcome) {
-    if (currentUserRole === 'bottom') {
-      bottomRatingChange = ratedOutcome.playerDelta
-      topRatingChange = ratedOutcome.opponentDelta
-    } else if (currentUserRole === 'top') {
-      bottomRatingChange = ratedOutcome.opponentDelta
-      topRatingChange = ratedOutcome.playerDelta
-    }
-  }
 
   return {
     id: backendMatch?.id ?? gameId,
@@ -327,8 +312,8 @@ function buildMatchSyncPayload({
     result_reason: inferResultReason(game),
     bottom_rating_before: backendMatch?.bottom_rating_before ?? game.players.bottom.rating,
     top_rating_before: backendMatch?.top_rating_before ?? game.players.top.rating,
-    bottom_rating_change: bottomRatingChange,
-    top_rating_change: topRatingChange,
+    bottom_rating_change: backendMatch?.bottom_rating_change ?? 0,
+    top_rating_change: backendMatch?.top_rating_change ?? 0,
     started_at: startedAt,
     finished_at: game.gameStatus === 'finished' ? finishedAt : null,
     moves: buildBackendMovesPayload(game),
@@ -709,9 +694,6 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
       backendMatch,
       gameId: syncTargetMatchId,
       game,
-      isRatedMatch,
-      currentUserRole,
-      ratedOutcome,
       startedAt: startedAtRef.current,
       finishedAt: finishedAtRef.current,
     })
@@ -743,8 +725,6 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
     syncTargetMatchId,
     currentUserRole,
     game,
-    isRatedMatch,
-    ratedOutcome,
   ])
 
   if (isUnavailable) {

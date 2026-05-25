@@ -19,4 +19,5 @@ pool.on('error', (err) => {
 module.exports = {
   // We export this 'query' function so we can use it in other files
   query: (text, params) => pool.query(text, params),
+  getClient: () => pool.connect(),
 };
