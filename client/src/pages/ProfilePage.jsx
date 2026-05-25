@@ -1,7 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { isGuestUser } from '../app/appState.js'
+import { getMatchesByUserIdRequest } from '../app/matchApi.js'
 import { getDisplayName } from '../app/playerNames.js'
+import {
+  buildHistoryEntryFromBackendMatch,
+  buildProfileFromBackendUser,
+  buildRatingHistoryFromBackendMatches,
+} from '../app/profileData.js'
+import { getUserByUsernameRequest } from '../app/userApi.js'
 import { useAppData } from '../app/useAppData.js'
 import { readStoredMatchSessionByGameId } from '../components/mangala/gamePersistence.js'
 import styles from './ProfilePage.module.css'
@@ -86,7 +93,13 @@ function buildLiveMatchEntry(activeMatchSummary, currentUser) {
   }
 
   const { bottom, top } = session.game.players
-  const player = currentUser.id === bottom?.id ? bottom : currentUser.id === top?.id ? top : null
+  const currentUserId = String(currentUser.id)
+  const player =
+    currentUserId === String(bottom?.id)
+      ? bottom
+      : currentUserId === String(top?.id)
+        ? top
+        : null
   const opponent = player?.id === bottom?.id ? top : bottom
 
   if (!player || !opponent) {
@@ -195,11 +208,34 @@ export default function ProfilePage() {
     publicProfileDirectory,
   } = useAppData()
   const [hoveredPointId, setHoveredPointId] = useState(null)
-  const profile = username
+  const [backendProfile, setBackendProfile] = useState(null)
+  const [backendMatches, setBackendMatches] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadError, setLoadError] = useState('')
+  const fallbackProfile = username
     ? resolveProfile(publicProfileDirectory, currentUser, username)
     : currentUser
-  const visibleRatingHistory = (profile?.ratingHistory ?? []).slice(
-    -MAX_VISIBLE_RATING_POINTS,
+  const profile = backendProfile ?? fallbackProfile
+  const allMatches = useMemo(() => {
+    if (!profile) {
+      return []
+    }
+
+    const mappedMatches = backendMatches.map((match) =>
+      buildHistoryEntryFromBackendMatch(match, profile.id),
+    )
+    const liveMatch = buildLiveMatchEntry(activeMatchSummary, currentUser)
+
+    return liveMatch && String(profile.id) === String(currentUser.id)
+      ? [liveMatch, ...mappedMatches.filter((match) => match.id !== liveMatch.id)]
+      : mappedMatches
+  }, [activeMatchSummary, backendMatches, currentUser, profile])
+  const visibleRatingHistory = useMemo(
+    () =>
+      buildRatingHistoryFromBackendMatches(backendMatches, profile?.id ?? '').slice(
+        -MAX_VISIBLE_RATING_POINTS,
+      ),
+    [backendMatches, profile?.id],
   )
   const chart = buildChartModel(visibleRatingHistory)
   const hoveredPoint =
@@ -207,6 +243,50 @@ export default function ProfilePage() {
 
   const canonicalUsername = currentUser.username
   const canonicalProfilePath = `/member/${encodeURIComponent(canonicalUsername)}`
+
+  useEffect(() => {
+    let isCancelled = false
+
+    if (!username) {
+      return undefined
+    }
+
+    const loadProfile = async () => {
+      setIsLoading(true)
+      setLoadError('')
+
+      try {
+        const user = await getUserByUsernameRequest(username)
+        const nextProfile = buildProfileFromBackendUser(user)
+        const matches = await getMatchesByUserIdRequest(user.id)
+
+        if (isCancelled) {
+          return
+        }
+
+        setBackendProfile(nextProfile)
+        setBackendMatches(matches)
+      } catch (error) {
+        if (isCancelled) {
+          return
+        }
+
+        setBackendProfile(null)
+        setBackendMatches([])
+        setLoadError(error.message || 'Could not load profile.')
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void loadProfile()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [username])
 
   if (!username) {
     return isAuthenticated
@@ -237,15 +317,38 @@ export default function ProfilePage() {
   }
 
   const isOnline =
-    isAuthenticated && !isGuestUser(currentUser) && profile.id === currentUser.id
-  const liveMatch = buildLiveMatchEntry(activeMatchSummary, currentUser)
-  const allMatches = liveMatch
-    && profile.id === currentUser.id
-      ? [liveMatch, ...(profile.matchHistory ?? []).filter((match) => match.id !== liveMatch.id)]
-      : profile.matchHistory ?? []
+    isAuthenticated && !isGuestUser(currentUser) && String(profile.id) === String(currentUser.id)
   const recentMatches = allMatches.slice(0, 5)
   const hasMoreMatches = allMatches.length > recentMatches.length
-  const profileDisplayName = getDisplayName(profile)
+  const profileDisplayName = backendProfile
+    ? profile.username
+    : getDisplayName(profile)
+
+  if (isLoading && !profile) {
+    return (
+      <main className={styles.profilePage}>
+        <section className={styles.profileShell}>
+          <section className={styles.missingProfileCard}>
+            <h1>Loading profile</h1>
+            <p>Fetching player details...</p>
+          </section>
+        </section>
+      </main>
+    )
+  }
+
+  if (loadError && !profile) {
+    return (
+      <main className={styles.profilePage}>
+        <section className={styles.profileShell}>
+          <section className={styles.missingProfileCard}>
+            <h1>No such player</h1>
+            <p>{loadError}</p>
+          </section>
+        </section>
+      </main>
+    )
+  }
 
   return (
     <main className={styles.profilePage}>
@@ -464,7 +567,7 @@ export default function ProfilePage() {
             {hasMoreMatches && (
               <div className={styles.historyFooter}>
                 <Link
-                  to={`/member/${encodeURIComponent(canonicalUsername)}/games`}
+                  to={`/member/${encodeURIComponent(profile.username)}/games`}
                   className={styles.seeMoreLink}
                 >
                   See More

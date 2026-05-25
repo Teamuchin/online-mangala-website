@@ -1,6 +1,13 @@
+import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { isGuestUser } from '../app/appState.js'
+import { getMatchesByUserIdRequest } from '../app/matchApi.js'
 import { getDisplayName } from '../app/playerNames.js'
+import {
+  buildHistoryEntryFromBackendMatch,
+  buildProfileFromBackendUser,
+} from '../app/profileData.js'
+import { getUserByUsernameRequest } from '../app/userApi.js'
 import { useAppData } from '../app/useAppData.js'
 import { readStoredMatchSessionByGameId } from '../components/mangala/gamePersistence.js'
 import styles from './ProfileGamesPage.module.css'
@@ -92,7 +99,13 @@ function buildLiveMatchEntry(activeMatchSummary, currentUser) {
   }
 
   const { bottom, top } = session.game.players
-  const player = currentUser.id === bottom?.id ? bottom : currentUser.id === top?.id ? top : null
+  const currentUserId = String(currentUser.id)
+  const player =
+    currentUserId === String(bottom?.id)
+      ? bottom
+      : currentUserId === String(top?.id)
+        ? top
+        : null
   const opponent = player?.id === bottom?.id ? top : bottom
 
   if (!player || !opponent) {
@@ -142,14 +155,62 @@ export default function ProfileGamesPage() {
     isAuthenticated,
     publicProfileDirectory,
   } = useAppData()
+  const [backendProfile, setBackendProfile] = useState(null)
+  const [backendMatches, setBackendMatches] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadError, setLoadError] = useState('')
+  const fallbackProfile = username
+    ? resolveProfile(publicProfileDirectory, currentUser, username)
+    : null
+  const profile = backendProfile ?? fallbackProfile
 
-  const canonicalUsername = currentUser.username
-  const canonicalProfilePath = `/member/${encodeURIComponent(canonicalUsername)}`
-  const canonicalGamesPath = `${canonicalProfilePath}/games`
+  useEffect(() => {
+    let isCancelled = false
+
+    if (!username) {
+      return undefined
+    }
+
+    const loadProfile = async () => {
+      setIsLoading(true)
+      setLoadError('')
+
+      try {
+        const user = await getUserByUsernameRequest(username)
+        const nextProfile = buildProfileFromBackendUser(user)
+        const matches = await getMatchesByUserIdRequest(user.id)
+
+        if (isCancelled) {
+          return
+        }
+
+        setBackendProfile(nextProfile)
+        setBackendMatches(matches)
+      } catch (error) {
+        if (isCancelled) {
+          return
+        }
+
+        setBackendProfile(null)
+        setBackendMatches([])
+        setLoadError(error.message || 'Could not load match history.')
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void loadProfile()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [username])
 
   if (!username) {
     return isAuthenticated
-      ? <Navigate to={canonicalGamesPath} replace />
+      ? <Navigate to={`/member/${encodeURIComponent(currentUser.username)}/games`} replace />
       : (
         <main className={styles.page}>
           <section className={styles.shell}>
@@ -161,8 +222,6 @@ export default function ProfileGamesPage() {
         </main>
       )
   }
-
-  const profile = resolveProfile(publicProfileDirectory, currentUser, username)
 
   if (!profile || (isGuestUser(currentUser) && username === currentUser.username)) {
     return (
@@ -177,11 +236,22 @@ export default function ProfileGamesPage() {
     )
   }
 
-  const liveMatch = buildLiveMatchEntry(activeMatchSummary, currentUser)
-  const allMatches = liveMatch
-    && profile.id === currentUser.id
-      ? [liveMatch, ...(profile.matchHistory ?? []).filter((match) => match.id !== liveMatch.id)]
-      : profile.matchHistory ?? []
+  const profileGamesPath = `/member/${encodeURIComponent(profile.username)}/games`
+
+  const allMatches = useMemo(() => {
+    if (!profile) {
+      return []
+    }
+
+    const mappedMatches = backendMatches.map((match) =>
+      buildHistoryEntryFromBackendMatch(match, profile.id),
+    )
+    const liveMatch = buildLiveMatchEntry(activeMatchSummary, currentUser)
+
+    return liveMatch && String(profile.id) === String(currentUser.id)
+      ? [liveMatch, ...mappedMatches.filter((match) => match.id !== liveMatch.id)]
+      : mappedMatches
+  }, [activeMatchSummary, backendMatches, currentUser, profile])
   const pageCount = getPageCount(allMatches.length)
   const rawPage = Number.parseInt(searchParams.get('page') ?? '1', 10)
   const currentPage = Number.isNaN(rawPage)
@@ -191,6 +261,32 @@ export default function ProfileGamesPage() {
   const pagedMatches = allMatches.slice(pageStart, pageStart + MATCHES_PER_PAGE)
   const visiblePages = getVisiblePages(currentPage, pageCount)
 
+  if (isLoading && !profile) {
+    return (
+      <main className={styles.page}>
+        <section className={styles.shell}>
+          <section className={styles.missingCard}>
+            <h1>Loading match history</h1>
+            <p>Fetching player matches...</p>
+          </section>
+        </section>
+      </main>
+    )
+  }
+
+  if (loadError && !profile) {
+    return (
+      <main className={styles.page}>
+        <section className={styles.shell}>
+          <section className={styles.missingCard}>
+            <h1>No such player</h1>
+            <p>{loadError}</p>
+          </section>
+        </section>
+      </main>
+    )
+  }
+
   return (
     <main className={styles.page}>
       <section className={styles.shell}>
@@ -199,7 +295,7 @@ export default function ProfileGamesPage() {
             <p className={styles.kicker}>Profile</p>
             <h1>Match History ({allMatches.length})</h1>
           </div>
-          <Link to={canonicalProfilePath} className={styles.backLink}>
+          <Link to={`/member/${encodeURIComponent(profile.username)}`} className={styles.backLink}>
             Back to Overview
           </Link>
         </header>
@@ -305,7 +401,7 @@ export default function ProfileGamesPage() {
           {allMatches.length > MATCHES_PER_PAGE && (
             <nav className={styles.pagination} aria-label="Match history pages">
               <Link
-                to={`${canonicalGamesPath}?page=${Math.max(1, currentPage - 1)}`}
+                to={`${profileGamesPath}?page=${Math.max(1, currentPage - 1)}`}
                 className={`${styles.pageButton} ${
                   currentPage === 1 ? styles.pageButtonDisabled : ''
                 }`}
@@ -316,7 +412,7 @@ export default function ProfileGamesPage() {
               {visiblePages.map((pageNumber) => (
                 <Link
                   key={pageNumber}
-                  to={`${canonicalGamesPath}?page=${pageNumber}`}
+                  to={`${profileGamesPath}?page=${pageNumber}`}
                   className={`${styles.pageButton} ${
                     pageNumber === currentPage ? styles.pageButtonActive : ''
                   }`}
@@ -325,7 +421,7 @@ export default function ProfileGamesPage() {
                 </Link>
               ))}
               <Link
-                to={`${canonicalGamesPath}?page=${Math.min(pageCount, currentPage + 1)}`}
+                to={`${profileGamesPath}?page=${Math.min(pageCount, currentPage + 1)}`}
                 className={`${styles.pageButton} ${
                   currentPage === pageCount ? styles.pageButtonDisabled : ''
                 }`}

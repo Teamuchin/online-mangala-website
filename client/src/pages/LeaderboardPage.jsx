@@ -1,18 +1,69 @@
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { buildLeaderboardProfiles, getLeaderboardPageCount, getVisibleLeaderboardPages, LEADERBOARD_PAGE_SIZE } from '../app/leaderboard.js'
+import {
+  getLeaderboardPageCount,
+  getVisibleLeaderboardPages,
+  LEADERBOARD_PAGE_SIZE,
+} from '../app/leaderboard.js'
 import { getDisplayName } from '../app/playerNames.js'
+import { buildProfileFromBackendUser } from '../app/profileData.js'
+import { getLeaderboardUsersRequest } from '../app/userApi.js'
 import { useAppData } from '../app/useAppData.js'
 import styles from './LeaderboardPage.module.css'
 
 export default function LeaderboardPage() {
   const [searchParams] = useSearchParams()
-  const { currentUser, isAuthenticated, publicProfileDirectory } = useAppData()
+  const { currentUser } = useAppData()
+  const [leaderboardUsers, setLeaderboardUsers] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadError, setLoadError] = useState('')
 
-  const leaderboard = buildLeaderboardProfiles(
-    currentUser,
-    publicProfileDirectory,
-    isAuthenticated,
-  )
+  useEffect(() => {
+    let isCancelled = false
+
+    const loadLeaderboard = async () => {
+      setIsLoading(true)
+      setLoadError('')
+
+      try {
+        const users = await getLeaderboardUsersRequest()
+
+        if (isCancelled) {
+          return
+        }
+
+        setLeaderboardUsers(users.map((user) => buildProfileFromBackendUser(user)))
+      } catch (error) {
+        if (isCancelled) {
+          return
+        }
+
+        setLeaderboardUsers([])
+        setLoadError(error.message || 'Could not load leaderboard.')
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void loadLeaderboard()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [])
+
+  const leaderboard = useMemo(() => {
+    return leaderboardUsers.map((user) =>
+      String(user.id) === String(currentUser.id)
+        ? {
+            ...user,
+            username: currentUser.username,
+          }
+        : user,
+    )
+  }, [currentUser.id, currentUser.username, leaderboardUsers])
   const pageCount = getLeaderboardPageCount(leaderboard.length)
   const rawPage = Number.parseInt(searchParams.get('page') ?? '1', 10)
   const currentPage = Number.isNaN(rawPage)
@@ -21,6 +72,27 @@ export default function LeaderboardPage() {
   const pageStart = (currentPage - 1) * LEADERBOARD_PAGE_SIZE
   const visiblePages = getVisibleLeaderboardPages(currentPage, pageCount)
   const pagedPlayers = leaderboard.slice(pageStart, pageStart + LEADERBOARD_PAGE_SIZE)
+
+  if (isLoading && leaderboard.length === 0) {
+    return (
+      <main className={styles.page}>
+        <section className={styles.shell}>
+          <header className={styles.header}>
+            <div>
+              <p className={styles.kicker}>Competition</p>
+              <h1>Leaderboard</h1>
+            </div>
+            <Link to="/" className={styles.backLink}>
+              Back to Lobby
+            </Link>
+          </header>
+          <section className={styles.leaderboardCard}>
+            <div className={styles.emptyCell}>Loading leaderboard...</div>
+          </section>
+        </section>
+      </main>
+    )
+  }
 
   return (
     <main className={styles.page}>
@@ -67,7 +139,7 @@ export default function LeaderboardPage() {
                 ) : (
                   <tr>
                     <td colSpan="3" className={styles.emptyCell}>
-                      No players yet.
+                      {loadError || 'No players yet.'}
                     </td>
                   </tr>
                 )}
