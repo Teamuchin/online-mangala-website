@@ -5,6 +5,7 @@ const {
   createMatchQuery,
   findMatchByIdQuery,
   findMatchesByUserIdQuery,
+  listActiveMatchesQuery,
   updateMatchQuery,
 } = require('./queries');
 
@@ -409,9 +410,20 @@ async function getMatchesByUserId(req, res) {
   }
 }
 
+async function getActiveMatches(req, res) {
+  try {
+    const result = await db.query(listActiveMatchesQuery);
+    return res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Get active matches error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
 module.exports = {
   createMatch,
   updateMatch,
   getMatchById,
   getMatchesByUserId,
+  getActiveMatches,
 };

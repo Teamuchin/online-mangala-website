@@ -75,6 +75,15 @@ WHERE matches.bottom_player_id = $1 OR matches.top_player_id = $1
 ORDER BY COALESCE(finished_at, started_at) DESC;
 `;
 
+const listActiveMatchesQuery = `
+SELECT ${MATCH_SELECT_FIELDS}
+FROM matches
+JOIN users AS bottom_user ON bottom_user.id = matches.bottom_player_id
+JOIN users AS top_user ON top_user.id = matches.top_player_id
+WHERE matches.status = 'active'
+ORDER BY matches.started_at DESC;
+`;
+
 const updateMatchQuery = `
 UPDATE matches
 SET
@@ -99,5 +108,6 @@ module.exports = {
   createMatchQuery,
   findMatchByIdQuery,
   findMatchesByUserIdQuery,
+  listActiveMatchesQuery,
   updateMatchQuery,
 };

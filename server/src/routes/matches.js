@@ -4,11 +4,13 @@ const {
   updateMatch,
   getMatchById,
   getMatchesByUserId,
+  getActiveMatches,
 } = require('../matches/controller');
 const { requireAuth } = require('../auth/middleware');
 
 const router = express.Router();
 
+router.get('/active', getActiveMatches);
 router.get('/user/:userId', getMatchesByUserId);
 router.get('/:id', getMatchById);
 router.post('/', requireAuth, createMatch);

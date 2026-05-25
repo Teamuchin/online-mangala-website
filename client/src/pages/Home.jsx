@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { buildWelcomeMessage } from '../app/appState.js'
-import { getMatchByIdRequest } from '../app/matchApi.js'
+import { getActiveMatchesRequest, getMatchByIdRequest } from '../app/matchApi.js'
 import {
   getClosestBotProfile,
 } from '../app/matchmaking.js'
@@ -23,19 +23,21 @@ import styles from './Home.module.css'
 
 const BOT_FALLBACK_DELAY_MS = 4000
 const HUMAN_ONLY_TIMEOUT_MS = 60_000
+const HOME_ACTIVE_MATCHES_POLL_INTERVAL_MS = 3000
 
 function buildQueueStatusText(rated) {
   return rated ? 'Looking for a rated game...' : 'Looking for an unrated game...'
 }
 
-function buildLobbyPlayers(currentUser, publicProfileDirectory, activeMatchSummary) {
+function buildLobbyPlayers(currentUser, users, activeMatches) {
   const seenIds = new Set()
   const participants = new Set(
-    [activeMatchSummary?.participants?.bottom, activeMatchSummary?.participants?.top].filter(
-      Boolean,
-    ),
+    activeMatches.flatMap((match) => [
+      String(match.bottom_player_id),
+      String(match.top_player_id),
+    ]),
   )
-  const players = [currentUser, ...publicProfileDirectory]
+  const players = users
     .filter((player) => {
       if (!player?.id || seenIds.has(player.id)) {
         return false
@@ -45,7 +47,7 @@ function buildLobbyPlayers(currentUser, publicProfileDirectory, activeMatchSumma
       return true
     })
     .map((player) => {
-      const status = participants.has(player.id) ? 'playing' : 'online'
+      const status = participants.has(String(player.id)) ? 'playing' : 'online'
 
       return {
         ...player,
@@ -59,27 +61,37 @@ function buildLobbyPlayers(currentUser, publicProfileDirectory, activeMatchSumma
   })
 }
 
-function buildLiveMatches(activeMatchSummary) {
-  if (!activeMatchSummary?.gameId) {
-    return []
-  }
-
-  const session = readStoredMatchSessionByGameId(activeMatchSummary.gameId)
-
-  if (!session?.game?.players) {
-    return []
-  }
-
-  const { bottom, top } = session.game.players
-
-  return [
-    {
-      gameId: activeMatchSummary.gameId,
-      url: activeMatchSummary.url,
-      bottom,
-      top,
+function buildLiveMatches(activeMatches, currentUser) {
+  return activeMatches.map((match) => ({
+    gameId: match.id,
+    url: `/game/${match.id}`,
+    bottom: {
+      id: String(match.bottom_player_id),
+      username:
+        String(currentUser.id) === String(match.bottom_player_id)
+          ? currentUser.username
+          : match.bottom_player_username,
+      name:
+        String(currentUser.id) === String(match.bottom_player_id)
+          ? currentUser.username
+          : match.bottom_player_username,
+      rating: match.bottom_rating_before,
+      isBot: match.bottom_player_is_bot === true,
     },
-  ]
+    top: {
+      id: String(match.top_player_id),
+      username:
+        String(currentUser.id) === String(match.top_player_id)
+          ? currentUser.username
+          : match.top_player_username,
+      name:
+        String(currentUser.id) === String(match.top_player_id)
+          ? currentUser.username
+          : match.top_player_username,
+      rating: match.top_rating_before,
+      isBot: match.top_player_is_bot === true,
+    },
+  }))
 }
 
 export default function Home() {
@@ -92,18 +104,19 @@ export default function Home() {
     statusText: buildQueueStatusText(true),
   })
   const [leaderboardUsers, setLeaderboardUsers] = useState([])
+  const [activeMatches, setActiveMatches] = useState([])
   const [rightPanelTab, setRightPanelTab] = useState('players')
   const queueStartedAtRef = useRef(null)
   const { activeMatchSummary, currentUser, isAuthenticated, publicProfileDirectory } =
     useAppData()
 
   const lobbyPlayers = useMemo(
-    () => buildLobbyPlayers(currentUser, publicProfileDirectory, activeMatchSummary),
-    [activeMatchSummary, currentUser, publicProfileDirectory],
+    () => buildLobbyPlayers(currentUser, leaderboardUsers, activeMatches),
+    [activeMatches, currentUser, leaderboardUsers],
   )
   const liveMatches = useMemo(
-    () => buildLiveMatches(activeMatchSummary),
-    [activeMatchSummary],
+    () => buildLiveMatches(activeMatches, currentUser),
+    [activeMatches, currentUser],
   )
   const leaderboardPreview = useMemo(
     () =>
@@ -310,6 +323,36 @@ export default function Home() {
 
     return () => {
       isCancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    let isCancelled = false
+
+    const loadActiveMatches = async () => {
+      try {
+        const matches = await getActiveMatchesRequest()
+
+        if (isCancelled) {
+          return
+        }
+
+        setActiveMatches(matches)
+      } catch (error) {
+        if (!isCancelled) {
+          console.error('Load active matches error:', error)
+        }
+      }
+    }
+
+    void loadActiveMatches()
+    const intervalId = window.setInterval(() => {
+      void loadActiveMatches()
+    }, HOME_ACTIVE_MATCHES_POLL_INTERVAL_MS)
+
+    return () => {
+      isCancelled = true
+      window.clearInterval(intervalId)
     }
   }, [])
 

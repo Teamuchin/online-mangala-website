@@ -70,3 +70,7 @@ export function updateMatchRequest(matchId, payload, token) {
 export function getMatchesByUserIdRequest(userId) {
   return request(`/api/matches/user/${userId}`)
 }
+
+export function getActiveMatchesRequest() {
+  return request('/api/matches/active')
+}
