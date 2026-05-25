@@ -104,6 +104,14 @@ function inferResultReason(game) {
   return 'normal'
 }
 
+function getRatingChangeForSide(currentUserRole, ratedOutcome, side) {
+  if (!ratedOutcome || (currentUserRole !== 'bottom' && currentUserRole !== 'top')) {
+    return null
+  }
+
+  return side === currentUserRole ? ratedOutcome.playerDelta : ratedOutcome.opponentDelta
+}
+
 function buildPlayersFromBackendMatch(backendMatch, currentUser) {
   const bottomId = String(backendMatch.bottom_player_id)
   const topId = String(backendMatch.top_player_id)
@@ -486,12 +494,18 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
           ? 'top'
           : 'spectator'
   const isRatedMatch = Boolean(queueSettings?.rated)
-  const showTopResign =
-    !isPracticeMode &&
-    (isLocalMatch || currentUserRole === 'top')
-  const showBottomResign =
-    !isPracticeMode &&
-    (isLocalMatch || currentUserRole === 'bottom')
+  const perspectiveSide =
+    isOnlineMatch && currentUserRole === 'top' ? 'top' : 'bottom'
+  const visualTopSide = perspectiveSide === 'top' ? 'bottom' : 'top'
+  const visualBottomSide = perspectiveSide === 'top' ? 'top' : 'bottom'
+  const topDisplayPlayer = displayedGame.players[visualTopSide]
+  const bottomDisplayPlayer = displayedGame.players[visualBottomSide]
+  const showResignForSide = (side) =>
+    !isPracticeMode && (isLocalMatch || currentUserRole === side)
+  const resignDisabledForSide = (side) =>
+    isReviewing ||
+    game.gameStatus !== 'playing' ||
+    (!isLocalMatch && !isPracticeMode && currentUserRole !== side)
   const matchTypeLabel =
     queueSettings && typeof queueSettings.rated === 'boolean'
       ? queueSettings.rated
@@ -746,20 +760,17 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
         <section className={styles.matchArena}>
           <div className={styles.playerColumn}>
             <PlayerPanel
-              player={displayedGame.players.top}
-              side="top"
-              isActive={game.currentPlayer === 'top' && game.gameStatus === 'playing'}
+              player={topDisplayPlayer}
+              position="top"
+              resignSide={visualTopSide}
+              isActive={game.currentPlayer === visualTopSide && game.gameStatus === 'playing'}
               compact
               onResign={handleResign}
-              resignDisabled={
-                isReviewing ||
-                game.gameStatus !== 'playing' ||
-                (!isLocalMatch && !isPracticeMode && currentUserRole !== 'top')
-              }
-              ratingChange={ratedOutcome?.opponentDelta ?? null}
+              resignDisabled={resignDisabledForSide(visualTopSide)}
+              ratingChange={getRatingChangeForSide(currentUserRole, ratedOutcome, visualTopSide)}
               showClock={!isPracticeMode}
               showRating={!isPracticeMode}
-              showResign={showTopResign}
+              showResign={showResignForSide(visualTopSide)}
             />
           </div>
           <div className={styles.boardColumn}>
@@ -781,6 +792,7 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
                       ? currentUserRole
                     : null
               }
+              perspectiveSide={perspectiveSide}
               onPitClick={handlePitClick}
             />
             <ReplayControls
@@ -802,20 +814,21 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
           </div>
           <div className={styles.playerColumn}>
             <PlayerPanel
-              player={displayedGame.players.bottom}
-              side="bottom"
-              isActive={game.currentPlayer === 'bottom' && game.gameStatus === 'playing'}
+              player={bottomDisplayPlayer}
+              position="bottom"
+              resignSide={visualBottomSide}
+              isActive={game.currentPlayer === visualBottomSide && game.gameStatus === 'playing'}
               compact
               onResign={handleResign}
-              resignDisabled={
-                isReviewing ||
-                game.gameStatus !== 'playing' ||
-                (!isLocalMatch && !isPracticeMode && currentUserRole !== 'bottom')
-              }
-              ratingChange={ratedOutcome?.playerDelta ?? null}
+              resignDisabled={resignDisabledForSide(visualBottomSide)}
+              ratingChange={getRatingChangeForSide(
+                currentUserRole,
+                ratedOutcome,
+                visualBottomSide,
+              )}
               showClock={!isPracticeMode}
               showRating={!isPracticeMode}
-              showResign={showBottomResign}
+              showResign={showResignForSide(visualBottomSide)}
             />
           </div>
         </section>

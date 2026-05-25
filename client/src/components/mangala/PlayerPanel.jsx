@@ -5,7 +5,8 @@ import styles from './MangalaGame.module.css'
 
 export default function PlayerPanel({
   player,
-  side,
+  position,
+  resignSide = position,
   isActive,
   compact = false,
   onResign,
@@ -22,7 +23,7 @@ export default function PlayerPanel({
   return (
     <section
       className={`${styles.playerPanel} ${isActive ? styles.activePanel : ''} ${
-        side === 'top' ? styles.topPanel : styles.bottomPanel
+        position === 'top' ? styles.topPanel : styles.bottomPanel
       } ${compact ? styles.compactPlayerPanel : ''}`}
     >
       <div className={styles.playerHeader}>
@@ -37,7 +38,7 @@ export default function PlayerPanel({
           <button
             type="button"
             className={styles.resignButton}
-            onClick={() => onResign?.(side)}
+            onClick={() => onResign?.(resignSide)}
             disabled={resignDisabled}
           >
             Resign

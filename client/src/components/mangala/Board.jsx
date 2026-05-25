@@ -4,6 +4,45 @@ import Store from './Store'
 import { buildBoardPresentation, isPitDisabled } from './boardState'
 import styles from './MangalaGame.module.css'
 
+const BOARD_VIEW_CONFIG = {
+  bottom: {
+    topRow: [...PLAYER_CONFIG.top.pitIndexes].reverse().map((index) => ({
+      index,
+      ownerSide: 'top',
+    })),
+    bottomRow: PLAYER_CONFIG.bottom.pitIndexes.map((index) => ({
+      index,
+      ownerSide: 'bottom',
+    })),
+    leftStore: {
+      index: PLAYER_CONFIG.top.storeIndex,
+      ownerSide: 'top',
+    },
+    rightStore: {
+      index: PLAYER_CONFIG.bottom.storeIndex,
+      ownerSide: 'bottom',
+    },
+  },
+  top: {
+    topRow: [...PLAYER_CONFIG.bottom.pitIndexes].reverse().map((index) => ({
+      index,
+      ownerSide: 'bottom',
+    })),
+    bottomRow: PLAYER_CONFIG.top.pitIndexes.map((index) => ({
+      index,
+      ownerSide: 'top',
+    })),
+    leftStore: {
+      index: PLAYER_CONFIG.bottom.storeIndex,
+      ownerSide: 'bottom',
+    },
+    rightStore: {
+      index: PLAYER_CONFIG.top.storeIndex,
+      ownerSide: 'top',
+    },
+  },
+}
+
 export default function Board({
   board,
   currentPlayer,
@@ -14,10 +53,10 @@ export default function Board({
   lastMove,
   disableInteraction = false,
   interactiveSide = null,
+  perspectiveSide = 'bottom',
   onPitClick,
 }) {
-  const topRow = [...PLAYER_CONFIG.top.pitIndexes].reverse()
-  const bottomRow = PLAYER_CONFIG.bottom.pitIndexes
+  const boardView = BOARD_VIEW_CONFIG[perspectiveSide] ?? BOARD_VIEW_CONFIG.bottom
   const { finalTarget, dropCounts, sourceSilhouetteCounts, capturedCounts } =
     buildBoardPresentation(lastMove)
 
@@ -25,14 +64,14 @@ export default function Board({
     <section className={styles.boardShell}>
       <Store
         className={styles.leftStore}
-        count={board[13]}
-        label={`${players.top.name} Store`}
+        count={board[boardView.leftStore.index]}
+        label={`${players[boardView.leftStore.ownerSide].name} Store`}
         showVisualStones={showVisualStones}
-        movedCount={dropCounts[13] ?? 0}
-        isFinalTarget={finalTarget === 13}
+        movedCount={dropCounts[boardView.leftStore.index] ?? 0}
+        isFinalTarget={finalTarget === boardView.leftStore.index}
       />
       <div className={`${styles.pitRow} ${styles.topPitRow}`}>
-        {topRow.map((index) => (
+        {boardView.topRow.map(({ index, ownerSide }) => (
           <Pit
             key={index}
             count={board[index]}
@@ -47,7 +86,7 @@ export default function Board({
               index,
               currentPlayer,
               gameStatus,
-              side: 'top',
+              side: ownerSide,
               interactiveSide,
             })}
             isSelected={selectedPit === index}
@@ -56,7 +95,7 @@ export default function Board({
         ))}
       </div>
       <div className={`${styles.pitRow} ${styles.bottomPitRow}`}>
-        {bottomRow.map((index) => (
+        {boardView.bottomRow.map(({ index, ownerSide }) => (
           <Pit
             key={index}
             count={board[index]}
@@ -71,7 +110,7 @@ export default function Board({
               index,
               currentPlayer,
               gameStatus,
-              side: 'bottom',
+              side: ownerSide,
               interactiveSide,
             })}
             isSelected={selectedPit === index}
@@ -81,11 +120,11 @@ export default function Board({
       </div>
       <Store
         className={styles.rightStore}
-        count={board[6]}
-        label={`${players.bottom.name} Store`}
+        count={board[boardView.rightStore.index]}
+        label={`${players[boardView.rightStore.ownerSide].name} Store`}
         showVisualStones={showVisualStones}
-        movedCount={dropCounts[6] ?? 0}
-        isFinalTarget={finalTarget === 6}
+        movedCount={dropCounts[boardView.rightStore.index] ?? 0}
+        isFinalTarget={finalTarget === boardView.rightStore.index}
       />
     </section>
   )
