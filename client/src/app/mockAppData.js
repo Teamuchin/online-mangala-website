@@ -9,17 +9,6 @@ const SEEDED_RATING_HISTORY = [
   },
 ]
 
-function buildSeededRatingHistory(id, rating) {
-  return [
-    {
-      id: `initial-rating-${id}`,
-      playedAt: '2026-05-01T00:00:00.000Z',
-      rating,
-      ratingDelta: 0,
-    },
-  ]
-}
-
 export const APP_ASSETS = {
   logo: '/logo.svg',
   accountIcon: '/accountbtn.svg',
@@ -47,73 +36,6 @@ export const GUEST_CURRENT_USER = {
   matchHistory: [],
   ratingHistory: SEEDED_RATING_HISTORY,
 }
-
-export const BOT_PROFILES = [
-  {
-    id: 'bot-deniz',
-    username: 'deniz-bot',
-    elo: 1000,
-    email: '',
-    memberSince: 'May 2026',
-    matchHistory: [],
-    ratingHistory: buildSeededRatingHistory('bot-deniz', 1000),
-    isBot: true,
-  },
-  {
-    id: 'bot-toprak',
-    username: 'toprak-bot',
-    elo: 1200,
-    email: '',
-    memberSince: 'May 2026',
-    matchHistory: [],
-    ratingHistory: buildSeededRatingHistory('bot-toprak', 1200),
-    isBot: true,
-  },
-  {
-    id: 'bot-ruzgar',
-    username: 'ruzgar-bot',
-    elo: 1400,
-    email: '',
-    memberSince: 'May 2026',
-    matchHistory: [],
-    ratingHistory: buildSeededRatingHistory('bot-ruzgar', 1400),
-    isBot: true,
-  },
-  {
-    id: 'bot-alev',
-    username: 'alev-bot',
-    elo: 1600,
-    email: '',
-    memberSince: 'May 2026',
-    matchHistory: [],
-    ratingHistory: buildSeededRatingHistory('bot-alev', 1600),
-    isBot: true,
-  },
-  {
-  },
-]
-
-export const PUBLIC_PROFILE_DIRECTORY = [
-  {
-    id: 'p1',
-    username: 'Emre',
-    elo: 1485,
-    email: '',
-    memberSince: 'May 2026',
-    matchHistory: [],
-    ratingHistory: [],
-  },
-  {
-    id: 'p2',
-    username: 'Ayse',
-    elo: 1520,
-    email: '',
-    memberSince: 'May 2026',
-    matchHistory: [],
-    ratingHistory: [],
-  },
-  ...BOT_PROFILES,
-]
 
 export const LOCAL_MATCH_PLAYERS = {
   bottom: { id: 'p1', name: 'Emre', rating: 1485, timeLeft: 300 },
