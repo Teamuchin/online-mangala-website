@@ -25,6 +25,21 @@ const BOT_FALLBACK_DELAY_MS = 4000
 const HUMAN_ONLY_TIMEOUT_MS = 60_000
 const HOME_ACTIVE_MATCHES_POLL_INTERVAL_MS = 3000
 
+function getBotDifficulty(botProfile) {
+  const normalizedUsername = String(botProfile?.username || '').toLowerCase()
+
+  switch (normalizedUsername) {
+    case 'alev-bot':
+      return 4
+    case 'ruzgar-bot':
+      return 3
+    case 'toprak-bot':
+      return 2
+    default:
+      return 1
+  }
+}
+
 function buildQueueStatusText(rated) {
   return rated ? 'Looking for a rated game...' : 'Looking for an unrated game...'
 }
@@ -227,14 +242,7 @@ export default function Home() {
     navigate(`/game/${gameId}`, {
       state: {
         botSettings: {
-          difficulty:
-            selectedBotProfile.id === 'bot-alev'
-              ? 4
-              : selectedBotProfile.id === 'bot-ruzgar'
-                ? 3
-                : selectedBotProfile.id === 'bot-toprak'
-                  ? 2
-                  : 1,
+          difficulty: getBotDifficulty(selectedBotProfile),
           firstMove: 'random',
         },
         botProfile: selectedBotProfile,

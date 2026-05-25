@@ -15,6 +15,7 @@ const {
   ensureUsernameTypeQuery,
   ensureUsernameUniqueIndexQuery,
 } = require('./auth/queries');
+const { ensureSeededBotUsers } = require('./auth/botSeed');
 
 const app = express();
 app.use(cors());
@@ -46,6 +47,7 @@ async function startServer() {
     await db.query(ensureIsBotColumnQuery);
     await db.query(ensureUsernameTypeQuery);
     await db.query(ensureUsernameUniqueIndexQuery);
+    await ensureSeededBotUsers(db);
     console.log('Users table is ready');
     await db.query(createMatchesTableQuery);
     console.log('Matches table is ready');

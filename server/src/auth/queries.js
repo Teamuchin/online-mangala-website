@@ -69,10 +69,27 @@ VALUES ($1, $2, $3, 1200, FALSE)
 RETURNING id, username, email, elo, is_bot, created_at;
 `;
 
+const createBotUserQuery = `
+INSERT INTO users (username, email, password_hash, elo, is_bot)
+VALUES ($1, $2, $3, $4, TRUE)
+RETURNING id, username, email, elo, is_bot, created_at;
+`;
+
 const updateUserPasswordQuery = `
 UPDATE users
 SET password_hash = $2
 WHERE id = $1;
+`;
+
+const updateSeededBotUserQuery = `
+UPDATE users
+SET username = $2,
+    email = $3,
+    password_hash = $4,
+    elo = $5,
+    is_bot = TRUE
+WHERE id = $1
+RETURNING id, username, email, elo, is_bot, created_at;
 `;
 
 const updateUserEloQuery = `
@@ -94,6 +111,8 @@ module.exports = {
   findUserByUsernameQuery,
   findUserByIdQuery,
   createUserQuery,
+  createBotUserQuery,
   updateUserPasswordQuery,
+  updateSeededBotUserQuery,
   updateUserEloQuery,
 };
