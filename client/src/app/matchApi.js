@@ -67,6 +67,14 @@ export function updateMatchRequest(matchId, payload, token) {
   })
 }
 
+export function submitMatchMoveRequest(matchId, pitIndex, token) {
+  return request(`/api/matches/${matchId}/moves`, {
+    method: 'POST',
+    body: pitIndex === null || pitIndex === undefined ? {} : { pitIndex },
+    token,
+  })
+}
+
 export function getMatchesByUserIdRequest(userId) {
   return request(`/api/matches/user/${userId}`)
 }

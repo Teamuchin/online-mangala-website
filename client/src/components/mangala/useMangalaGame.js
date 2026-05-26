@@ -80,6 +80,7 @@ export function useMangalaGame(initialConfig) {
   const hasRestoredGameForRoute = Boolean(
     restoredSession && restoredSession.gameId === initialConfig?.gameId,
   )
+  const restoredUiSession = hasRestoredGameForRoute ? restoredSession : null
   const canCreateFreshMatch = Boolean(initialConfig?.matchMode)
   const shouldRestorePersistedSession = Boolean(
     !isPracticeBoard &&
@@ -112,13 +113,13 @@ export function useMangalaGame(initialConfig) {
         : createInitialState(initialConfig),
   )
   const [showVisualStones, setShowVisualStones] = useState(() =>
-    shouldRestorePersistedSession ? restoredSession.showVisualStones : true,
+    restoredUiSession ? restoredUiSession.showVisualStones : true,
   )
   const [animateMoves, setAnimateMoves] = useState(() =>
-    shouldRestorePersistedSession ? restoredSession.animateMoves : false,
+    restoredUiSession ? restoredUiSession.animateMoves : false,
   )
   const [reviewIndex, setReviewIndex] = useState(() =>
-    shouldRestorePersistedSession ? restoredSession.reviewIndex : null,
+    restoredUiSession ? restoredUiSession.reviewIndex : null,
   )
   const isComputerMatch =
     activeMatchMode === 'computer' || game.players.top?.isBot === true
@@ -190,7 +191,8 @@ export function useMangalaGame(initialConfig) {
       !activeGameId ||
       !activeMatchMode ||
       isUnavailable ||
-      isPracticeBoard
+      isPracticeBoard ||
+      game.moveInProgress
     ) {
       return
     }

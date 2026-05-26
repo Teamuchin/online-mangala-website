@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
-import { getMatchByIdRequest, updateMatchRequest } from '../app/matchApi.js'
+import {
+  getMatchByIdRequest,
+  submitMatchMoveRequest,
+  updateMatchRequest,
+} from '../app/matchApi.js'
 import { getDisplayName } from '../app/playerNames.js'
 import { buildRatedMatchOutcome } from '../app/rating.js'
 import { useAppData } from '../app/useAppData.js'
@@ -9,7 +13,7 @@ import Board from '../components/mangala/Board.jsx'
 import {
   readStoredMatchSessionByGameId,
 } from '../components/mangala/gamePersistence.js'
-import { createInitialState } from '../components/mangala/gameLogic.js'
+import { createInitialState, INITIAL_BOARD } from '../components/mangala/gameLogic.js'
 import { buildPositionSnapshot, buildReplayDescription } from '../components/mangala/matchRecord.js'
 import { buildResolvedLastMove } from '../components/mangala/movePresentation.js'
 import ReplayControls from '../components/mangala/ReplayControls.jsx'
@@ -19,6 +23,7 @@ import styles from '../components/mangala/MangalaGame.module.css'
 
 const RESERVED_LOCAL_GAME_IDS = new Set(['local'])
 const BACKEND_MATCH_POLL_INTERVAL_MS = 1500
+const BOT_MOVE_DELAY_MS = 700
 
 function getBackendMoveCount(match) {
   return Array.isArray(match?.moves) ? match.moves.length : 0
@@ -218,17 +223,21 @@ function buildHydratedLastMove(rawMove) {
 
 function buildMatchRecordFromBackendMatch({
   backendMatch,
-  initialBoard,
+  replayStartBoard,
   players,
   currentPlayer,
   gameStatus,
   winner,
 }) {
   const rawMoves = Array.isArray(backendMatch?.moves) ? backendMatch.moves : []
+  const replayStartPlayer =
+    rawMoves.length > 0
+      ? rawMoves[0]?.player ?? rawMoves[0]?.playerSide ?? currentPlayer
+      : currentPlayer
   const positions = [
     buildPositionSnapshot({
-      board: initialBoard,
-      currentPlayer,
+      board: replayStartBoard,
+      currentPlayer: replayStartPlayer,
       gameStatus: rawMoves.length === 0 ? gameStatus : 'playing',
       winner: rawMoves.length === 0 ? winner : null,
       players,
@@ -290,12 +299,14 @@ function buildInitialConfigFromBackendMatch({ backendMatch, currentUser, gameId 
   const winner = mapWinnerSideToWinner(backendMatch.winner_side)
   const currentPlayer =
     backendMatch?.game_state?.currentPlayer === 'top' ? 'top' : 'bottom'
-  const initialBoard =
+  const currentBoard =
     buildFlatBoard(backendMatch?.game_state?.board) ?? createInitialState().board
+  const replayStartBoard =
+    Array.isArray(INITIAL_BOARD) ? [...INITIAL_BOARD] : createInitialState().board
   const gameStatus = backendMatch.status === 'finished' ? 'finished' : 'playing'
   const initialMatchRecord = buildMatchRecordFromBackendMatch({
     backendMatch,
-    initialBoard,
+    replayStartBoard,
     players,
     currentPlayer,
     gameStatus,
@@ -318,7 +329,7 @@ function buildInitialConfigFromBackendMatch({ backendMatch, currentUser, gameId 
     },
     initialPlayers: players,
     initialCurrentPlayer: currentPlayer,
-    initialBoard,
+    initialBoard: currentBoard,
     initialGameStatus: gameStatus,
     initialWinner: winner,
     initialTurnMessage: buildTurnMessageFromState({
@@ -363,7 +374,12 @@ function buildMatchSyncPayload({
   }
 }
 
-function MangalaGameScreen({ gameId, backendMatch = null }) {
+function MangalaGameScreen({
+  gameId,
+  backendMatch = null,
+  onSubmitAuthoritativeMove = null,
+  isSubmittingAuthoritativeMove = false,
+}) {
   const location = useLocation()
   const {
     activeMatchSummary,
@@ -570,6 +586,11 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
     location.state?.backendMatchId ??
     matchingPersistedSession?.backendMatchId ??
     null
+  const allowMoveAnimation = !syncTargetMatchId
+  const boardInteractionDisabled =
+    isReviewing ||
+    currentUserRole === 'spectator' ||
+    isSubmittingAuthoritativeMove
 
   useEffect(() => {
     startedAtRef.current = backendMatch?.started_at ?? new Date().toISOString()
@@ -597,8 +618,9 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
           type="button"
           className={styles.headerSettingsOption}
           onClick={() => animationToggleRef.current()}
+          disabled={!allowMoveAnimation}
         >
-          Move Animation: {animateMoves ? 'On' : 'Off'}
+          Move Animation: {!allowMoveAnimation ? 'Unavailable' : animateMoves ? 'On' : 'Off'}
         </button>
       </>,
     )
@@ -606,7 +628,7 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
     return () => {
       setSettingsContent(null)
     }
-  }, [animateMoves, setSettingsContent, showVisualStones])
+  }, [allowMoveAnimation, animateMoves, setSettingsContent, showVisualStones])
 
   useEffect(() => {
     if (
@@ -712,6 +734,10 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
       return
     }
 
+    if (game.moveInProgress) {
+      return
+    }
+
     if (currentUserRole !== 'bottom' && currentUserRole !== 'top') {
       return
     }
@@ -792,7 +818,7 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
               player={topDisplayPlayer}
               position="top"
               resignSide={visualTopSide}
-              isActive={game.currentPlayer === visualTopSide && game.gameStatus === 'playing'}
+              isActive={displayedGame.currentPlayer === visualTopSide && displayedGame.gameStatus === 'playing'}
               compact
               onResign={handleResign}
               resignDisabled={resignDisabledForSide(visualTopSide)}
@@ -811,7 +837,7 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
               players={displayedGame.players}
               showVisualStones={showVisualStones}
               lastMove={displayedGame.lastMove}
-              disableInteraction={isReviewing || currentUserRole === 'spectator'}
+              disableInteraction={boardInteractionDisabled}
               interactiveSide={
                 currentUserRole === 'spectator'
                   ? '__none__'
@@ -822,7 +848,11 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
                     : null
               }
               perspectiveSide={perspectiveSide}
-              onPitClick={handlePitClick}
+              onPitClick={
+                syncTargetMatchId && onSubmitAuthoritativeMove
+                  ? onSubmitAuthoritativeMove
+                  : handlePitClick
+              }
             />
             <ReplayControls
               activePositionIndex={activePositionIndex}
@@ -846,7 +876,7 @@ function MangalaGameScreen({ gameId, backendMatch = null }) {
               player={bottomDisplayPlayer}
               position="bottom"
               resignSide={visualBottomSide}
-              isActive={game.currentPlayer === visualBottomSide && game.gameStatus === 'playing'}
+              isActive={displayedGame.currentPlayer === visualBottomSide && displayedGame.gameStatus === 'playing'}
               compact
               onResign={handleResign}
               resignDisabled={resignDisabledForSide(visualBottomSide)}
@@ -872,6 +902,8 @@ export default function MangalaGame() {
   const [backendMatch, setBackendMatch] = useState(null)
   const [isLoadingBackendMatch, setIsLoadingBackendMatch] = useState(false)
   const [backendMatchError, setBackendMatchError] = useState('')
+  const [isSubmittingAuthoritativeMove, setIsSubmittingAuthoritativeMove] = useState(false)
+  const botAutoMoveTimeoutRef = useRef(null)
   const persistedMatchSession =
     typeof window === 'undefined' || typeof gameId !== 'string'
       ? null
@@ -895,6 +927,41 @@ export default function MangalaGame() {
         moves: backendMatch.moves ?? [],
       })
     : 'local'
+
+  const submitAuthoritativeMove = async (pitIndex = null) => {
+    if (!targetBackendMatchId || isSubmittingAuthoritativeMove) {
+      return
+    }
+
+    const token =
+      typeof window === 'undefined'
+        ? ''
+        : window.localStorage.getItem('mangala.authToken') ?? ''
+
+    if (!token) {
+      return
+    }
+
+    setIsSubmittingAuthoritativeMove(true)
+
+    try {
+      const updatedMatch = await submitMatchMoveRequest(targetBackendMatchId, pitIndex, token)
+      setBackendMatch(updatedMatch)
+    } catch (error) {
+      console.error('Submit authoritative move error:', error)
+    } finally {
+      setIsSubmittingAuthoritativeMove(false)
+    }
+  }
+
+  useEffect(
+    () => () => {
+      if (botAutoMoveTimeoutRef.current !== null) {
+        window.clearTimeout(botAutoMoveTimeoutRef.current)
+      }
+    },
+    [],
+  )
 
   useEffect(() => {
     let isCancelled = false
@@ -974,6 +1041,36 @@ export default function MangalaGame() {
     }
   }, [targetBackendMatchId])
 
+  useEffect(() => {
+    if (!backendMatch || !targetBackendMatchId || isSubmittingAuthoritativeMove) {
+      return
+    }
+
+    const currentPlayer =
+      backendMatch?.game_state?.currentPlayer === 'top' ? 'top' : 'bottom'
+    const topIsBot = backendMatch.top_player_is_bot === true
+
+    if (backendMatch.status !== 'active' || !topIsBot || currentPlayer !== 'top') {
+      return
+    }
+
+    if (botAutoMoveTimeoutRef.current !== null) {
+      window.clearTimeout(botAutoMoveTimeoutRef.current)
+    }
+
+    botAutoMoveTimeoutRef.current = window.setTimeout(() => {
+      void submitAuthoritativeMove(null)
+      botAutoMoveTimeoutRef.current = null
+    }, BOT_MOVE_DELAY_MS)
+
+    return () => {
+      if (botAutoMoveTimeoutRef.current !== null) {
+        window.clearTimeout(botAutoMoveTimeoutRef.current)
+        botAutoMoveTimeoutRef.current = null
+      }
+    }
+  }, [backendMatch, isSubmittingAuthoritativeMove, targetBackendMatchId])
+
   if (isLoadingBackendMatch) {
     return (
       <main className={styles.page}>
@@ -1005,6 +1102,8 @@ export default function MangalaGame() {
       key={`${gameId}-${backendMatch?.id ?? 'local'}-${backendMatchRevision}`}
       gameId={gameId}
       backendMatch={backendMatch}
+      onSubmitAuthoritativeMove={submitAuthoritativeMove}
+      isSubmittingAuthoritativeMove={isSubmittingAuthoritativeMove}
     />
   )
 }
