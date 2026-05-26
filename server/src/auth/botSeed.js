@@ -36,7 +36,6 @@ async function ensureSeededBotUsers(db) {
       bot.username,
       bot.email,
       passwordHash,
-      bot.elo,
     ]);
   }
 }
