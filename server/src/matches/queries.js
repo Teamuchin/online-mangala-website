@@ -9,8 +9,8 @@ const MATCH_SELECT_FIELDS = `
 const createMatchesTableQuery = `
 CREATE TABLE IF NOT EXISTS matches (
   id TEXT PRIMARY KEY,
-  bottom_player_id INTEGER NOT NULL REFERENCES users(id),
-  top_player_id INTEGER NOT NULL REFERENCES users(id),
+  bottom_player_id TEXT NOT NULL,
+  top_player_id TEXT NOT NULL,
   is_rated BOOLEAN NOT NULL DEFAULT FALSE,
   status VARCHAR(20) NOT NULL,
   winner_side VARCHAR(10),
@@ -30,6 +30,152 @@ CREATE TABLE IF NOT EXISTS matches (
   ),
   CONSTRAINT matches_distinct_players_check CHECK (bottom_player_id <> top_player_id)
 );
+`;
+
+const ensureLegacyMatchPlayerIdColumnsQuery = `
+DO $$
+DECLARE
+  resolved_match_table_oid OID;
+  table_schema_name TEXT;
+  bottom_source_column TEXT;
+  top_source_column TEXT;
+BEGIN
+  SELECT to_regclass('matches')
+  INTO resolved_match_table_oid;
+
+  IF resolved_match_table_oid IS NULL THEN
+    RETURN;
+  END IF;
+
+  SELECT namespace.nspname
+  INTO table_schema_name
+  FROM pg_class AS class
+  JOIN pg_namespace AS namespace ON namespace.oid = class.relnamespace
+  WHERE class.oid = resolved_match_table_oid;
+
+  SELECT column_name
+  INTO bottom_source_column
+  FROM information_schema.columns
+  WHERE table_schema = table_schema_name
+    AND table_name = 'matches'
+    AND column_name IN (
+      'bottom_player_id',
+      'bottom_player',
+      'bottomplayerid',
+      'bottom_playerid',
+      'bottom_user_id',
+      'bottomuserid',
+      'bottom_user',
+      'bottomplayer'
+    )
+  ORDER BY CASE column_name
+    WHEN 'bottom_player_id' THEN 0
+    WHEN 'bottom_player' THEN 1
+    WHEN 'bottom_playerid' THEN 2
+    WHEN 'bottomplayerid' THEN 3
+    WHEN 'bottom_user_id' THEN 4
+    WHEN 'bottomuserid' THEN 5
+    WHEN 'bottom_user' THEN 6
+    ELSE 7
+  END
+  LIMIT 1;
+
+  IF bottom_source_column IS NULL THEN
+    ALTER TABLE matches ADD COLUMN IF NOT EXISTS bottom_player_id TEXT;
+  ELSIF bottom_source_column <> 'bottom_player_id' THEN
+    IF EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = table_schema_name
+        AND table_name = 'matches'
+        AND column_name = 'bottom_player_id'
+    ) THEN
+      EXECUTE format(
+        'UPDATE matches SET bottom_player_id = COALESCE(bottom_player_id::text, %I::text)',
+        bottom_source_column
+      );
+    ELSE
+      EXECUTE format(
+        'ALTER TABLE matches RENAME COLUMN %I TO bottom_player_id',
+        bottom_source_column
+      );
+    END IF;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = table_schema_name
+      AND table_name = 'matches'
+      AND column_name = 'bottom_player_id'
+  ) THEN
+    ALTER TABLE matches
+    ALTER COLUMN bottom_player_id TYPE TEXT
+    USING bottom_player_id::text;
+  END IF;
+
+  SELECT column_name
+  INTO top_source_column
+  FROM information_schema.columns
+  WHERE table_schema = table_schema_name
+    AND table_name = 'matches'
+    AND column_name IN (
+      'top_player_id',
+      'top_player',
+      'topplayerid',
+      'top_playerid',
+      'top_user_id',
+      'topuserid',
+      'top_user',
+      'topplayer'
+    )
+  ORDER BY CASE column_name
+    WHEN 'top_player_id' THEN 0
+    WHEN 'top_player' THEN 1
+    WHEN 'top_playerid' THEN 2
+    WHEN 'topplayerid' THEN 3
+    WHEN 'top_user_id' THEN 4
+    WHEN 'topuserid' THEN 5
+    WHEN 'top_user' THEN 6
+    ELSE 7
+  END
+  LIMIT 1;
+
+  IF top_source_column IS NULL THEN
+    ALTER TABLE matches ADD COLUMN IF NOT EXISTS top_player_id TEXT;
+  ELSIF top_source_column <> 'top_player_id' THEN
+    IF EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = table_schema_name
+        AND table_name = 'matches'
+        AND column_name = 'top_player_id'
+    ) THEN
+      EXECUTE format(
+        'UPDATE matches SET top_player_id = COALESCE(top_player_id::text, %I::text)',
+        top_source_column
+      );
+    ELSE
+      EXECUTE format(
+        'ALTER TABLE matches RENAME COLUMN %I TO top_player_id',
+        top_source_column
+      );
+    END IF;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = table_schema_name
+      AND table_name = 'matches'
+      AND column_name = 'top_player_id'
+  ) THEN
+    ALTER TABLE matches
+    ALTER COLUMN top_player_id TYPE TEXT
+    USING top_player_id::text;
+  END IF;
+END
+$$;
 `;
 
 const createMatchQuery = `
@@ -60,8 +206,8 @@ RETURNING *;
 const findMatchByIdQuery = `
 SELECT ${MATCH_SELECT_FIELDS}
 FROM matches
-JOIN users AS bottom_user ON bottom_user.id = matches.bottom_player_id
-JOIN users AS top_user ON top_user.id = matches.top_player_id
+JOIN users AS bottom_user ON bottom_user.id::text = matches.bottom_player_id::text
+JOIN users AS top_user ON top_user.id::text = matches.top_player_id::text
 WHERE matches.id = $1
 LIMIT 1;
 `;
@@ -69,17 +215,17 @@ LIMIT 1;
 const findMatchesByUserIdQuery = `
 SELECT ${MATCH_SELECT_FIELDS}
 FROM matches
-JOIN users AS bottom_user ON bottom_user.id = matches.bottom_player_id
-JOIN users AS top_user ON top_user.id = matches.top_player_id
-WHERE matches.bottom_player_id = $1 OR matches.top_player_id = $1
+JOIN users AS bottom_user ON bottom_user.id::text = matches.bottom_player_id::text
+JOIN users AS top_user ON top_user.id::text = matches.top_player_id::text
+WHERE matches.bottom_player_id::text = $1::text OR matches.top_player_id::text = $1::text
 ORDER BY COALESCE(finished_at, started_at) DESC;
 `;
 
 const listActiveMatchesQuery = `
 SELECT ${MATCH_SELECT_FIELDS}
 FROM matches
-JOIN users AS bottom_user ON bottom_user.id = matches.bottom_player_id
-JOIN users AS top_user ON top_user.id = matches.top_player_id
+JOIN users AS bottom_user ON bottom_user.id::text = matches.bottom_player_id::text
+JOIN users AS top_user ON top_user.id::text = matches.top_player_id::text
 WHERE matches.status = 'active'
 ORDER BY matches.started_at DESC;
 `;
@@ -105,6 +251,7 @@ RETURNING *;
 
 module.exports = {
   createMatchesTableQuery,
+  ensureLegacyMatchPlayerIdColumnsQuery,
   createMatchQuery,
   findMatchByIdQuery,
   findMatchesByUserIdQuery,

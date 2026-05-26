@@ -6,15 +6,6 @@ const authRoutes = require('./routes/auth');
 const matchmakingRoutes = require('./routes/matchmaking');
 const matchRoutes = require('./routes/matches');
 const userRoutes = require('./routes/users');
-const { createMatchesTableQuery } = require('./matches/queries');
-const {
-  createUsersTableQuery,
-  dropBioColumnQuery,
-  ensureEloColumnQuery,
-  ensureIsBotColumnQuery,
-  ensureUsernameTypeQuery,
-  ensureUsernameUniqueIndexQuery,
-} = require('./auth/queries');
 const { ensureSeededBotUsers } = require('./auth/botSeed');
 
 const app = express();
@@ -41,16 +32,9 @@ app.get('/api/health', async (req, res) => {
 
 async function startServer() {
   try {
-    await db.query(createUsersTableQuery);
-    await db.query(dropBioColumnQuery);
-    await db.query(ensureEloColumnQuery);
-    await db.query(ensureIsBotColumnQuery);
-    await db.query(ensureUsernameTypeQuery);
-    await db.query(ensureUsernameUniqueIndexQuery);
+    // Schema is managed via node-pg-migrate scripts before server boot.
     await ensureSeededBotUsers(db);
-    console.log('Users table is ready');
-    await db.query(createMatchesTableQuery);
-    console.log('Matches table is ready');
+    console.log('Seeded bot users are ready');
 
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => console.log(`Running on http://localhost:${PORT}`));

@@ -17,8 +17,17 @@ function parseInteger(value) {
   return Number.isInteger(parsed) ? parsed : null;
 }
 
+function normalizeUserId(value) {
+  const normalized = String(value || '').trim();
+  return normalized || null;
+}
+
+function isSameUserId(left, right) {
+  return normalizeUserId(left) !== null && normalizeUserId(left) === normalizeUserId(right);
+}
+
 function createMatchId() {
-  return crypto.randomBytes(6).toString('hex');
+  return crypto.randomUUID();
 }
 
 function buildFlatBoard(boardState) {
@@ -139,11 +148,11 @@ function normalizeMatchPayload(input, options = {}) {
   const bottomPlayerId =
     source.bottom_player_id === undefined
       ? existingMatch?.bottom_player_id ?? null
-      : parseInteger(source.bottom_player_id);
+      : normalizeUserId(source.bottom_player_id);
   const topPlayerId =
     source.top_player_id === undefined
       ? existingMatch?.top_player_id ?? null
-      : parseInteger(source.top_player_id);
+      : normalizeUserId(source.top_player_id);
   const bottomRatingBefore =
     source.bottom_rating_before === undefined
       ? existingMatch?.bottom_rating_before ?? null
@@ -318,13 +327,13 @@ function buildServerRatedResult(existingMatch, payload) {
 
 async function createMatch(req, res) {
   try {
-    const authenticatedUserId = parseInteger(req.auth?.userId);
+    const authenticatedUserId = normalizeUserId(req.auth?.userId);
     const payload = normalizeMatchPayload(req.body, { requireId: false });
     const validationError = validateMatchPayload(payload, { requireId: false });
 
     if (
-      authenticatedUserId !== payload.bottomPlayerId &&
-      authenticatedUserId !== payload.topPlayerId
+      !isSameUserId(authenticatedUserId, payload.bottomPlayerId) &&
+      !isSameUserId(authenticatedUserId, payload.topPlayerId)
     ) {
       return res.status(403).json({ message: 'You cannot create a match for other players' });
     }
@@ -373,7 +382,7 @@ async function createMatch(req, res) {
 
 async function updateMatch(req, res) {
   try {
-    const authenticatedUserId = parseInteger(req.auth?.userId);
+    const authenticatedUserId = normalizeUserId(req.auth?.userId);
     const matchId = String(req.params?.id || '').trim();
 
     if (!matchId) {
@@ -389,22 +398,22 @@ async function updateMatch(req, res) {
     const existingMatch = existingMatchResult.rows[0];
 
     if (
-      authenticatedUserId !== existingMatch.bottom_player_id &&
-      authenticatedUserId !== existingMatch.top_player_id
+      !isSameUserId(authenticatedUserId, existingMatch.bottom_player_id) &&
+      !isSameUserId(authenticatedUserId, existingMatch.top_player_id)
     ) {
       return res.status(403).json({ message: 'You cannot update a match for other players' });
     }
 
     if (
       req.body?.bottom_player_id !== undefined &&
-      parseInteger(req.body.bottom_player_id) !== existingMatch.bottom_player_id
+      !isSameUserId(req.body.bottom_player_id, existingMatch.bottom_player_id)
     ) {
       return res.status(400).json({ message: 'Match players cannot be changed' });
     }
 
     if (
       req.body?.top_player_id !== undefined &&
-      parseInteger(req.body.top_player_id) !== existingMatch.top_player_id
+      !isSameUserId(req.body.top_player_id, existingMatch.top_player_id)
     ) {
       return res.status(400).json({ message: 'Match players cannot be changed' });
     }
@@ -462,7 +471,7 @@ async function updateMatch(req, res) {
 
 async function submitMove(req, res) {
   try {
-    const authenticatedUserId = parseInteger(req.auth?.userId);
+    const authenticatedUserId = normalizeUserId(req.auth?.userId);
     const matchId = String(req.params?.id || '').trim();
 
     if (!matchId) {
@@ -478,8 +487,8 @@ async function submitMove(req, res) {
     const existingMatch = existingMatchResult.rows[0];
 
     if (
-      authenticatedUserId !== existingMatch.bottom_player_id &&
-      authenticatedUserId !== existingMatch.top_player_id
+      !isSameUserId(authenticatedUserId, existingMatch.bottom_player_id) &&
+      !isSameUserId(authenticatedUserId, existingMatch.top_player_id)
     ) {
       return res.status(403).json({ message: 'You cannot play moves for other players' });
     }
@@ -496,7 +505,7 @@ async function submitMove(req, res) {
 
     let currentPlayer = existingMatch?.game_state?.currentPlayer === 'top' ? 'top' : 'bottom';
     const actingSide =
-      authenticatedUserId === existingMatch.bottom_player_id ? 'bottom' : 'top';
+      isSameUserId(authenticatedUserId, existingMatch.bottom_player_id) ? 'bottom' : 'top';
     const submittedPitIndex =
       req.body?.pitIndex === undefined ? null : parseInteger(req.body.pitIndex);
     const nextMoves = Array.isArray(existingMatch.moves) ? [...existingMatch.moves] : [];
@@ -629,10 +638,10 @@ async function getMatchById(req, res) {
 
 async function getMatchesByUserId(req, res) {
   try {
-    const userId = parseInteger(req.params?.userId);
+    const userId = String(req.params?.userId || '').trim();
 
     if (!userId) {
-      return res.status(400).json({ message: 'User id must be a valid integer' });
+      return res.status(400).json({ message: 'User id is required' });
     }
 
     const result = await db.query(findMatchesByUserIdQuery, [userId]);

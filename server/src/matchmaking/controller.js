@@ -11,17 +11,13 @@ const {
   setQueueEntry,
 } = require('./state');
 
+const BOT_FALLBACK_DELAY_MS = 4 * 1000;
 const INITIAL_MATCH_BOARD = {
   bottomPits: [4, 4, 4, 4, 4, 4],
   bottomStore: 0,
   topPits: [4, 4, 4, 4, 4, 4],
   topStore: 0,
 };
-
-function parseInteger(value) {
-  const parsed = Number.parseInt(value, 10);
-  return Number.isInteger(parsed) ? parsed : null;
-}
 
 function buildQueuedPlayer(user) {
   return {
@@ -75,12 +71,12 @@ async function readUserById(userId) {
 }
 
 async function createBackendMatch(players, rated) {
-  const gameId = crypto.randomBytes(6).toString('hex');
+  const gameId = crypto.randomUUID();
 
   await db.query(createMatchQuery, [
     gameId,
-    parseInteger(players.bottom.id),
-    parseInteger(players.top.id),
+    players.bottom.id,
+    players.top.id,
     rated,
     'active',
     null,
@@ -99,6 +95,51 @@ async function createBackendMatch(players, rated) {
   ]);
 
   return gameId;
+}
+
+async function readClosestBotUser(excludedUserId, targetRating) {
+  const excludedId = String(excludedUserId || '').trim() || null;
+  const normalizedTargetRating = Number.isInteger(targetRating) ? targetRating : 1200;
+  const result = await db.query(
+    `
+    SELECT id, username, elo
+    FROM users
+    WHERE is_bot = TRUE
+      AND ($1::text IS NULL OR id::text <> $1::text)
+    ORDER BY ABS(elo - $2::int) ASC, RANDOM()
+    LIMIT 1;
+    `,
+    [excludedId, normalizedTargetRating],
+  );
+
+  return result.rows[0] ?? null;
+}
+
+async function buildBotMatchedEntry(entry) {
+  const currentUser = await readUserById(entry.userId);
+
+  if (!currentUser) {
+    removeQueueEntry(entry.userId);
+    return null;
+  }
+
+  const botUser = await readClosestBotUser(currentUser.id, currentUser.elo ?? entry.rating);
+
+  if (!botUser) {
+    return null;
+  }
+
+  const players = buildMatchPlayers(currentUser, botUser);
+  const gameId = await createBackendMatch(players, entry.rated);
+  const matchedAt = Date.now();
+
+  return {
+    ...entry,
+    status: 'matched',
+    matchedAt,
+    gameId,
+    players,
+  };
 }
 
 function buildAndConsumeMatchedResponse(userId, entry) {
@@ -184,7 +225,7 @@ async function joinQueue(req, res) {
   }
 }
 
-function getQueueStatus(req, res) {
+async function getQueueStatus(req, res) {
   try {
     const userId = String(req.auth?.userId || '').trim();
 
@@ -202,6 +243,15 @@ function getQueueStatus(req, res) {
 
     if (entry.status === 'matched') {
       return res.status(200).json(buildAndConsumeMatchedResponse(userId, entry));
+    }
+
+    if (entry.allowBots && Date.now() - entry.joinedAt >= BOT_FALLBACK_DELAY_MS) {
+      const botMatchedEntry = await buildBotMatchedEntry(entry);
+
+      if (botMatchedEntry) {
+        setQueueEntry(botMatchedEntry);
+        return res.status(200).json(buildAndConsumeMatchedResponse(userId, botMatchedEntry));
+      }
     }
 
     return res.status(200).json(buildSearchingResponse(entry));

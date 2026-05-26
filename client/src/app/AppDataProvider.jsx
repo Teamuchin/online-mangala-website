@@ -98,22 +98,24 @@ export function AppDataProvider({ children }) {
   const [publicUsers, setPublicUsers] = useState([])
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     if (typeof window === 'undefined') {
-      return true
+      return false
     }
 
     const storedAuthState = window.localStorage.getItem(AUTH_STATE_STORAGE_KEY)
 
     if (!storedAuthState) {
-      return true
+      const token = window.localStorage.getItem('mangala.authToken') ?? ''
+      return Boolean(token) || isGuestUser(currentUser)
     }
 
     try {
       return mergeStoredAuthState(
-        { isAuthenticated: true },
+        { isAuthenticated: false },
         JSON.parse(storedAuthState),
       ).isAuthenticated
     } catch {
-      return true
+      const token = window.localStorage.getItem('mangala.authToken') ?? ''
+      return Boolean(token) || isGuestUser(currentUser)
     }
   })
   const [activeMatchSummary, setActiveMatchSummary] = useState(() =>

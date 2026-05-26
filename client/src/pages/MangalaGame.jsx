@@ -1048,9 +1048,12 @@ export default function MangalaGame() {
 
     const currentPlayer =
       backendMatch?.game_state?.currentPlayer === 'top' ? 'top' : 'bottom'
-    const topIsBot = backendMatch.top_player_is_bot === true
+    const currentSideIsBot =
+      currentPlayer === 'top'
+        ? backendMatch.top_player_is_bot === true
+        : backendMatch.bottom_player_is_bot === true
 
-    if (backendMatch.status !== 'active' || !topIsBot || currentPlayer !== 'top') {
+    if (backendMatch.status !== 'active' || !currentSideIsBot) {
       return
     }
 
