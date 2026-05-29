@@ -10,7 +10,6 @@ import {
 } from '../app/profileData.js'
 import { getUserByUsernameRequest } from '../app/userApi.js'
 import { useAppData } from '../app/useAppData.js'
-import { readStoredMatchSessionByGameId } from '../components/mangala/gamePersistence.js'
 import styles from './ProfilePage.module.css'
 
 const MAX_VISIBLE_RATING_POINTS = 10
@@ -79,44 +78,6 @@ function getClosestPointId(points, mouseEvent) {
       ? point
       : closestPoint
   }, null)?.id ?? null
-}
-
-function buildLiveMatchEntry(activeMatchSummary, currentUser) {
-  if (!activeMatchSummary?.isActive) {
-    return null
-  }
-
-  const session = readStoredMatchSessionByGameId(activeMatchSummary.gameId)
-
-  if (!session?.game?.players) {
-    return null
-  }
-
-  const { bottom, top } = session.game.players
-  const currentUserId = String(currentUser.id)
-  const player =
-    currentUserId === String(bottom?.id)
-      ? bottom
-      : currentUserId === String(top?.id)
-        ? top
-        : null
-  const opponent = player?.id === bottom?.id ? top : bottom
-
-  if (!player || !opponent) {
-    return null
-  }
-
-  return {
-    id: activeMatchSummary.gameId,
-    playedAt: new Date(session.game.lastTimerStartedAt ?? Date.now()).toISOString(),
-    opponent: opponent.name,
-    playerRating: player.rating,
-    opponentRating: opponent.rating,
-    result: 'Live',
-    ratingDelta: null,
-    opponentRatingDelta: null,
-    isLive: true,
-  }
 }
 
 function buildChartModel(ratingHistory) {
@@ -221,15 +182,8 @@ export default function ProfilePage() {
       return []
     }
 
-    const mappedMatches = backendMatches.map((match) =>
-      buildHistoryEntryFromBackendMatch(match, profile.id),
-    )
-    const liveMatch = buildLiveMatchEntry(activeMatchSummary, currentUser)
-
-    return liveMatch && String(profile.id) === String(currentUser.id)
-      ? [liveMatch, ...mappedMatches.filter((match) => match.id !== liveMatch.id)]
-      : mappedMatches
-  }, [activeMatchSummary, backendMatches, currentUser, profile])
+    return backendMatches.map((match) => buildHistoryEntryFromBackendMatch(match, profile.id))
+  }, [backendMatches, profile])
   const visibleRatingHistory = useMemo(
     () =>
       buildRatingHistoryFromBackendMatches(backendMatches, profile?.id ?? '').slice(

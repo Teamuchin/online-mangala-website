@@ -155,6 +155,26 @@ function getRatingChangeForSide(currentUserRole, ratedOutcome, side) {
   return side === currentUserRole ? ratedOutcome.playerDelta : ratedOutcome.opponentDelta
 }
 
+function buildBackendRatedOutcome(backendMatch, currentUserRole) {
+  if (
+    !backendMatch?.is_rated ||
+    backendMatch?.status !== 'finished' ||
+    (currentUserRole !== 'bottom' && currentUserRole !== 'top')
+  ) {
+    return null
+  }
+
+  return currentUserRole === 'bottom'
+    ? {
+        playerDelta: backendMatch.bottom_rating_change ?? 0,
+        opponentDelta: backendMatch.top_rating_change ?? 0,
+      }
+    : {
+        playerDelta: backendMatch.top_rating_change ?? 0,
+        opponentDelta: backendMatch.bottom_rating_change ?? 0,
+      }
+}
+
 function buildPlayersFromBackendMatch(backendMatch, currentUser) {
   const bottomId = String(backendMatch.bottom_player_id)
   const topId = String(backendMatch.top_player_id)
@@ -518,15 +538,17 @@ function MangalaGameScreen({
       : null
   const ratedOutcome =
     isRatedMatch && currentUserRole !== 'spectator' && game.gameStatus === 'finished'
-      ? buildRatedMatchOutcome(
-          game.players[currentUserRole].rating,
-          game.players[currentUserRole === 'bottom' ? 'top' : 'bottom'].rating,
-          game.winner === currentUserRole
-            ? 'win'
-            : game.winner === 'draw'
-              ? 'draw'
-              : 'loss',
-        )
+      ? syncTargetMatchId
+        ? buildBackendRatedOutcome(backendMatch, currentUserRole)
+        : buildRatedMatchOutcome(
+            game.players[currentUserRole].rating,
+            game.players[currentUserRole === 'bottom' ? 'top' : 'bottom'].rating,
+            game.winner === currentUserRole
+              ? 'win'
+              : game.winner === 'draw'
+                ? 'draw'
+                : 'loss',
+          )
       : null
   const replayDescription = buildReplayDescription(
     game.matchRecord,
