@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
 import {
   getMatchByIdRequest,
@@ -13,22 +13,14 @@ import Board from '../components/mangala/Board.jsx'
 import {
   readStoredMatchSessionByGameId,
 } from '../components/mangala/gamePersistence.js'
-import {
-  buildMoveAnimationFrames,
-  createInitialState,
-  INITIAL_BOARD,
-} from '../components/mangala/gameLogic.js'
+import { createInitialState, INITIAL_BOARD } from '../components/mangala/gameLogic.js'
 import { buildPositionSnapshot, buildReplayDescription } from '../components/mangala/matchRecord.js'
-import {
-  buildAnimatedLastMove,
-  buildPreMoveLastMove,
-  buildResolvedLastMove,
-} from '../components/mangala/movePresentation.js'
+import { buildResolvedLastMove } from '../components/mangala/movePresentation.js'
 import ReplayControls from '../components/mangala/ReplayControls.jsx'
 import PlayerPanel from '../components/mangala/PlayerPanel.jsx'
+import { useBackendMoveAnimationQueue } from '../components/mangala/useBackendMoveAnimationQueue.js'
 import { useMangalaGame } from '../components/mangala/useMangalaGame.js'
 import styles from '../components/mangala/MangalaGame.module.css'
-import { MOVE_ANIMATION_DELAY_MS } from '../components/mangala/constants.js'
 
 const RESERVED_LOCAL_GAME_IDS = new Set(['local'])
 const BACKEND_MATCH_POLL_INTERVAL_MS = 1500
@@ -59,94 +51,6 @@ function buildBackendMatchSignature(match, { includeClocks = false } = {}) {
 
 function getBackendMoveCount(match) {
   return Array.isArray(match?.moves) ? match.moves.length : 0
-}
-
-function normalizeBackendMoveForPresentation(rawMove) {
-  if (!rawMove) {
-    return null
-  }
-
-  return {
-    fromPit: rawMove.fromPit ?? rawMove.pitIndex ?? 0,
-    initialPitCount: rawMove.initialPitCount ?? 0,
-    dropCounts: rawMove.dropCounts ?? {},
-    dropSequence: rawMove.dropSequence ?? [],
-    capturedStones: rawMove.capturedStones ?? [],
-    lastLandingIndex: rawMove.lastLandingIndex ?? rawMove.landedAt ?? null,
-    captured: rawMove.captured ?? 0,
-    extraTurn: rawMove.extraTurn === true,
-  }
-}
-
-function buildBackendTimeline(match) {
-  const rawMoves = Array.isArray(match?.moves) ? match.moves : []
-  const winner = mapWinnerSideToWinner(match?.winner_side)
-  const finalGameStatus = match?.status === 'finished' ? 'finished' : 'playing'
-  const initialCurrentPlayer =
-    rawMoves.length > 0
-      ? rawMoves[0]?.playerSide ?? rawMoves[0]?.player ?? 'bottom'
-      : match?.game_state?.currentPlayer === 'top'
-        ? 'top'
-        : 'bottom'
-  const positions = [
-    {
-      board: [...INITIAL_BOARD],
-      currentPlayer: initialCurrentPlayer,
-      gameStatus: rawMoves.length === 0 ? finalGameStatus : 'playing',
-      winner: rawMoves.length === 0 ? winner : null,
-    },
-  ]
-
-  rawMoves.forEach((rawMove, index) => {
-    const boardAfter = buildFlatBoard(rawMove?.boardAfter)
-
-    if (!boardAfter) {
-      return
-    }
-
-    positions.push({
-      board: boardAfter,
-      currentPlayer:
-        rawMove?.nextPlayer ?? positions[positions.length - 1]?.currentPlayer ?? 'bottom',
-      gameStatus:
-        index === rawMoves.length - 1 ? finalGameStatus : rawMove?.gameStatus ?? 'playing',
-      winner: index === rawMoves.length - 1 ? winner : rawMove?.winner ?? null,
-    })
-  })
-
-  return {
-    moves: rawMoves,
-    positions,
-  }
-}
-
-function buildBackendAnimationSteps(match, fromMoveCount, toMoveCount) {
-  if (!match || toMoveCount <= fromMoveCount) {
-    return []
-  }
-
-  const timeline = buildBackendTimeline(match)
-  const steps = []
-
-  for (let moveIndex = fromMoveCount; moveIndex < toMoveCount; moveIndex += 1) {
-    const rawMove = timeline.moves[moveIndex]
-    const previousPosition = timeline.positions[moveIndex]
-    const nextPosition = timeline.positions[moveIndex + 1]
-    const move = normalizeBackendMoveForPresentation(rawMove)
-
-    if (!rawMove || !previousPosition || !nextPosition || !move) {
-      continue
-    }
-
-    steps.push({
-      moveNumber: moveIndex + 1,
-      move,
-      previousPosition,
-      nextPosition,
-    })
-  }
-
-  return steps
 }
 
 function getLocalMoveCount(session) {
@@ -215,19 +119,6 @@ function buildFlatBoard(boardState) {
   ]
 }
 
-function buildBoardStatePayload(board) {
-  if (!Array.isArray(board) || board.length !== 14) {
-    return null
-  }
-
-  return {
-    bottomPits: board.slice(0, 6),
-    bottomStore: board[6],
-    topPits: board.slice(7, 13),
-    topStore: board[13],
-  }
-}
-
 function resolveBackendClockPlayers(players, backendMatch, now = Date.now()) {
   if (!backendMatch || backendMatch.status !== 'active') {
     return players
@@ -282,22 +173,6 @@ function buildTurnMessageFromState({ players, currentPlayer, gameStatus, winner 
   return `${players[currentPlayer].name} to move`
 }
 
-function inferResultReason(game) {
-  if (game.gameStatus !== 'finished') {
-    return null
-  }
-
-  if (game.turnMessage.includes('resignation')) {
-    return 'resign'
-  }
-
-  if (game.turnMessage.includes('on time')) {
-    return 'timeout'
-  }
-
-  return 'normal'
-}
-
 function getRatingChangeForSide(currentUserRole, ratedOutcome, side) {
   if (!ratedOutcome || (currentUserRole !== 'bottom' && currentUserRole !== 'top')) {
     return null
@@ -336,30 +211,6 @@ function buildPlayersFromBackendMatch(backendMatch, currentUser) {
       isBot: backendMatch.top_player_is_bot === true,
     },
   }
-}
-
-function buildBackendMovesPayload(game) {
-  return game.matchRecord.moves.map((move, index) => {
-    const positionAfter = game.matchRecord.positions[index + 1]
-
-    return {
-      moveNumber: move.moveNumber,
-      playerSide: move.player,
-      fromPit: move.fromPit,
-      pitIndex: move.fromPit,
-      captured: move.captured,
-      extraTurn: move.extraTurn,
-      initialPitCount: move.initialPitCount ?? null,
-      dropCounts: move.dropCounts ?? {},
-      dropSequence: move.dropSequence ?? [],
-      capturedStones: move.capturedStones ?? [],
-      lastLandingIndex: move.lastLandingIndex ?? move?.landedAt ?? null,
-      nextPlayer: positionAfter?.currentPlayer ?? game.currentPlayer,
-      boardAfter: buildBoardStatePayload(positionAfter?.board ?? game.board),
-      gameStatus: positionAfter?.gameStatus ?? game.gameStatus,
-      winner: positionAfter?.winner ?? game.winner,
-    }
-  })
 }
 
 function buildHydratedLastMove(rawMove) {
@@ -504,36 +355,6 @@ function buildInitialConfigFromBackendMatch({ backendMatch, currentUser, gameId 
     initialSelectedPit: latestMove?.fromPit ?? latestMove?.pitIndex ?? null,
     initialLastMove: buildHydratedLastMove(latestMove),
     initialMatchRecord,
-  }
-}
-
-function buildMatchSyncPayload({
-  backendMatch,
-  gameId,
-  game,
-  startedAt,
-  finishedAt,
-}) {
-  const winnerSide = mapWinnerSideToWinner(game.winner)
-
-  return {
-    id: backendMatch?.id ?? gameId,
-    status: game.gameStatus === 'finished' ? 'finished' : 'active',
-    winner_side: winnerSide,
-    result_reason: inferResultReason(game),
-    bottom_rating_before: backendMatch?.bottom_rating_before ?? game.players.bottom.rating,
-    top_rating_before: backendMatch?.top_rating_before ?? game.players.top.rating,
-    bottom_rating_change: backendMatch?.bottom_rating_change ?? 0,
-    top_rating_change: backendMatch?.top_rating_change ?? 0,
-    started_at: startedAt,
-    finished_at: game.gameStatus === 'finished' ? finishedAt : null,
-    moves: buildBackendMovesPayload(game),
-    game_state: {
-      currentPlayer: game.currentPlayer,
-      board: buildBoardStatePayload(game.board),
-      bottomTimeLeft: game.players.bottom.timeLeft,
-      topTimeLeft: game.players.top.timeLeft,
-    },
   }
 }
 
@@ -1033,13 +854,7 @@ export default function MangalaGame() {
   const [backendMatchError, setBackendMatchError] = useState('')
   const [isSubmittingAuthoritativeMove, setIsSubmittingAuthoritativeMove] = useState(false)
   const [backendAnimationEnabled, setBackendAnimationEnabled] = useState(false)
-  const [backendAnimationDisplay, setBackendAnimationDisplay] = useState(null)
   const botAutoMoveTimeoutRef = useRef(null)
-  const backendAnimationTimeoutsRef = useRef([])
-  const backendAnimationQueueRef = useRef([])
-  const backendAnimationRunningRef = useRef(false)
-  const backendDisplayedMoveCountRef = useRef(null)
-  const backendScheduledMoveCountRef = useRef(null)
   const persistedMatchSession =
     typeof window === 'undefined' || typeof gameId !== 'string'
       ? null
@@ -1053,92 +868,10 @@ export default function MangalaGame() {
       ? gameId
       : null)
   const backendMatchRevision = buildBackendMatchSignature(backendMatch) ?? 'local'
-
-  const clearBackendAnimationTimeouts = () => {
-    backendAnimationTimeoutsRef.current.forEach((timeoutId) => window.clearTimeout(timeoutId))
-    backendAnimationTimeoutsRef.current = []
-  }
-
-  const clearBackendAnimationState = () => {
-    clearBackendAnimationTimeouts()
-    backendAnimationQueueRef.current = []
-    backendAnimationRunningRef.current = false
-    setBackendAnimationDisplay(null)
-  }
-
-  const runNextBackendAnimation = () => {
-    const nextStep = backendAnimationQueueRef.current.shift()
-
-    if (!nextStep) {
-      backendAnimationRunningRef.current = false
-      setBackendAnimationDisplay(null)
-      return
-    }
-
-    backendAnimationRunningRef.current = true
-    const { move, previousPosition, nextPosition, moveNumber } = nextStep
-    const frames = buildMoveAnimationFrames(
-      previousPosition.board,
-      previousPosition.currentPlayer,
-      move.fromPit,
-    )
-
-    setBackendAnimationDisplay({
-      board: previousPosition.board,
-      currentPlayer: previousPosition.currentPlayer,
-      gameStatus: previousPosition.gameStatus,
-      winner: previousPosition.winner,
-      selectedPit: move.fromPit,
-      moveInProgress: true,
-      lastMove: buildPreMoveLastMove(
-        {
-          board: previousPosition.board,
-        },
-        move.fromPit,
-      ),
-    })
-
-    frames.forEach((frame, frameIndex) => {
-      const timeoutId = window.setTimeout(() => {
-        setBackendAnimationDisplay({
-          board: frame,
-          currentPlayer: previousPosition.currentPlayer,
-          gameStatus: previousPosition.gameStatus,
-          winner: previousPosition.winner,
-          selectedPit: move.fromPit,
-          moveInProgress: true,
-          lastMove: buildAnimatedLastMove(move, frameIndex),
-        })
-      }, (frameIndex + 1) * MOVE_ANIMATION_DELAY_MS)
-
-      backendAnimationTimeoutsRef.current.push(timeoutId)
-    })
-
-    const finalizeTimeoutId = window.setTimeout(() => {
-      backendDisplayedMoveCountRef.current = moveNumber
-      setBackendAnimationDisplay({
-        board: nextPosition.board,
-        currentPlayer: nextPosition.currentPlayer,
-        gameStatus: nextPosition.gameStatus,
-        winner: nextPosition.winner,
-        selectedPit: move.fromPit,
-        moveInProgress: false,
-        lastMove: buildResolvedLastMove(move),
-      })
-
-      clearBackendAnimationTimeouts()
-
-      if (backendAnimationQueueRef.current.length > 0) {
-        runNextBackendAnimation()
-        return
-      }
-
-      backendAnimationRunningRef.current = false
-      setBackendAnimationDisplay(null)
-    }, (frames.length + 1) * MOVE_ANIMATION_DELAY_MS)
-
-    backendAnimationTimeoutsRef.current.push(finalizeTimeoutId)
-  }
+  const { backendAnimationDisplay, isAnimatingBackendMoves } = useBackendMoveAnimationQueue({
+    backendMatch,
+    enabled: backendAnimationEnabled,
+  })
 
   const submitAuthoritativeMove = async (pitIndex = null) => {
     if (!targetBackendMatchId || isSubmittingAuthoritativeMove) {
@@ -1203,69 +936,9 @@ export default function MangalaGame() {
       if (botAutoMoveTimeoutRef.current !== null) {
         window.clearTimeout(botAutoMoveTimeoutRef.current)
       }
-      clearBackendAnimationState()
     },
     [],
   )
-
-  useLayoutEffect(() => {
-    if (!backendMatch) {
-      backendDisplayedMoveCountRef.current = null
-      backendScheduledMoveCountRef.current = null
-      clearBackendAnimationState()
-      return
-    }
-
-    const backendMoveCount = getBackendMoveCount(backendMatch)
-
-    if (!backendAnimationEnabled) {
-      backendDisplayedMoveCountRef.current = backendMoveCount
-      backendScheduledMoveCountRef.current = backendMoveCount
-      clearBackendAnimationState()
-      return
-    }
-
-    if (
-      backendDisplayedMoveCountRef.current === null ||
-      backendScheduledMoveCountRef.current === null
-    ) {
-      backendDisplayedMoveCountRef.current = backendMoveCount
-      backendScheduledMoveCountRef.current = backendMoveCount
-      setBackendAnimationDisplay(null)
-      return
-    }
-
-    if (backendMoveCount < backendDisplayedMoveCountRef.current) {
-      backendDisplayedMoveCountRef.current = backendMoveCount
-      backendScheduledMoveCountRef.current = backendMoveCount
-      clearBackendAnimationState()
-      return
-    }
-
-    if (backendMoveCount <= backendScheduledMoveCountRef.current) {
-      return
-    }
-
-    const steps = buildBackendAnimationSteps(
-      backendMatch,
-      backendScheduledMoveCountRef.current,
-      backendMoveCount,
-    )
-
-    if (steps.length === 0) {
-      backendDisplayedMoveCountRef.current = backendMoveCount
-      backendScheduledMoveCountRef.current = backendMoveCount
-      clearBackendAnimationState()
-      return
-    }
-
-    backendAnimationQueueRef.current.push(...steps)
-    backendScheduledMoveCountRef.current = backendMoveCount
-
-    if (!backendAnimationRunningRef.current) {
-      runNextBackendAnimation()
-    }
-  }, [backendAnimationEnabled, backendMatch])
 
   useEffect(() => {
     let isCancelled = false
@@ -1332,7 +1005,7 @@ export default function MangalaGame() {
       !backendMatch ||
       !targetBackendMatchId ||
       isSubmittingAuthoritativeMove ||
-      backendAnimationRunningRef.current
+      isAnimatingBackendMoves
     ) {
       return
     }
@@ -1363,7 +1036,7 @@ export default function MangalaGame() {
         botAutoMoveTimeoutRef.current = null
       }
     }
-  }, [backendMatch, isSubmittingAuthoritativeMove, targetBackendMatchId, backendAnimationDisplay])
+  }, [backendMatch, isAnimatingBackendMoves, isSubmittingAuthoritativeMove, targetBackendMatchId])
 
   if (isLoadingBackendMatch) {
     return (
@@ -1397,7 +1070,7 @@ export default function MangalaGame() {
       gameId={gameId}
       backendMatch={backendMatch}
       backendAnimationDisplay={backendAnimationDisplay}
-      isAnimatingBackendMoves={backendAnimationDisplay?.moveInProgress === true}
+      isAnimatingBackendMoves={isAnimatingBackendMoves}
       onBackendAnimationPreferenceChange={setBackendAnimationEnabled}
       onSubmitAuthoritativeMove={submitAuthoritativeMove}
       onSubmitAuthoritativeResign={submitAuthoritativeResign}
