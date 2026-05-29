@@ -5,7 +5,6 @@ import {
   submitMatchMoveRequest,
   submitMatchResignRequest,
 } from '../app/matchApi.js'
-import { getDisplayName } from '../app/playerNames.js'
 import { buildRatedMatchOutcome } from '../app/rating.js'
 import { useAppData } from '../app/useAppData.js'
 import { useGlobalHeader } from '../app/useGlobalHeader.js'
@@ -349,8 +348,6 @@ function MangalaGameScreen({
     currentUser,
     isAuthenticated,
     refreshCurrentUser,
-    recordMatchHistoryResult,
-    recordPublicProfileMatchResult,
   } = useAppData()
   const { setSettingsContent } = useGlobalHeader()
   const isPracticeBoard = location.pathname === '/practice'
@@ -626,7 +623,7 @@ function MangalaGameScreen({
 
   useEffect(() => {
     if (
-      (!isRatedMatch && !queueSettings) ||
+      !isRatedMatch ||
       currentUserRole === 'spectator' ||
       game.gameStatus !== 'finished' ||
       game.ratingApplied
@@ -634,89 +631,17 @@ function MangalaGameScreen({
       return
     }
 
-    const playerSide = currentUserRole
-    const opponentSide = playerSide === 'bottom' ? 'top' : 'bottom'
-    const playerResult =
-      game.winner === playerSide
-        ? 'win'
-        : game.winner === 'draw'
-          ? 'draw'
-          : 'loss'
-    const ratedOutcome = buildRatedMatchOutcome(
-      game.players[playerSide].rating,
-      game.players[opponentSide].rating,
-      playerResult,
-    )
-    const playedAt = new Date().toISOString()
-    const mode = isComputerMatch ? 'Bot' : 'Online'
-    const currentPlayerPayload = {
-      gameId,
-      playedAt,
-      opponent: getDisplayName(game.players[opponentSide]) ?? game.players[opponentSide].name,
-      playerRating: game.players[playerSide].rating,
-      opponentRating: game.players[opponentSide].rating,
-      mode,
-      result:
-        playerResult === 'win'
-          ? 'Win'
-          : playerResult === 'draw'
-            ? 'Draw'
-            : 'Loss',
-    }
-
-    if (isRatedMatch) {
-      void refreshCurrentUser().catch((error) => {
-        console.error('Refresh current user after rated match error:', error)
-      })
-    } else {
-      recordMatchHistoryResult(currentPlayerPayload)
-    }
-
-    if (game.players[opponentSide].id !== currentUser.id) {
-      recordPublicProfileMatchResult(game.players[opponentSide].id, {
-        gameId,
-        playedAt,
-        opponent: getDisplayName(game.players[playerSide]) ?? game.players[playerSide].name,
-        playerRating: game.players[opponentSide].rating,
-        opponentRating: game.players[playerSide].rating,
-        mode,
-        result:
-          playerResult === 'win'
-            ? 'Loss'
-            : playerResult === 'draw'
-              ? 'Draw'
-              : 'Win',
-        ...(isRatedMatch
-          ? {
-              opponentRatingDelta: ratedOutcome.playerDelta,
-              ratingAfter: ratedOutcome.opponentRating,
-              ratingDelta: ratedOutcome.opponentDelta,
-            }
-          : {}),
-      })
-    }
+    void refreshCurrentUser().catch((error) => {
+      console.error('Refresh current user after rated match error:', error)
+    })
     markRatingApplied()
   }, [
     currentUserRole,
     game.gameStatus,
-    game.players,
-    game.players.bottom.rating,
-    game.players.bottom.name,
-    game.players.bottom.id,
-    game.players.top.rating,
-    game.players.top.id,
     game.ratingApplied,
-    game.winner,
-    game.players.top.name,
-    gameId,
-    isComputerMatch,
     isRatedMatch,
     markRatingApplied,
-    queueSettings,
     refreshCurrentUser,
-    recordMatchHistoryResult,
-    recordPublicProfileMatchResult,
-    currentUser.id,
   ])
 
   if (isUnavailable) {

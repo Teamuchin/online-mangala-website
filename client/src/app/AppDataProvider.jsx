@@ -173,10 +173,6 @@ export function AppDataProvider({ children }) {
     setIsAuthenticated(buildLoggedOutSessionUpdates().isAuthenticated)
   }
 
-  const recordMatchHistoryResult = () => {}
-
-  const recordPublicProfileMatchResult = () => {}
-
   useEffect(() => {
     window.localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(currentUser))
   }, [currentUser])
@@ -278,8 +274,6 @@ export function AppDataProvider({ children }) {
     logOut,
     publicProfileDirectory,
     refreshCurrentUser,
-    recordMatchHistoryResult,
-    recordPublicProfileMatchResult,
     registerUser,
     setIsAuthenticated,
     updateCurrentUser,
