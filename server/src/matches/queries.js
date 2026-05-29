@@ -34,8 +34,8 @@ RETURNING *;
 const findMatchByIdQuery = `
 SELECT ${MATCH_SELECT_FIELDS}
 FROM matches
-JOIN users AS bottom_user ON bottom_user.id::text = matches.bottom_player_id::text
-JOIN users AS top_user ON top_user.id::text = matches.top_player_id::text
+JOIN users AS bottom_user ON bottom_user.id = matches.bottom_player_id
+JOIN users AS top_user ON top_user.id = matches.top_player_id
 WHERE matches.id = $1
 LIMIT 1;
 `;
@@ -43,17 +43,17 @@ LIMIT 1;
 const findMatchesByUserIdQuery = `
 SELECT ${MATCH_SELECT_FIELDS}
 FROM matches
-JOIN users AS bottom_user ON bottom_user.id::text = matches.bottom_player_id::text
-JOIN users AS top_user ON top_user.id::text = matches.top_player_id::text
-WHERE matches.bottom_player_id::text = $1::text OR matches.top_player_id::text = $1::text
+JOIN users AS bottom_user ON bottom_user.id = matches.bottom_player_id
+JOIN users AS top_user ON top_user.id = matches.top_player_id
+WHERE matches.bottom_player_id = $1::int OR matches.top_player_id = $1::int
 ORDER BY COALESCE(finished_at, started_at) DESC;
 `;
 
 const listActiveMatchesQuery = `
 SELECT ${MATCH_SELECT_FIELDS}
 FROM matches
-JOIN users AS bottom_user ON bottom_user.id::text = matches.bottom_player_id::text
-JOIN users AS top_user ON top_user.id::text = matches.top_player_id::text
+JOIN users AS bottom_user ON bottom_user.id = matches.bottom_player_id
+JOIN users AS top_user ON top_user.id = matches.top_player_id
 WHERE matches.status = 'active'
 ORDER BY matches.started_at DESC;
 `;
