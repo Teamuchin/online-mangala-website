@@ -23,7 +23,7 @@ import styles from '../components/mangala/MangalaGame.module.css'
 
 const RESERVED_LOCAL_GAME_IDS = new Set(['local'])
 const BACKEND_MATCH_POLL_INTERVAL_MS = 1500
-const BOT_MOVE_DELAY_MS = 700
+const BOT_MOVE_DELAY_MS = 1000
 
 function getBackendMoveCount(match) {
   return Array.isArray(match?.moves) ? match.moves.length : 0
@@ -1044,7 +1044,11 @@ export default function MangalaGame() {
   }, [targetBackendMatchId])
 
   useEffect(() => {
-    if (!backendMatch || !targetBackendMatchId || isSubmittingAuthoritativeMove) {
+    if (
+      !backendMatch ||
+      !targetBackendMatchId ||
+      isSubmittingAuthoritativeMove
+    ) {
       return
     }
 
