@@ -63,14 +63,6 @@ export function getMatchByIdRequest(matchId) {
   return request(`/api/matches/${matchId}`)
 }
 
-export function updateMatchRequest(matchId, payload, token) {
-  return request(`/api/matches/${matchId}`, {
-    method: 'PATCH',
-    body: payload,
-    token,
-  })
-}
-
 export function submitMatchMoveRequest(matchId, pitIndex, token) {
   return request(`/api/matches/${matchId}/moves`, {
     method: 'POST',

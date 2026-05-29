@@ -606,110 +606,6 @@ async function createMatch(req, res) {
   }
 }
 
-async function updateMatch(req, res) {
-  try {
-    const authenticatedUserId = normalizeUserId(req.auth?.userId);
-    const matchId = String(req.params?.id || '').trim();
-
-    if (!matchId) {
-      return res.status(400).json({ message: 'Match id is required' });
-    }
-
-    const existingMatchResult = await db.query(findMatchByIdQuery, [matchId]);
-
-    if (existingMatchResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Match not found' });
-    }
-
-    const existingMatch = existingMatchResult.rows[0];
-
-    if (
-      !isSameUserId(authenticatedUserId, existingMatch.bottom_player_id) &&
-      !isSameUserId(authenticatedUserId, existingMatch.top_player_id)
-    ) {
-      return res.status(403).json({ message: 'You cannot update a match for other players' });
-    }
-
-    if (
-      req.body?.bottom_player_id !== undefined &&
-      !isSameUserId(req.body.bottom_player_id, existingMatch.bottom_player_id)
-    ) {
-      return res.status(400).json({ message: 'Match players cannot be changed' });
-    }
-
-    if (
-      req.body?.top_player_id !== undefined &&
-      !isSameUserId(req.body.top_player_id, existingMatch.top_player_id)
-    ) {
-      return res.status(400).json({ message: 'Match players cannot be changed' });
-    }
-
-    const timeoutResolvedMatch = await finalizeMatchByTimeout(matchId);
-    const activeMatch =
-      timeoutResolvedMatch && timeoutResolvedMatch.id === existingMatch.id
-        ? timeoutResolvedMatch
-        : existingMatch;
-
-    if (activeMatch.status === 'finished') {
-      return res.status(200).json(hydrateMatchForResponse(activeMatch));
-    }
-
-    const payload = normalizeMatchPayload(req.body, {
-      requireId: false,
-      existingMatch: activeMatch,
-    });
-    const validationError = validateMatchPayload(payload, { requireId: false });
-
-    if (validationError) {
-      return res.status(400).json({ message: validationError });
-    }
-
-    const snapshot = resolveClockSnapshot(activeMatch, Date.now());
-    payload.gameState = {
-      ...(payload.gameState ?? {}),
-      currentPlayer:
-        payload.gameState?.currentPlayer === 'top' ? 'top' : snapshot.currentPlayer,
-      bottomTimeLeft: snapshot.bottomTimeLeft,
-      topTimeLeft: snapshot.topTimeLeft,
-      lastTurnStartedAt:
-        payload.status === 'active'
-          ? payload.gameState?.lastTurnStartedAt ?? new Date().toISOString()
-          : null,
-    };
-
-    const serverRatedResult = buildServerRatedResult(activeMatch, payload);
-
-    if (serverRatedResult) {
-      payload.bottomRatingBefore = serverRatedResult.bottomRatingBefore;
-      payload.topRatingBefore = serverRatedResult.topRatingBefore;
-      payload.bottomRatingChange = serverRatedResult.bottomRatingChange;
-      payload.topRatingChange = serverRatedResult.topRatingChange;
-    } else {
-      payload.bottomRatingBefore = activeMatch.bottom_rating_before;
-      payload.topRatingBefore = activeMatch.top_rating_before;
-    }
-
-    const client = await db.getClient();
-
-    try {
-      await client.query('BEGIN');
-      await persistUpdatedMatch(client, matchId, payload);
-      const refreshedMatchResult = await client.query(findMatchByIdQuery, [matchId]);
-      await client.query('COMMIT');
-      scheduleMatchTimeout(refreshedMatchResult.rows[0]);
-      return res.status(200).json(hydrateMatchForResponse(refreshedMatchResult.rows[0]));
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
-  } catch (error) {
-    console.error('Update match error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-}
-
 async function submitMove(req, res) {
   try {
     const authenticatedUserId = normalizeUserId(req.auth?.userId);
@@ -1024,7 +920,6 @@ async function getActiveMatches(req, res) {
 
 module.exports = {
   createMatch,
-  updateMatch,
   submitMove,
   resignMatch,
   getMatchById,

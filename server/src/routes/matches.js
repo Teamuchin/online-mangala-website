@@ -1,7 +1,6 @@
 const express = require('express');
 const {
   createMatch,
-  updateMatch,
   submitMove,
   resignMatch,
   getMatchById,
@@ -18,6 +17,5 @@ router.get('/:id', getMatchById);
 router.post('/', requireAuth, createMatch);
 router.post('/:id/moves', requireAuth, submitMove);
 router.post('/:id/resign', requireAuth, resignMatch);
-router.patch('/:id', requireAuth, updateMatch);
 
 module.exports = router;
