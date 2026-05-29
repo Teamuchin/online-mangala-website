@@ -181,7 +181,6 @@ function buildPlayersFromBackendMatch(backendMatch, currentUser) {
 function buildBackendMovesPayload(game) {
   return game.matchRecord.moves.map((move, index) => {
     const positionAfter = game.matchRecord.positions[index + 1]
-    const resolvedLastMove = index === game.matchRecord.moves.length - 1 ? game.lastMove : null
 
     return {
       moveNumber: move.moveNumber,
@@ -190,12 +189,11 @@ function buildBackendMovesPayload(game) {
       pitIndex: move.fromPit,
       captured: move.captured,
       extraTurn: move.extraTurn,
-      initialPitCount: resolvedLastMove?.initialPitCount ?? null,
-      dropCounts: resolvedLastMove?.dropCounts ?? {},
-      dropSequence: resolvedLastMove?.dropSequence ?? [],
-      capturedStones: resolvedLastMove?.capturedStones ?? [],
-      lastLandingIndex:
-        resolvedLastMove?.lastLandingIndex ?? move?.landedAt ?? null,
+      initialPitCount: move.initialPitCount ?? null,
+      dropCounts: move.dropCounts ?? {},
+      dropSequence: move.dropSequence ?? [],
+      capturedStones: move.capturedStones ?? [],
+      lastLandingIndex: move.lastLandingIndex ?? move?.landedAt ?? null,
       nextPlayer: positionAfter?.currentPlayer ?? game.currentPlayer,
       boardAfter: buildBoardStatePayload(positionAfter?.board ?? game.board),
       gameStatus: positionAfter?.gameStatus ?? game.gameStatus,
@@ -267,6 +265,11 @@ function buildMatchRecordFromBackendMatch({
       landedAt: move?.landedAt ?? move?.lastLandingIndex ?? null,
       captured: move?.captured ?? 0,
       extraTurn: move?.extraTurn === true,
+      initialPitCount: move?.initialPitCount ?? 0,
+      dropCounts: move?.dropCounts ?? {},
+      dropSequence: move?.dropSequence ?? [],
+      capturedStones: move?.capturedStones ?? [],
+      lastLandingIndex: move?.lastLandingIndex ?? move?.landedAt ?? null,
       gameStatus: moveGameStatus,
       winner: moveWinner,
     })

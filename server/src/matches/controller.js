@@ -531,7 +531,7 @@ async function submitMove(req, res) {
     }
 
     const pitIndexToApply =
-      submittedPitIndex === null ? chooseBotMove(currentBoard) : submittedPitIndex;
+      submittedPitIndex === null ? chooseBotMove(currentBoard, currentPlayer) : submittedPitIndex;
 
     if (pitIndexToApply === null) {
       return res.status(400).json({ message: 'No legal move available' });

@@ -29,6 +29,11 @@ export function buildRecordedMove(currentGame, moveResult, moveNumber) {
     landedAt: moveResult.lastLandingIndex,
     captured: moveResult.captured,
     extraTurn: moveResult.extraTurn,
+    initialPitCount: moveResult.initialPitCount,
+    dropCounts: moveResult.dropCounts,
+    dropSequence: moveResult.dropSequence,
+    capturedStones: moveResult.capturedStones,
+    lastLandingIndex: moveResult.lastLandingIndex,
     gameStatus: moveResult.gameStatus,
     winner: moveResult.winner,
   }

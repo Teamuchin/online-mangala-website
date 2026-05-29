@@ -1,7 +1,7 @@
 const { getLegalMoves } = require('./gameLogic');
 
-function chooseBotMove(board) {
-  const legalMoves = getLegalMoves(board, 'top');
+function chooseBotMove(board, playerSide = 'top') {
+  const legalMoves = getLegalMoves(board, playerSide);
 
   if (legalMoves.length === 0) {
     return null;

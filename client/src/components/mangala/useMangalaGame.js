@@ -14,7 +14,7 @@ import {
   readStoredMatchSessionByGameId,
   writePersistedMatchSession,
 } from './gamePersistence.js'
-import { buildAnimatedLastMove } from './movePresentation.js'
+import { buildAnimatedLastMove, buildResolvedLastMove } from './movePresentation.js'
 import {
   buildAnimatingMoveState,
   finalizeMoveState,
@@ -147,9 +147,15 @@ export function useMangalaGame(initialConfig) {
             timeLeft: game.players.top.timeLeft,
           },
         },
-        selectedPit: null,
+        selectedPit:
+          activePositionIndex > 0
+            ? game.matchRecord.moves[activePositionIndex - 1]?.fromPit ?? null
+            : null,
         moveInProgress: false,
-        lastMove: null,
+        lastMove:
+          activePositionIndex > 0 && game.matchRecord.moves[activePositionIndex - 1]
+            ? buildResolvedLastMove(game.matchRecord.moves[activePositionIndex - 1])
+            : null,
       }
     : game
 
