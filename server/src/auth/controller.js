@@ -42,6 +42,10 @@ function sanitizeProfileUser(userRow) {
   };
 }
 
+function isBotUser(userRow) {
+  return userRow?.is_bot === true;
+}
+
 async function register(req, res) {
   try {
     const username = String(req.body?.username || '').trim();
@@ -109,6 +113,11 @@ async function login(req, res) {
     }
 
     const userRow = userResult.rows[0];
+
+    if (isBotUser(userRow)) {
+      return res.status(403).json({ message: 'Bot accounts cannot sign in' });
+    }
+
     const isMatch = await bcrypt.compare(password, userRow.password_hash);
 
     if (!isMatch) {
@@ -140,6 +149,10 @@ async function updateMe(req, res) {
 
     if (existingUserResult.rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (isBotUser(existingUserResult.rows[0])) {
+      return res.status(403).json({ message: 'Bot accounts cannot manage account settings' });
     }
 
     if (!currentPassword) {
@@ -212,6 +225,10 @@ async function getMe(req, res) {
 
     if (userResult.rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (isBotUser(userResult.rows[0])) {
+      return res.status(403).json({ message: 'Bot accounts cannot sign in' });
     }
 
     return res.status(200).json({ user: sanitizeProfileUser(userResult.rows[0]) });
