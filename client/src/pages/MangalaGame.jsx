@@ -536,6 +536,11 @@ function MangalaGameScreen({
         ? 'Rated'
         : 'Unrated'
       : null
+  const syncTargetMatchId =
+    backendMatch?.id ??
+    location.state?.backendMatchId ??
+    matchingPersistedSession?.backendMatchId ??
+    null
   const ratedOutcome =
     isRatedMatch && currentUserRole !== 'spectator' && game.gameStatus === 'finished'
       ? syncTargetMatchId
@@ -558,11 +563,6 @@ function MangalaGameScreen({
   const sidebarDescription = isReviewing ? replayDescription : game.turnMessage
   const stoneToggleRef = useRef(handleStoneToggle)
   const animationToggleRef = useRef(handleAnimationToggle)
-  const syncTargetMatchId =
-    backendMatch?.id ??
-    location.state?.backendMatchId ??
-    matchingPersistedSession?.backendMatchId ??
-    null
   const [clockNow, setClockNow] = useState(() => Date.now())
   const allowMoveAnimation = true
   const effectiveDisplayedGame = syncTargetMatchId

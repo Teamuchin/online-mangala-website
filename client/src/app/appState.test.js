@@ -1,13 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  applyRatedMatchResult,
   buildAccountFormState,
-  buildAuthenticatedSessionUpdates,
-  buildMatchHistoryEntry,
   buildLoggedOutSessionUpdates,
   buildProfileUpdatesFromForm,
-  buildRatingHistoryEntry,
   buildWelcomeMessage,
   isGuestUser,
   mergeStoredAuthState,
@@ -93,22 +89,6 @@ test('buildProfileUpdatesFromForm only keeps supported profile fields', () => {
   )
 })
 
-test('buildAuthenticatedSessionUpdates marks the session authenticated and updates the user', () => {
-  assert.deepEqual(
-    buildAuthenticatedSessionUpdates(
-      { username: 'Username', email: 'username@example.com' },
-      { username: 'Guest' },
-    ),
-    {
-      isAuthenticated: true,
-      currentUser: {
-        username: 'Guest',
-        email: 'username@example.com',
-      },
-    },
-  )
-})
-
 test('buildLoggedOutSessionUpdates marks the session logged out', () => {
   assert.deepEqual(buildLoggedOutSessionUpdates(), { isAuthenticated: false })
 })
@@ -116,134 +96,4 @@ test('buildLoggedOutSessionUpdates marks the session logged out', () => {
 test('isGuestUser detects the guest session profile', () => {
   assert.equal(isGuestUser({ email: 'guest@example.com' }), true)
   assert.equal(isGuestUser({ email: 'username@example.com' }), false)
-})
-
-test('buildMatchHistoryEntry keeps the profile history shape compact', () => {
-  assert.deepEqual(
-    buildMatchHistoryEntry({
-      gameId: '123',
-      playedAt: '2026-05-11T10:00:00.000Z',
-      opponent: 'Computer',
-      playerRating: 1200,
-      opponentRating: 1000,
-      opponentRatingDelta: -16,
-      mode: 'Bot',
-      result: 'Win',
-      ratingDelta: 16,
-    }),
-    {
-      id: '123',
-      playedAt: '2026-05-11T10:00:00.000Z',
-      opponent: 'Computer',
-      playerRating: 1200,
-      opponentRating: 1000,
-      opponentRatingDelta: -16,
-      mode: 'Bot',
-      result: 'Win',
-      ratingDelta: 16,
-    },
-  )
-})
-
-test('buildRatingHistoryEntry records the post-match rating point', () => {
-  assert.deepEqual(
-    buildRatingHistoryEntry({
-      gameId: '123',
-      playedAt: '2026-05-11T10:00:00.000Z',
-      rating: 1216,
-      ratingDelta: 16,
-    }),
-    {
-      id: '123',
-      playedAt: '2026-05-11T10:00:00.000Z',
-      rating: 1216,
-      ratingDelta: 16,
-    },
-  )
-})
-
-test('applyRatedMatchResult updates elo and appends history without duplicates', () => {
-  assert.deepEqual(
-    applyRatedMatchResult(
-      {
-        username: 'Username',
-        elo: 1200,
-        matchHistory: [
-          {
-            id: 'older',
-            playedAt: '2026-05-10T10:00:00.000Z',
-            opponent: 'Computer',
-            playerRating: 1200,
-            opponentRating: 984,
-            opponentRatingDelta: 16,
-            mode: 'Bot',
-            result: 'Loss',
-            ratingDelta: -16,
-          },
-        ],
-        ratingHistory: [
-          {
-            id: 'initial-rating',
-            playedAt: '2026-05-01T00:00:00.000Z',
-            rating: 1200,
-            ratingDelta: 0,
-          },
-        ],
-      },
-      {
-        gameId: '123',
-        playedAt: '2026-05-11T10:00:00.000Z',
-        opponent: 'Computer',
-        playerRating: 1200,
-        opponentRating: 1000,
-        opponentRatingDelta: -16,
-        mode: 'Bot',
-        result: 'Win',
-        ratingAfter: 1216,
-        ratingDelta: 16,
-      },
-    ),
-    {
-      username: 'Username',
-      elo: 1216,
-      matchHistory: [
-        {
-          id: '123',
-          playedAt: '2026-05-11T10:00:00.000Z',
-          opponent: 'Computer',
-          playerRating: 1200,
-          opponentRating: 1000,
-          opponentRatingDelta: -16,
-          mode: 'Bot',
-          result: 'Win',
-          ratingDelta: 16,
-        },
-        {
-          id: 'older',
-          playedAt: '2026-05-10T10:00:00.000Z',
-          opponent: 'Computer',
-          playerRating: 1200,
-          opponentRating: 984,
-          opponentRatingDelta: 16,
-          mode: 'Bot',
-          result: 'Loss',
-          ratingDelta: -16,
-        },
-      ],
-      ratingHistory: [
-        {
-          id: 'initial-rating',
-          playedAt: '2026-05-01T00:00:00.000Z',
-          rating: 1200,
-          ratingDelta: 0,
-        },
-        {
-          id: '123',
-          playedAt: '2026-05-11T10:00:00.000Z',
-          rating: 1216,
-          ratingDelta: 16,
-        },
-      ],
-    },
-  )
 })

@@ -35,85 +35,6 @@ export function updateUserProfile(currentUser, updates) {
   }
 }
 
-export function buildMatchHistoryEntry({
-  gameId,
-  playedAt,
-  opponent,
-  playerRating,
-  opponentRating,
-  opponentRatingDelta,
-  mode,
-  result,
-  ratingDelta,
-}) {
-  return {
-    id: gameId,
-    playedAt,
-    opponent,
-    playerRating,
-    opponentRating,
-    opponentRatingDelta,
-    mode,
-    result,
-    ratingDelta,
-  }
-}
-
-export function buildRatingHistoryEntry({
-  gameId,
-  playedAt,
-  rating,
-  ratingDelta,
-}) {
-  return {
-    id: gameId,
-    playedAt,
-    rating,
-    ratingDelta,
-  }
-}
-
-export function applyMatchHistoryResult(currentUser, matchResult) {
-  const nextMatchHistory = [
-    buildMatchHistoryEntry(matchResult),
-    ...(currentUser.matchHistory ?? []).filter(
-      (existingMatch) => existingMatch.id !== matchResult.gameId,
-    ),
-  ]
-
-  return {
-    ...currentUser,
-    matchHistory: nextMatchHistory,
-  }
-}
-
-export function applyRatedMatchResult(currentUser, matchResult) {
-  const nextMatchHistory = [
-    buildMatchHistoryEntry(matchResult),
-    ...(currentUser.matchHistory ?? []).filter(
-      (existingMatch) => existingMatch.id !== matchResult.gameId,
-    ),
-  ]
-  const nextRatingHistory = [
-    ...(currentUser.ratingHistory ?? []).filter(
-      (existingPoint) => existingPoint.id !== matchResult.gameId,
-    ),
-    buildRatingHistoryEntry({
-      gameId: matchResult.gameId,
-      playedAt: matchResult.playedAt,
-      rating: matchResult.ratingAfter,
-      ratingDelta: matchResult.ratingDelta,
-    }),
-  ]
-
-  return {
-    ...currentUser,
-    elo: matchResult.ratingAfter,
-    matchHistory: nextMatchHistory,
-    ratingHistory: nextRatingHistory,
-  }
-}
-
 export function buildAccountFormState(currentUser) {
   return {
     username: currentUser.username,
@@ -128,13 +49,6 @@ export function buildProfileUpdatesFromForm(formState) {
   return {
     username: formState.username,
     email: formState.email,
-  }
-}
-
-export function buildAuthenticatedSessionUpdates(currentUser, userOverrides = {}) {
-  return {
-    isAuthenticated: true,
-    currentUser: updateUserProfile(currentUser, userOverrides),
   }
 }
 
