@@ -71,7 +71,7 @@ async function readUserById(userId) {
 }
 
 async function createBackendMatch(players, rated) {
-  const gameId = crypto.randomUUID();
+  const gameId = crypto.randomBytes(6).toString('hex');
 
   await db.query(createMatchQuery, [
     gameId,

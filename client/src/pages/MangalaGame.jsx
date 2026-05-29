@@ -536,14 +536,15 @@ function MangalaGameScreen({
     ? 'spectator'
     : isPracticeMode || isLocalMatch
       ? 'both'
-      : currentUser.id === game.players.bottom.id
+      : String(currentUser.id) === String(game.players.bottom.id)
         ? 'bottom'
-        : currentUser.id === game.players.top.id
+        : String(currentUser.id) === String(game.players.top.id)
           ? 'top'
           : 'spectator'
   const isRatedMatch = Boolean(queueSettings?.rated)
+  const isPlayerPerspectiveMatch = isOnlineMatch || isComputerMatch
   const perspectiveSide =
-    isOnlineMatch && currentUserRole === 'top' ? 'top' : 'bottom'
+    isPlayerPerspectiveMatch && currentUserRole === 'top' ? 'top' : 'bottom'
   const visualTopSide = perspectiveSide === 'top' ? 'bottom' : 'top'
   const visualBottomSide = perspectiveSide === 'top' ? 'top' : 'bottom'
   const topDisplayPlayer = displayedGame.players[visualTopSide]
@@ -844,11 +845,9 @@ function MangalaGameScreen({
               interactiveSide={
                 currentUserRole === 'spectator'
                   ? '__none__'
-                  : isComputerMatch
-                    ? 'bottom'
-                    : isOnlineMatch
+                  : isPlayerPerspectiveMatch
                       ? currentUserRole
-                    : null
+                      : null
               }
               perspectiveSide={perspectiveSide}
               onPitClick={

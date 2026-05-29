@@ -27,7 +27,7 @@ function isSameUserId(left, right) {
 }
 
 function createMatchId() {
-  return crypto.randomUUID();
+  return crypto.randomBytes(6).toString('hex');
 }
 
 function buildFlatBoard(boardState) {

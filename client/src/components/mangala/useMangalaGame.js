@@ -123,6 +123,7 @@ export function useMangalaGame(initialConfig) {
   )
   const isComputerMatch =
     activeMatchMode === 'computer' || game.players.top?.isBot === true
+  const allowLocalComputerAutomation = !backendMatchId && isComputerMatch
   const animationTimeoutsRef = useRef([])
   const botTurnTimeoutRef = useRef(null)
   const latestPositionIndex = game.matchRecord.positions.length - 1
@@ -361,7 +362,7 @@ export function useMangalaGame(initialConfig) {
 
   useEffect(() => {
     if (
-      !isComputerMatch ||
+      !allowLocalComputerAutomation ||
       game.currentPlayer !== 'top' ||
       game.moveInProgress ||
       game.gameStatus !== 'playing'
@@ -414,12 +415,12 @@ export function useMangalaGame(initialConfig) {
 
     return () => clearBotTurnTimeout()
   }, [
+    allowLocalComputerAutomation,
     animateMoves,
     game.board,
     game.currentPlayer,
     game.gameStatus,
     game.moveInProgress,
-    isComputerMatch,
   ])
 
   return {
