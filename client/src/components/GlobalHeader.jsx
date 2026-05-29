@@ -24,10 +24,10 @@ export default function GlobalHeader() {
     <header className={styles.header}>
       <div className={styles.inner}>
         <div className={styles.leftCluster}>
-          <a href="/" className={styles.brand} aria-label="Go home">
+          <Link to="/" className={styles.brand} aria-label="Go home">
             <img src={assets.logo} alt={brandName} className={styles.logo} />
             <span className={styles.brandText}>MangalaOyna</span>
-          </a>
+          </Link>
 
           {showBackToGame ? (
             <Link to={activeMatchSummary.url} className={styles.backToGameLink}>
@@ -39,24 +39,20 @@ export default function GlobalHeader() {
 
         <nav className={styles.actions} aria-label="Global navigation">
           {isAuthenticated && !isGuestUser(currentUser) ? (
-            <a
-              href={profileHref}
+            <Link
+              to={profileHref}
               className={styles.actionLink}
               aria-label="Open profile"
               onClick={(event) => event.currentTarget.blur()}
             >
-              <span className={styles.actionIcon} aria-hidden="true">
-                ◎
-              </span>
+              <span className={styles.actionIcon} aria-hidden="true">◎</span>
               <span className={styles.actionText}>{currentUser.username}</span>
-            </a>
+            </Link>
           ) : (
-            <a href="/login" className={styles.actionLink}>
-              <span className={styles.actionIcon} aria-hidden="true">
-                ◎
-              </span>
+            <Link to="/login" className={styles.actionLink}>
+              <span className={styles.actionIcon} aria-hidden="true">◎</span>
               <span className={styles.actionText}>Account</span>
-            </a>
+            </Link>
           )}
 
           <div className={styles.menu}>
@@ -78,16 +74,14 @@ export default function GlobalHeader() {
 
           <div className={styles.menu}>
             <button type="button" className={styles.actionButton} aria-label="Settings">
-              <span className={styles.actionIcon} aria-hidden="true">
-                ⚙
-              </span>
+              <span className={styles.actionIcon} aria-hidden="true">⚙</span>
               <span className={styles.actionText}>Settings</span>
             </button>
             <div className={styles.panel}>
               {showAccountSettings ? (
-                <a href="/account" className={styles.panelLink}>
+                <Link to="/account" className={styles.panelLink}>
                   Account Settings
-                </a>
+                </Link>
               ) : null}
               {isAuthenticated ? (
                 <Link to="/login" className={styles.panelLink} onClick={logOut}>

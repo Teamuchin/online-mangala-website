@@ -172,41 +172,6 @@
   background: #f1ddc2;
 }
 
-.profilePanel {
-  min-width: 260px;
-  padding: 14px;
-  text-align: center;
-}
-
-.profileImage {
-  width: 92px;
-  height: 92px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid rgba(90, 47, 18, 0.2);
-  margin: 0 auto 10px;
-  display: block;
-}
-
-.profileName {
-  margin: 0 0 6px;
-  font-size: 1rem;
-}
-
-.profileElo {
-  margin: 0 0 6px;
-  font-weight: 700;
-  color: #5a2f12;
-  font-size: 0.92rem;
-}
-
-.profileBio {
-  margin: 0 0 10px;
-  line-height: 1.45;
-  color: #5f3820;
-  font-size: 0.9rem;
-}
-
 .liveDot {
   width: 10px;
   height: 10px;
