@@ -5,7 +5,6 @@ import {
   submitMatchMoveRequest,
   submitMatchResignRequest,
 } from '../app/matchApi.js'
-import { buildRatedMatchOutcome } from '../app/rating.js'
 import { useAppData } from '../app/useAppData.js'
 import { useGlobalHeader } from '../app/useGlobalHeader.js'
 import Board from '../components/mangala/Board.jsx'
@@ -545,15 +544,7 @@ function MangalaGameScreen({
     isRatedMatch && currentUserRole !== 'spectator' && game.gameStatus === 'finished'
       ? syncTargetMatchId
         ? buildBackendRatedOutcome(backendMatch, currentUserRole)
-        : buildRatedMatchOutcome(
-            game.players[currentUserRole].rating,
-            game.players[currentUserRole === 'bottom' ? 'top' : 'bottom'].rating,
-            game.winner === currentUserRole
-              ? 'win'
-              : game.winner === 'draw'
-                ? 'draw'
-                : 'loss',
-          )
+        : null
       : null
   const replayDescription = buildReplayDescription(
     game.matchRecord,
