@@ -348,9 +348,9 @@ function MangalaGameScreen({
     activeMatchSummary,
     currentUser,
     isAuthenticated,
+    refreshCurrentUser,
     recordMatchHistoryResult,
     recordPublicProfileMatchResult,
-    recordRatedMatchResult,
   } = useAppData()
   const { setSettingsContent } = useGlobalHeader()
   const isPracticeBoard = location.pathname === '/practice'
@@ -665,12 +665,8 @@ function MangalaGameScreen({
     }
 
     if (isRatedMatch) {
-      recordRatedMatchResult({
-        ...currentPlayerPayload,
-        opponentRating: ratedOutcome.opponentRating,
-        opponentRatingDelta: ratedOutcome.opponentDelta,
-        ratingAfter: ratedOutcome.playerRating,
-        ratingDelta: ratedOutcome.playerDelta,
+      void refreshCurrentUser().catch((error) => {
+        console.error('Refresh current user after rated match error:', error)
       })
     } else {
       recordMatchHistoryResult(currentPlayerPayload)
@@ -717,9 +713,9 @@ function MangalaGameScreen({
     isRatedMatch,
     markRatingApplied,
     queueSettings,
+    refreshCurrentUser,
     recordMatchHistoryResult,
     recordPublicProfileMatchResult,
-    recordRatedMatchResult,
     currentUser.id,
   ])
 

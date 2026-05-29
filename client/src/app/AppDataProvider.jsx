@@ -131,6 +131,24 @@ export function AppDataProvider({ children }) {
     setCurrentUser((existingUser) => updateUserProfile(existingUser, updates))
   }
 
+  const refreshCurrentUser = async () => {
+    const token =
+      typeof window === 'undefined'
+        ? ''
+        : window.localStorage.getItem('mangala.authToken') ?? ''
+
+    if (!token || !isAuthenticated || isGuestUser(currentUser)) {
+      return null
+    }
+
+    const response = await getMeRequest(token)
+    setCurrentUser((existingUser) =>
+      buildCurrentUserFromBackendUser(response.user, existingUser),
+    )
+
+    return response.user
+  }
+
   const logIn = (user) => {
     setCurrentUser((existingUser) => buildCurrentUserFromBackendUser(user, existingUser))
     setIsAuthenticated(true)
@@ -153,13 +171,6 @@ export function AppDataProvider({ children }) {
 
     setCurrentUser(staticAppData.initialCurrentUser)
     setIsAuthenticated(buildLoggedOutSessionUpdates().isAuthenticated)
-  }
-
-  const recordRatedMatchResult = (matchResult) => {
-    setCurrentUser((existingUser) => ({
-      ...existingUser,
-      elo: matchResult.ratingAfter,
-    }))
   }
 
   const recordMatchHistoryResult = () => {}
@@ -266,9 +277,9 @@ export function AppDataProvider({ children }) {
     logIn,
     logOut,
     publicProfileDirectory,
+    refreshCurrentUser,
     recordMatchHistoryResult,
     recordPublicProfileMatchResult,
-    recordRatedMatchResult,
     registerUser,
     setIsAuthenticated,
     updateCurrentUser,
