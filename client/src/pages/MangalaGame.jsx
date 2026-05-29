@@ -53,31 +53,6 @@ function getBackendMoveCount(match) {
   return Array.isArray(match?.moves) ? match.moves.length : 0
 }
 
-function getLocalMoveCount(session) {
-  return Array.isArray(session?.game?.matchRecord?.moves)
-    ? session.game.matchRecord.moves.length
-    : 0
-}
-
-function shouldKeepLocalSessionAheadOfBackend(session, fetchedMatch) {
-  if (!session || !fetchedMatch) {
-    return false
-  }
-
-  if (session.backendMatchId !== fetchedMatch.id) {
-    return false
-  }
-
-  const localMoveCount = getLocalMoveCount(session)
-  const backendMoveCount = getBackendMoveCount(fetchedMatch)
-
-  if (localMoveCount > backendMoveCount) {
-    return true
-  }
-
-  return session.game?.gameStatus === 'finished' && fetchedMatch.status !== 'finished'
-}
-
 function mapWinnerSideToWinner(winnerSide) {
   if (winnerSide === 'bottom' || winnerSide === 'top' || winnerSide === 'draw') {
     return winnerSide
@@ -959,12 +934,6 @@ export default function MangalaGame() {
         const match = await getMatchByIdRequest(targetBackendMatchId)
 
         if (isCancelled) {
-          return
-        }
-
-        const latestPersistedSession = readStoredMatchSessionByGameId(gameId)
-
-        if (shouldKeepLocalSessionAheadOfBackend(latestPersistedSession, match)) {
           return
         }
 
