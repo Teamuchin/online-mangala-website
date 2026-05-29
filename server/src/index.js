@@ -7,6 +7,7 @@ const matchmakingRoutes = require('./routes/matchmaking');
 const matchRoutes = require('./routes/matches');
 const userRoutes = require('./routes/users');
 const { ensureSeededBotUsers } = require('./auth/botSeed');
+const { initializeMatchTimeouts } = require('./matches/controller');
 
 const app = express();
 app.use(cors());
@@ -35,6 +36,8 @@ async function startServer() {
     // Schema is managed via node-pg-migrate scripts before server boot.
     await ensureSeededBotUsers(db);
     console.log('Seeded bot users are ready');
+    await initializeMatchTimeouts();
+    console.log('Match timeout scheduler is ready');
 
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => console.log(`Running on http://localhost:${PORT}`));

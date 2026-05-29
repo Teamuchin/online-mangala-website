@@ -104,10 +104,13 @@ export function useMangalaGame(initialConfig) {
   const backendMatchId = shouldRestorePersistedSession
     ? restoredSession?.backendMatchId ?? initialConfig?.backendMatchId ?? null
     : initialConfig?.backendMatchId ?? null
+  const useAuthoritativeBackendClock = Boolean(backendMatchId)
 
   const [game, setGame] = useState(() =>
     shouldRestorePersistedSession
-      ? syncGameClock(restoredSession.game)
+      ? useAuthoritativeBackendClock
+        ? restoredSession.game
+        : syncGameClock(restoredSession.game)
       : isUnavailable
         ? buildUnavailableGameState()
         : createInitialState(initialConfig),
@@ -173,7 +176,7 @@ export function useMangalaGame(initialConfig) {
   }
 
   useEffect(() => {
-    if (game.gameStatus !== 'playing') {
+    if (useAuthoritativeBackendClock || game.gameStatus !== 'playing') {
       return undefined
     }
 
@@ -182,7 +185,7 @@ export function useMangalaGame(initialConfig) {
     }, 1000)
 
     return () => window.clearInterval(timerId)
-  }, [game.gameStatus])
+  }, [game.gameStatus, useAuthoritativeBackendClock])
 
   useEffect(
     () => () => {

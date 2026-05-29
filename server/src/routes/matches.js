@@ -3,6 +3,7 @@ const {
   createMatch,
   updateMatch,
   submitMove,
+  resignMatch,
   getMatchById,
   getMatchesByUserId,
   getActiveMatches,
@@ -16,6 +17,7 @@ router.get('/user/:userId', getMatchesByUserId);
 router.get('/:id', getMatchById);
 router.post('/', requireAuth, createMatch);
 router.post('/:id/moves', requireAuth, submitMove);
+router.post('/:id/resign', requireAuth, resignMatch);
 router.patch('/:id', requireAuth, updateMatch);
 
 module.exports = router;

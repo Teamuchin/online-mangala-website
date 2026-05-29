@@ -3,7 +3,7 @@ import { useLocation, useParams } from 'react-router-dom'
 import {
   getMatchByIdRequest,
   submitMatchMoveRequest,
-  updateMatchRequest,
+  submitMatchResignRequest,
 } from '../app/matchApi.js'
 import { getDisplayName } from '../app/playerNames.js'
 import { buildRatedMatchOutcome } from '../app/rating.js'
@@ -24,6 +24,29 @@ import styles from '../components/mangala/MangalaGame.module.css'
 const RESERVED_LOCAL_GAME_IDS = new Set(['local'])
 const BACKEND_MATCH_POLL_INTERVAL_MS = 1500
 const BOT_MOVE_DELAY_MS = 1000
+
+function buildBackendMatchSignature(match, { includeClocks = false } = {}) {
+  if (!match) {
+    return null
+  }
+
+  return JSON.stringify({
+    status: match.status,
+    winnerSide: match.winner_side,
+    resultReason: match.result_reason,
+    finishedAt: match.finished_at,
+    currentPlayer: match.game_state?.currentPlayer ?? null,
+    board: match.game_state?.board ?? null,
+    moves: match.moves ?? [],
+    ...(includeClocks
+      ? {
+          bottomTimeLeft: match.game_state?.bottomTimeLeft ?? null,
+          topTimeLeft: match.game_state?.topTimeLeft ?? null,
+          lastTurnStartedAt: match.game_state?.lastTurnStartedAt ?? null,
+        }
+      : {}),
+  })
+}
 
 function getBackendMoveCount(match) {
   return Array.isArray(match?.moves) ? match.moves.length : 0
@@ -105,6 +128,46 @@ function buildBoardStatePayload(board) {
     bottomStore: board[6],
     topPits: board.slice(7, 13),
     topStore: board[13],
+  }
+}
+
+function resolveBackendClockPlayers(players, backendMatch, now = Date.now()) {
+  if (!backendMatch || backendMatch.status !== 'active') {
+    return players
+  }
+
+  const currentPlayer =
+    backendMatch?.game_state?.currentPlayer === 'top' ? 'top' : 'bottom'
+  const bottomBase = Number.isInteger(backendMatch?.game_state?.bottomTimeLeft)
+    ? backendMatch.game_state.bottomTimeLeft
+    : players.bottom.timeLeft
+  const topBase = Number.isInteger(backendMatch?.game_state?.topTimeLeft)
+    ? backendMatch.game_state.topTimeLeft
+    : players.top.timeLeft
+  const lastTurnStartedAt = backendMatch?.game_state?.lastTurnStartedAt
+    ? Date.parse(backendMatch.game_state.lastTurnStartedAt)
+    : null
+  const elapsedSeconds =
+    Number.isFinite(lastTurnStartedAt) && lastTurnStartedAt !== null
+      ? Math.floor(Math.max(0, now - lastTurnStartedAt) / 1000)
+      : 0
+
+  return {
+    ...players,
+    bottom: {
+      ...players.bottom,
+      timeLeft:
+        currentPlayer === 'bottom'
+          ? Math.max(0, bottomBase - elapsedSeconds)
+          : bottomBase,
+    },
+    top: {
+      ...players.top,
+      timeLeft:
+        currentPlayer === 'top'
+          ? Math.max(0, topBase - elapsedSeconds)
+          : topBase,
+    },
   }
 }
 
@@ -381,6 +444,7 @@ function MangalaGameScreen({
   gameId,
   backendMatch = null,
   onSubmitAuthoritativeMove = null,
+  onSubmitAuthoritativeResign = null,
   isSubmittingAuthoritativeMove = false,
 }) {
   const location = useLocation()
@@ -547,8 +611,6 @@ function MangalaGameScreen({
     isPlayerPerspectiveMatch && currentUserRole === 'top' ? 'top' : 'bottom'
   const visualTopSide = perspectiveSide === 'top' ? 'bottom' : 'top'
   const visualBottomSide = perspectiveSide === 'top' ? 'top' : 'bottom'
-  const topDisplayPlayer = displayedGame.players[visualTopSide]
-  const bottomDisplayPlayer = displayedGame.players[visualBottomSide]
   const showResignForSide = (side) =>
     !isPracticeMode && (isLocalMatch || currentUserRole === side)
   const resignDisabledForSide = (side) =>
@@ -581,32 +643,42 @@ function MangalaGameScreen({
   const sidebarDescription = isReviewing ? replayDescription : game.turnMessage
   const stoneToggleRef = useRef(handleStoneToggle)
   const animationToggleRef = useRef(handleAnimationToggle)
-  const startedAtRef = useRef(backendMatch?.started_at ?? new Date().toISOString())
-  const finishedAtRef = useRef(backendMatch?.finished_at ?? null)
-  const lastSyncedSignatureRef = useRef('')
-  const inFlightSyncSignatureRef = useRef('')
   const syncTargetMatchId =
     backendMatch?.id ??
     location.state?.backendMatchId ??
     matchingPersistedSession?.backendMatchId ??
     null
+  const [clockNow, setClockNow] = useState(() => Date.now())
   const allowMoveAnimation = !syncTargetMatchId
+  const effectiveDisplayedGame = syncTargetMatchId
+    ? {
+        ...displayedGame,
+        players: resolveBackendClockPlayers(displayedGame.players, backendMatch, clockNow),
+      }
+    : displayedGame
+  const topDisplayPlayer = effectiveDisplayedGame.players[visualTopSide]
+  const bottomDisplayPlayer = effectiveDisplayedGame.players[visualBottomSide]
   const boardInteractionDisabled =
     isReviewing ||
     currentUserRole === 'spectator' ||
     isSubmittingAuthoritativeMove
 
   useEffect(() => {
-    startedAtRef.current = backendMatch?.started_at ?? new Date().toISOString()
-    finishedAtRef.current = backendMatch?.finished_at ?? null
-    lastSyncedSignatureRef.current = ''
-    inFlightSyncSignatureRef.current = ''
-  }, [backendMatch?.finished_at, backendMatch?.id, backendMatch?.started_at])
-
-  useEffect(() => {
     stoneToggleRef.current = handleStoneToggle
     animationToggleRef.current = handleAnimationToggle
   }, [handleAnimationToggle, handleStoneToggle])
+
+  useEffect(() => {
+    if (!syncTargetMatchId || backendMatch?.status !== 'active') {
+      return undefined
+    }
+
+    const timerId = window.setInterval(() => {
+      setClockNow(Date.now())
+    }, 1000)
+
+    return () => window.clearInterval(timerId)
+  }, [backendMatch?.status, syncTargetMatchId])
 
   useEffect(() => {
     setSettingsContent(
@@ -733,73 +805,6 @@ function MangalaGameScreen({
     currentUser.id,
   ])
 
-  useEffect(() => {
-    if (!syncTargetMatchId) {
-      return
-    }
-
-    if (game.moveInProgress) {
-      return
-    }
-
-    if (currentUserRole !== 'bottom' && currentUserRole !== 'top') {
-      return
-    }
-
-    const token =
-      typeof window === 'undefined'
-        ? ''
-        : window.localStorage.getItem('mangala.authToken') ?? ''
-
-    if (!token) {
-      return
-    }
-
-    if (game.gameStatus === 'finished' && !finishedAtRef.current) {
-      finishedAtRef.current = new Date().toISOString()
-    }
-
-    if (game.gameStatus !== 'finished' && finishedAtRef.current) {
-      finishedAtRef.current = null
-    }
-
-    const payload = buildMatchSyncPayload({
-      backendMatch,
-      gameId: syncTargetMatchId,
-      game,
-      startedAt: startedAtRef.current,
-      finishedAt: finishedAtRef.current,
-    })
-    const signature = JSON.stringify(payload)
-
-    if (
-      signature === lastSyncedSignatureRef.current ||
-      signature === inFlightSyncSignatureRef.current
-    ) {
-      return
-    }
-
-    inFlightSyncSignatureRef.current = signature
-
-    updateMatchRequest(syncTargetMatchId, payload, token)
-      .then(() => {
-        lastSyncedSignatureRef.current = signature
-      })
-      .catch((error) => {
-        console.error('Match sync error:', error)
-      })
-      .finally(() => {
-        if (inFlightSyncSignatureRef.current === signature) {
-          inFlightSyncSignatureRef.current = ''
-        }
-      })
-  }, [
-    backendMatch,
-    syncTargetMatchId,
-    currentUserRole,
-    game,
-  ])
-
   if (isUnavailable) {
     return (
       <main className={styles.page}>
@@ -822,9 +827,9 @@ function MangalaGameScreen({
               player={topDisplayPlayer}
               position="top"
               resignSide={visualTopSide}
-              isActive={displayedGame.currentPlayer === visualTopSide && displayedGame.gameStatus === 'playing'}
+              isActive={effectiveDisplayedGame.currentPlayer === visualTopSide && effectiveDisplayedGame.gameStatus === 'playing'}
               compact
-              onResign={handleResign}
+              onResign={syncTargetMatchId && onSubmitAuthoritativeResign ? onSubmitAuthoritativeResign : handleResign}
               resignDisabled={resignDisabledForSide(visualTopSide)}
               ratingChange={getRatingChangeForSide(currentUserRole, ratedOutcome, visualTopSide)}
               showClock={!isPracticeMode}
@@ -834,13 +839,13 @@ function MangalaGameScreen({
           </div>
           <div className={styles.boardColumn}>
             <Board
-              board={displayedGame.board}
-              currentPlayer={displayedGame.currentPlayer}
-              selectedPit={displayedGame.selectedPit}
-              gameStatus={displayedGame.gameStatus}
-              players={displayedGame.players}
+              board={effectiveDisplayedGame.board}
+              currentPlayer={effectiveDisplayedGame.currentPlayer}
+              selectedPit={effectiveDisplayedGame.selectedPit}
+              gameStatus={effectiveDisplayedGame.gameStatus}
+              players={effectiveDisplayedGame.players}
               showVisualStones={showVisualStones}
-              lastMove={displayedGame.lastMove}
+              lastMove={effectiveDisplayedGame.lastMove}
               disableInteraction={boardInteractionDisabled}
               interactiveSide={
                 currentUserRole === 'spectator'
@@ -878,9 +883,9 @@ function MangalaGameScreen({
               player={bottomDisplayPlayer}
               position="bottom"
               resignSide={visualBottomSide}
-              isActive={displayedGame.currentPlayer === visualBottomSide && displayedGame.gameStatus === 'playing'}
+              isActive={effectiveDisplayedGame.currentPlayer === visualBottomSide && effectiveDisplayedGame.gameStatus === 'playing'}
               compact
-              onResign={handleResign}
+              onResign={syncTargetMatchId && onSubmitAuthoritativeResign ? onSubmitAuthoritativeResign : handleResign}
               resignDisabled={resignDisabledForSide(visualBottomSide)}
               ratingChange={getRatingChangeForSide(
                 currentUserRole,
@@ -918,17 +923,7 @@ export default function MangalaGame() {
     !RESERVED_LOCAL_GAME_IDS.has(gameId)
       ? gameId
       : null)
-  const backendMatchRevision = backendMatch
-    ? JSON.stringify({
-        status: backendMatch.status,
-        winnerSide: backendMatch.winner_side,
-        resultReason: backendMatch.result_reason,
-        finishedAt: backendMatch.finished_at,
-        currentPlayer: backendMatch.game_state?.currentPlayer ?? null,
-        board: backendMatch.game_state?.board ?? null,
-        moves: backendMatch.moves ?? [],
-      })
-    : 'local'
+  const backendMatchRevision = buildBackendMatchSignature(backendMatch) ?? 'local'
 
   const submitAuthoritativeMove = async (pitIndex = null) => {
     if (!targetBackendMatchId || isSubmittingAuthoritativeMove) {
@@ -950,7 +945,39 @@ export default function MangalaGame() {
       const updatedMatch = await submitMatchMoveRequest(targetBackendMatchId, pitIndex, token)
       setBackendMatch(updatedMatch)
     } catch (error) {
+      if (error?.match) {
+        setBackendMatch(error.match)
+      }
       console.error('Submit authoritative move error:', error)
+    } finally {
+      setIsSubmittingAuthoritativeMove(false)
+    }
+  }
+
+  const submitAuthoritativeResign = async (playerSide) => {
+    if (!targetBackendMatchId || isSubmittingAuthoritativeMove) {
+      return
+    }
+
+    const token =
+      typeof window === 'undefined'
+        ? ''
+        : window.localStorage.getItem('mangala.authToken') ?? ''
+
+    if (!token) {
+      return
+    }
+
+    setIsSubmittingAuthoritativeMove(true)
+
+    try {
+      const updatedMatch = await submitMatchResignRequest(targetBackendMatchId, token)
+      setBackendMatch(updatedMatch)
+    } catch (error) {
+      if (error?.match) {
+        setBackendMatch(error.match)
+      }
+      console.error(`Submit authoritative resign error (${playerSide}):`, error)
     } finally {
       setIsSubmittingAuthoritativeMove(false)
     }
@@ -994,26 +1021,8 @@ export default function MangalaGame() {
         }
 
         setBackendMatch((currentMatch) => {
-          const currentRevision = currentMatch
-            ? JSON.stringify({
-                status: currentMatch.status,
-                winnerSide: currentMatch.winner_side,
-                resultReason: currentMatch.result_reason,
-                finishedAt: currentMatch.finished_at,
-                currentPlayer: currentMatch.game_state?.currentPlayer ?? null,
-                board: currentMatch.game_state?.board ?? null,
-                moves: currentMatch.moves ?? [],
-              })
-            : null
-          const nextRevision = JSON.stringify({
-            status: match.status,
-            winnerSide: match.winner_side,
-            resultReason: match.result_reason,
-            finishedAt: match.finished_at,
-            currentPlayer: match.game_state?.currentPlayer ?? null,
-            board: match.game_state?.board ?? null,
-            moves: match.moves ?? [],
-          })
+          const currentRevision = buildBackendMatchSignature(currentMatch)
+          const nextRevision = buildBackendMatchSignature(match)
 
           return currentRevision === nextRevision ? currentMatch : match
         })
@@ -1112,6 +1121,7 @@ export default function MangalaGame() {
       gameId={gameId}
       backendMatch={backendMatch}
       onSubmitAuthoritativeMove={submitAuthoritativeMove}
+      onSubmitAuthoritativeResign={submitAuthoritativeResign}
       isSubmittingAuthoritativeMove={isSubmittingAuthoritativeMove}
     />
   )

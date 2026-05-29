@@ -41,7 +41,11 @@ async function request(path, options = {}) {
   const data = await response.json().catch(() => ({}))
 
   if (!response.ok) {
-    throw new Error(data.message || 'Request failed')
+    const error = new Error(data.message || 'Request failed')
+    if (data.match) {
+      error.match = data.match
+    }
+    throw error
   }
 
   return data
@@ -71,6 +75,13 @@ export function submitMatchMoveRequest(matchId, pitIndex, token) {
   return request(`/api/matches/${matchId}/moves`, {
     method: 'POST',
     body: pitIndex === null || pitIndex === undefined ? {} : { pitIndex },
+    token,
+  })
+}
+
+export function submitMatchResignRequest(matchId, token) {
+  return request(`/api/matches/${matchId}/resign`, {
+    method: 'POST',
     token,
   })
 }
