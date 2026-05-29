@@ -12,6 +12,15 @@ exports.up = (pgm) => {
         SELECT 1
         FROM information_schema.table_constraints
         WHERE table_name = 'matches'
+          AND constraint_name = 'matches_distinct_players_check'
+      ) THEN
+        ALTER TABLE matches DROP CONSTRAINT matches_distinct_players_check;
+      END IF;
+
+      IF EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE table_name = 'matches'
           AND constraint_name = 'matches_bottom_player_id_fkey'
       ) THEN
         ALTER TABLE matches DROP CONSTRAINT matches_bottom_player_id_fkey;
@@ -66,6 +75,17 @@ exports.up = (pgm) => {
       ) THEN
         ALTER TABLE matches
         ALTER COLUMN top_player_id SET NOT NULL;
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE table_name = 'matches'
+          AND constraint_name = 'matches_distinct_players_check'
+      ) THEN
+        ALTER TABLE matches
+        ADD CONSTRAINT matches_distinct_players_check
+        CHECK (bottom_player_id <> top_player_id);
       END IF;
     END
     $$;
