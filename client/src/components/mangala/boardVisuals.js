@@ -57,10 +57,6 @@ export function buildStaticStoneStates(count, idPrefix) {
   }))
 }
 
-export function shouldUseOverflowCount() {
-  return false
-}
-
 export function shouldRenderInlinePitStones(count) {
   return count > 0
 }

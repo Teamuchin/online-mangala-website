@@ -3,7 +3,6 @@ import {
   buildStoneStates,
   getStoneRows,
   shouldRenderInlinePitStones,
-  shouldUseOverflowCount,
 } from './boardVisuals'
 import StoneRows from './StoneRows'
 import styles from './MangalaGame.module.css'
@@ -19,11 +18,8 @@ export default function Pit({
   onClick,
   showVisualStones,
 }) {
-  const useOverflowCount = shouldUseOverflowCount(count)
-  const rows = useOverflowCount ? [] : getStoneRows(count)
-  const stoneStates = useOverflowCount
-    ? []
-    : buildStoneStates(count, movedCount, isFinalTarget)
+  const rows = getStoneRows(count)
+  const stoneStates = buildStoneStates(count, movedCount, isFinalTarget)
   const capturedRows = shouldRenderInlinePitStones(capturedCount)
     ? getStoneRows(capturedCount)
     : []
@@ -49,7 +45,7 @@ export default function Pit({
           isFinalTarget ? styles.finalTargetSurface : ''
         }`}
       >
-        {!showVisualStones || useOverflowCount ? (
+        {!showVisualStones ? (
           <span className={styles.pitCount}>{count}</span>
         ) : (
           <>
@@ -78,7 +74,6 @@ export default function Pit({
           </>
         )}
       </span>
-      {useOverflowCount && <span className={styles.pitOverflowCount}>{count} stones</span>}
     </button>
   )
 }
