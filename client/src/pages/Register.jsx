@@ -106,13 +106,13 @@ export default function Register() {
           placeholder="Confirm Password"
           className={styles.textinput}
         />
-        {errorMessage ? <p>{errorMessage}</p> : null}
+        {errorMessage ? <p className={styles.errorMessage}>{errorMessage}</p> : null}
         <button type="submit" className={styles.submitbtn} disabled={isSubmitting}>
           {isSubmitting ? 'Signing up...' : 'Sign up'}
         </button>
       </form>
       <hr className={styles.horizline} data-content="OR" />
-      <button className={styles.submitbtn}>Continue with Google</button>
+      <button type="button" className={styles.submitbtn}>Continue with Google</button>
       <Link to="/login" className={styles.submitbtn}>
         Back to Login
       </Link>

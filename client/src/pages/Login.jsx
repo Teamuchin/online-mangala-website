@@ -81,7 +81,7 @@ export default function Login() {
             name="rememberme"
           />
         </div>
-        {errorMessage ? <p>{errorMessage}</p> : null}
+        {errorMessage ? <p className={styles.errorMessage}>{errorMessage}</p> : null}
         <button type="submit" className={styles.submitbtn} disabled={isSubmitting}>
           {isSubmitting ? 'Logging in...' : 'Log in'}
         </button>
