@@ -179,47 +179,6 @@ export function readStoredMatchSessionByGameId(gameId) {
   )
 }
 
-export function readStoredMatchIds() {
-  if (typeof window === 'undefined') {
-    return new Set()
-  }
-
-  const matchIds = new Set()
-  const activeSession = readPersistedMatchSession(
-    window.localStorage.getItem(ACTIVE_MATCH_STORAGE_KEY),
-  )
-
-  if (activeSession?.gameId) {
-    matchIds.add(activeSession.gameId)
-  }
-
-  readPersistedFinishedMatches(
-    window.localStorage.getItem(FINISHED_MATCHES_STORAGE_KEY),
-  ).forEach((session) => {
-    if (session.gameId) {
-      matchIds.add(session.gameId)
-    }
-  })
-
-  return matchIds
-}
-
-export function createRandomGameId(existingIds = new Set()) {
-  const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789'
-
-  for (let attempt = 0; attempt < 10; attempt += 1) {
-    const bytes = new Uint8Array(8)
-    globalThis.crypto.getRandomValues(bytes)
-    const candidate = Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('')
-
-    if (!existingIds.has(candidate)) {
-      return candidate
-    }
-  }
-
-  return globalThis.crypto.randomUUID().replaceAll('-', '').slice(0, 12)
-}
-
 export function writePersistedMatchSession(session) {
   if (typeof window === 'undefined') {
     return

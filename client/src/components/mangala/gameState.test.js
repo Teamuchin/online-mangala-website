@@ -4,7 +4,6 @@ import {
   buildAnimatingMoveState,
   finalizeMoveState,
   syncGameClock,
-  tickGameClock,
 } from './gameState.js'
 
 const baseGame = {
@@ -39,42 +38,12 @@ const baseGame = {
   },
 }
 
-test('tickGameClock decrements the active player timer during play', () => {
-  const nextGame = tickGameClock(baseGame)
-
-  assert.equal(nextGame.players.bottom.timeLeft, 299)
-  assert.equal(nextGame.players.top.timeLeft, 300)
-  assert.equal(nextGame.gameStatus, 'playing')
-})
-
 test('syncGameClock applies elapsed real time since the last timer anchor', () => {
   const nextGame = syncGameClock(baseGame, 1_003_500)
 
   assert.equal(nextGame.players.bottom.timeLeft, 297)
   assert.equal(nextGame.players.top.timeLeft, 300)
   assert.equal(nextGame.lastTimerStartedAt, 1_003_000)
-})
-
-test('tickGameClock leaves non-playing games unchanged', () => {
-  const finishedGame = { ...baseGame, gameStatus: 'finished' }
-
-  assert.equal(tickGameClock(finishedGame), finishedGame)
-})
-
-test('tickGameClock ends the game on time and names the winner', () => {
-  const expiredGame = {
-    ...baseGame,
-    players: {
-      ...baseGame.players,
-      bottom: { ...baseGame.players.bottom, timeLeft: 0 },
-    },
-  }
-
-  const nextGame = tickGameClock(expiredGame)
-
-  assert.equal(nextGame.gameStatus, 'finished')
-  assert.equal(nextGame.winner, 'top')
-  assert.equal(nextGame.turnMessage, 'Ayse wins on time.')
 })
 
 test('finalizeMoveState resolves the live game with move metadata and history', () => {

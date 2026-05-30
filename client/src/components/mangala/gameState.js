@@ -6,37 +6,6 @@ import {
 } from './movePresentation.js'
 import { appendMatchRecord } from './matchRecord.js'
 
-export function tickGameClock(currentGame) {
-  if (currentGame.gameStatus !== 'playing') {
-    return currentGame
-  }
-
-  const activePlayer = currentGame.currentPlayer
-  const currentTime = currentGame.players[activePlayer].timeLeft
-
-  if (currentTime <= 0) {
-    const winner = activePlayer === 'bottom' ? 'top' : 'bottom'
-
-    return {
-      ...currentGame,
-      gameStatus: 'finished',
-      winner,
-      turnMessage: `${currentGame.players[winner].name} wins on time.`,
-    }
-  }
-
-  return {
-    ...currentGame,
-    players: {
-      ...currentGame.players,
-      [activePlayer]: {
-        ...currentGame.players[activePlayer],
-        timeLeft: currentTime - 1,
-      },
-    },
-  }
-}
-
 export function syncGameClock(currentGame, now = Date.now()) {
   if (currentGame.gameStatus !== 'playing') {
     return currentGame
