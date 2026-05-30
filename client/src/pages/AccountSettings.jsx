@@ -10,7 +10,7 @@ import { useAppData } from '../app/useAppData.js'
 import { updateMeRequest } from '../app/authApi.js'
 
 export default function AccountSettings() {
-  const { accountSettingsFields, currentUser, updateCurrentUser } = useAppData()
+  const { accountSettingsFields, currentUser, logOut, updateCurrentUser } = useAppData()
   const [formState, setFormState] = useState(() => buildAccountFormState(currentUser))
   const [saveMessage, setSaveMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
@@ -80,8 +80,8 @@ export default function AccountSettings() {
         error.message === 'Invalid or expired token' ||
         error.message === 'Invalid token payload'
       ) {
-        window.localStorage.removeItem('mangala.authToken')
-        setErrorMessage('Session expired. Please log out and log in again, then retry.')
+        logOut()
+        setErrorMessage('Session expired. Please log in again, then retry.')
       } else {
         setErrorMessage(error.message || 'Could not update account settings.')
       }

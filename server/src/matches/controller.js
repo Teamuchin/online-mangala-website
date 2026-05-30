@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const db = require('../db');
-const { updateUserEloQuery } = require('../auth/queries');
+const { findUserByIdQuery, updateUserEloQuery } = require('../auth/queries');
 const { buildRatedMatchOutcome } = require('./rating');
 const { chooseBotMove } = require('./botLogic');
 const { applyMove, getLegalMoves } = require('./gameLogic');
@@ -14,6 +14,12 @@ const {
 
 const DEFAULT_TIME_LEFT_SECONDS = 300;
 const matchTimeoutHandles = new Map();
+const INITIAL_MATCH_BOARD = {
+  bottomPits: [4, 4, 4, 4, 4, 4],
+  bottomStore: 0,
+  topPits: [4, 4, 4, 4, 4, 4],
+  topStore: 0,
+};
 
 function parseInteger(value) {
   const parsed = Number.parseInt(value, 10);
@@ -80,6 +86,15 @@ function buildBoardStatePayload(board) {
     bottomStore: board[6],
     topPits: board.slice(7, 13),
     topStore: board[13],
+  };
+}
+
+function buildDefaultBoardState() {
+  return {
+    bottomPits: [...INITIAL_MATCH_BOARD.bottomPits],
+    bottomStore: INITIAL_MATCH_BOARD.bottomStore,
+    topPits: [...INITIAL_MATCH_BOARD.topPits],
+    topStore: INITIAL_MATCH_BOARD.topStore,
   };
 }
 
@@ -210,6 +225,80 @@ function buildFinishedRatedEloUpdates(payload) {
       userId: payload.topPlayerId,
       nextElo: payload.topRatingBefore + payload.topRatingChange,
     },
+  };
+}
+
+async function readUserById(userId) {
+  if (!userId) {
+    return null;
+  }
+
+  const result = await db.query(findUserByIdQuery, [userId]);
+  return result.rows[0] ?? null;
+}
+
+async function applyCreateMatchDefaults(payload) {
+  const [bottomUser, topUser] = await Promise.all([
+    readUserById(payload.bottomPlayerId),
+    readUserById(payload.topPlayerId),
+  ]);
+
+  if (!bottomUser || !topUser) {
+    return {
+      bottomUser,
+      topUser,
+      error: 'One or both players do not exist',
+    };
+  }
+
+  if (!payload.status) {
+    payload.status = 'active';
+  }
+
+  if (payload.bottomRatingBefore === null) {
+    payload.bottomRatingBefore = bottomUser.elo ?? 1200;
+  }
+
+  if (payload.topRatingBefore === null) {
+    payload.topRatingBefore = topUser.elo ?? 1200;
+  }
+
+  if (
+    !payload.gameState ||
+    typeof payload.gameState !== 'object' ||
+    Array.isArray(payload.gameState)
+  ) {
+    return {
+      bottomUser,
+      topUser,
+      error: null,
+    };
+  }
+
+  const currentPlayer =
+    payload.gameState?.currentPlayer === 'top' ? 'top' : 'bottom';
+  const board =
+    buildBoardStatePayload(buildFlatBoard(payload.gameState?.board)) ??
+    buildDefaultBoardState();
+
+  payload.gameState = {
+    ...(payload.gameState ?? {}),
+    board,
+    currentPlayer,
+    bottomTimeLeft:
+      parseInteger(payload.gameState?.bottomTimeLeft) ?? DEFAULT_TIME_LEFT_SECONDS,
+    topTimeLeft:
+      parseInteger(payload.gameState?.topTimeLeft) ?? DEFAULT_TIME_LEFT_SECONDS,
+  };
+
+  if (payload.status === 'active') {
+    payload.finishedAt = null;
+  }
+
+  return {
+    bottomUser,
+    topUser,
+    error: null,
   };
 }
 
@@ -539,14 +628,23 @@ async function createMatch(req, res) {
   try {
     const authenticatedUserId = normalizeUserId(req.auth?.userId);
     const payload = normalizeMatchPayload(req.body, { requireId: false });
-    const validationError = validateMatchPayload(payload, { requireId: false });
 
     if (
+      payload.bottomPlayerId &&
+      payload.topPlayerId &&
       !isSameUserId(authenticatedUserId, payload.bottomPlayerId) &&
       !isSameUserId(authenticatedUserId, payload.topPlayerId)
     ) {
       return res.status(403).json({ message: 'You cannot create a match for other players' });
     }
+
+    const { error: defaultsError } = await applyCreateMatchDefaults(payload);
+
+    if (defaultsError) {
+      return res.status(400).json({ message: defaultsError });
+    }
+
+    const validationError = validateMatchPayload(payload, { requireId: false });
 
     if (validationError) {
       return res.status(400).json({ message: validationError });

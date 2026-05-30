@@ -51,14 +51,6 @@ async function request(path, options = {}) {
   return data
 }
 
-export function createMatchRequest(payload, token) {
-  return request('/api/matches', {
-    method: 'POST',
-    body: payload,
-    token,
-  })
-}
-
 export function getMatchByIdRequest(matchId) {
   return request(`/api/matches/${matchId}`)
 }

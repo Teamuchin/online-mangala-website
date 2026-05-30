@@ -404,12 +404,6 @@ function MangalaGameScreen({
         matchingPersistedSession?.queueSettings ??
         null
       : null
-  const botSettings =
-    isComputerMatch
-      ? location.state?.botSettings ??
-        matchingPersistedSession?.botSettings ??
-        null
-      : null
   const initialConfig =
     backendInitialConfig ??
     (matchMode === 'practice'
@@ -457,13 +451,13 @@ function MangalaGameScreen({
               matchingPersistedSession?.game?.players ??
               seededPlayers,
           }
-      : botSettings
+      : isComputerMatch
         ? {
             gameId,
+            backendMatchId:
+              location.state?.backendMatchId ?? matchingPersistedSession?.backendMatchId ?? null,
             matchMode: 'computer',
-            botSettings,
             queueSettings,
-            initialCurrentPlayer: location.state?.startingPlayer ?? 'bottom',
             initialPlayers: {
               ...seededPlayers,
               bottom: {
@@ -474,10 +468,10 @@ function MangalaGameScreen({
                 rating: currentUser.elo ?? seededPlayers.bottom.rating,
               },
               top: {
-                id: location.state?.botProfile?.id ?? 'bot-deniz',
-                name: location.state?.botProfile?.username ?? 'deniz-bot',
-                username: location.state?.botProfile?.username ?? 'deniz-bot',
-                rating: location.state?.botProfile?.elo ?? 1000,
+                id: 'bot-pending',
+                name: 'Bot opponent',
+                username: 'bot-opponent',
+                rating: seededPlayers.top.rating,
                 timeLeft: 300,
                 isBot: true,
               },

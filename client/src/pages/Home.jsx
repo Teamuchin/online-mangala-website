@@ -2,13 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { buildWelcomeMessage } from '../app/appState.js'
 import {
-  createMatchRequest,
   getActiveMatchesRequest,
   getMatchByIdRequest,
 } from '../app/matchApi.js'
-import {
-  getClosestBotProfile,
-} from '../app/matchmaking.js'
 import {
   getMatchmakingStatusRequest,
   joinMatchmakingQueueRequest,
@@ -25,35 +21,8 @@ import {
 import PlayQueueModal from './PlayQueueModal.jsx'
 import styles from './Home.module.css'
 
-const BOT_FALLBACK_DELAY_MS = 4000
 const HUMAN_ONLY_TIMEOUT_MS = 60_000
 const HOME_ACTIVE_MATCHES_POLL_INTERVAL_MS = 3000
-const INITIAL_MATCH_BOARD = {
-  bottomPits: [4, 4, 4, 4, 4, 4],
-  bottomStore: 0,
-  topPits: [4, 4, 4, 4, 4, 4],
-  topStore: 0,
-}
-
-function getBotDifficulty(botProfile) {
-  const normalizedUsername = String(botProfile?.username || '').toLowerCase()
-
-  switch (normalizedUsername) {
-    case 'alev-bot':
-      return 4
-    case 'ruzgar-bot':
-      return 3
-    case 'toprak-bot':
-      return 2
-    default:
-      return 1
-  }
-}
-
-function parseParticipantId(value) {
-  const parsed = Number.parseInt(String(value ?? ''), 10)
-  return Number.isInteger(parsed) ? parsed : null
-}
 
 function buildQueueStatusText(rated) {
   return rated ? 'Looking for a rated game...' : 'Looking for an unrated game...'
@@ -137,7 +106,7 @@ export default function Home() {
   const [activeMatches, setActiveMatches] = useState([])
   const [rightPanelTab, setRightPanelTab] = useState('players')
   const queueStartedAtRef = useRef(null)
-  const { activeMatchSummary, currentUser, isAuthenticated, publicProfileDirectory } =
+  const { activeMatchSummary, currentUser, isAuthenticated } =
     useAppData()
 
   const lobbyPlayers = useMemo(
@@ -168,7 +137,10 @@ export default function Home() {
       return null
     }
 
-    if (activeMatchSummary.matchMode !== 'online') {
+    if (
+      activeMatchSummary.matchMode === 'local' ||
+      activeMatchSummary.matchMode === 'practice'
+    ) {
       return activeMatchSummary
     }
 
@@ -238,78 +210,6 @@ export default function Home() {
 
     setIsPlayModalOpen(false)
   }
-
-  const startBotMatch = useCallback(async (rated) => {
-    const selectedBotProfile = getClosestBotProfile(publicProfileDirectory, currentUser.elo ?? 1200)
-
-    if (!selectedBotProfile) {
-      resetQueueState()
-      setIsPlayModalOpen(false)
-      return
-    }
-
-    const bottomStarts = Math.random() < 0.5
-    const currentUserId = parseParticipantId(currentUser.id)
-    const botUserId = parseParticipantId(selectedBotProfile.id)
-    const token =
-      typeof window === 'undefined'
-        ? ''
-        : window.localStorage.getItem('mangala.authToken') ?? ''
-
-    if (!token || !currentUserId || !botUserId) {
-      console.error('Bot match requires real backend player ids.')
-      return
-    }
-
-    try {
-      const createdMatch = await createMatchRequest(
-        {
-          bottom_player_id: currentUserId,
-          top_player_id: botUserId,
-          is_rated: rated,
-          status: 'active',
-          winner_side: null,
-          result_reason: null,
-          bottom_rating_before: currentUser.elo ?? 1200,
-          top_rating_before: selectedBotProfile.elo ?? 1200,
-          bottom_rating_change: 0,
-          top_rating_change: 0,
-          started_at: new Date().toISOString(),
-          finished_at: null,
-          moves: [],
-          game_state: {
-            currentPlayer: bottomStarts ? 'bottom' : 'top',
-            board: INITIAL_MATCH_BOARD,
-            bottomTimeLeft: 300,
-            topTimeLeft: 300,
-          },
-        },
-        token,
-      )
-
-      resetQueueState()
-      setIsPlayModalOpen(false)
-
-      navigate(`/game/${createdMatch.id}`, {
-        state: {
-          backendMatchId: createdMatch.id,
-          botSettings: {
-            difficulty: getBotDifficulty(selectedBotProfile),
-            firstMove: 'random',
-          },
-          botProfile: selectedBotProfile,
-          matchMode: 'computer',
-          queueSettings: {
-            rated,
-            allowBots: true,
-          },
-          startingPlayer: bottomStarts ? 'bottom' : 'top',
-        },
-      })
-    } catch (error) {
-      console.error('Create bot match error:', error)
-    }
-  }, [currentUser.elo, navigate, publicProfileDirectory, resetQueueState])
 
   const handleStartQueue = async () => {
     if (await redirectToActiveGame()) {
@@ -472,16 +372,6 @@ export default function Home() {
         return
       }
 
-      if (queueConfig.allowBots && elapsedMs >= BOT_FALLBACK_DELAY_MS) {
-        try {
-          await leaveMatchmakingQueueRequest(token)
-        } catch (error) {
-          console.error('Leave matchmaking queue error:', error)
-        }
-        startBotMatch(queueConfig.rated)
-        return
-      }
-
       if (!queueConfig.allowBots && elapsedMs >= HUMAN_ONLY_TIMEOUT_MS) {
         cancelQueue()
         setIsPlayModalOpen(false)
@@ -508,7 +398,6 @@ export default function Home() {
     queueConfig,
     queueState.isSearching,
     resetQueueState,
-    startBotMatch,
   ])
 
   if (!isAuthenticated) {
