@@ -615,11 +615,6 @@
     grid-column: 2;
   }
 
-  .matchSidebar,
-  .sidebarRow {
-    grid-template-columns: 1fr;
-  }
-
   .playerColumn {
     gap: 8px;
   }
