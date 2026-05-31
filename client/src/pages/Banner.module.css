@@ -5,14 +5,13 @@
 .banner {
     display: flex;
     flex-direction: column;
-    justify-content:start;
+    justify-content: flex-start;
     align-items: center;
     width: 100%;
     min-height: calc(100vh - 72px);
     background:
     radial-gradient(circle at top, rgba(255, 233, 204, 0.9), transparent 35%),
     linear-gradient(180deg, #f8d9b6 0%, #efc093 45%, #c98856 100%);
-    flex-direction: start;
 }
 .bannerheader {
     margin-top: 0px;

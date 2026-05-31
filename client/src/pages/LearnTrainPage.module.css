@@ -1,7 +1,7 @@
 .learnpage {
     display: flex;
     flex-direction: column;
-    justify-content:start;
+    justify-content: flex-start;
     align-items: center;
     width: 100%;
     min-height: 100vh;
@@ -9,7 +9,6 @@
     radial-gradient(circle at top, rgba(255, 233, 204, 0.9), transparent 35%),
     linear-gradient(180deg, #f8d9b6 0%, #efc093 45%, #c98856 100%);
     color: #5a2f12;
-    flex-direction: start;
 }
 .logo {
     width: 80px;
@@ -41,7 +40,7 @@
 }
 .header {
     margin-top: 0px;
-    background-color: none;
+    background-color: transparent;
     width: 100%;
     flex-direction: row;
     display: flex;
