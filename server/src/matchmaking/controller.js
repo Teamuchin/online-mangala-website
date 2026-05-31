@@ -72,6 +72,7 @@ async function readUserById(userId) {
 
 async function createBackendMatch(players, rated) {
   const gameId = crypto.randomBytes(6).toString('hex');
+  const startedAt = new Date().toISOString();
 
   await db.query(createMatchQuery, [
     gameId,
@@ -85,12 +86,15 @@ async function createBackendMatch(players, rated) {
     players.top.rating,
     0,
     0,
-    new Date().toISOString(),
+    startedAt,
     null,
     JSON.stringify([]),
     JSON.stringify({
       currentPlayer: 'bottom',
       board: INITIAL_MATCH_BOARD,
+      bottomTimeLeft: 300,
+      topTimeLeft: 300,
+      lastTurnStartedAt: startedAt,
     }),
   ]);
 
@@ -189,10 +193,20 @@ async function joinQueue(req, res) {
       return res.status(200).json(buildSearchingResponse(currentEntry));
     }
 
-    const opponentUser = await readUserById(matchedEntry.userId);
+    const reservedOpponentEntry = consumeQueueEntry(matchedEntry.userId);
+
+    if (
+      !reservedOpponentEntry ||
+      reservedOpponentEntry.status !== 'searching' ||
+      reservedOpponentEntry.rated !== currentEntry.rated
+    ) {
+      setQueueEntry(currentEntry);
+      return res.status(200).json(buildSearchingResponse(currentEntry));
+    }
+
+    const opponentUser = await readUserById(reservedOpponentEntry.userId);
 
     if (!opponentUser) {
-      removeQueueEntry(matchedEntry.userId);
       setQueueEntry(currentEntry);
       return res.status(200).json(buildSearchingResponse(currentEntry));
     }
@@ -208,7 +222,7 @@ async function joinQueue(req, res) {
       players,
     };
     const opponentMatchedEntry = {
-      ...matchedEntry,
+      ...reservedOpponentEntry,
       status: 'matched',
       matchedAt,
       gameId,
@@ -246,12 +260,23 @@ async function getQueueStatus(req, res) {
     }
 
     if (entry.allowBots && Date.now() - entry.joinedAt >= BOT_FALLBACK_DELAY_MS) {
-      const botMatchedEntry = await buildBotMatchedEntry(entry);
+      const reservedEntry = consumeQueueEntry(userId);
+
+      if (!reservedEntry) {
+        return res.status(200).json({ status: 'idle' });
+      }
+
+      if (reservedEntry.status === 'matched') {
+        return res.status(200).json(buildMatchedResponse(reservedEntry));
+      }
+
+      const botMatchedEntry = await buildBotMatchedEntry(reservedEntry);
 
       if (botMatchedEntry) {
-        setQueueEntry(botMatchedEntry);
-        return res.status(200).json(buildAndConsumeMatchedResponse(userId, botMatchedEntry));
+        return res.status(200).json(buildMatchedResponse(botMatchedEntry));
       }
+
+      setQueueEntry(reservedEntry);
     }
 
     return res.status(200).json(buildSearchingResponse(entry));
