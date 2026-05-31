@@ -43,13 +43,6 @@ function getPlayerHistoryRating(match) {
     return match.playerRating
   }
 
-  if (
-    typeof match.ratingAfter === 'number' &&
-    typeof match.ratingDelta === 'number'
-  ) {
-    return match.ratingAfter - match.ratingDelta
-  }
-
   return '-'
 }
 
@@ -163,7 +156,6 @@ export default function ProfilePage() {
   const { username } = useParams()
   const navigate = useNavigate()
   const {
-    activeMatchSummary,
     currentUser,
     isAuthenticated,
     publicProfileDirectory,

@@ -42,13 +42,6 @@ function getPlayerHistoryRating(match) {
     return match.playerRating
   }
 
-  if (
-    typeof match.ratingAfter === 'number' &&
-    typeof match.ratingDelta === 'number'
-  ) {
-    return match.ratingAfter - match.ratingDelta
-  }
-
   return '-'
 }
 
@@ -111,7 +104,6 @@ export default function ProfileGamesPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const {
-    activeMatchSummary,
     currentUser,
     isAuthenticated,
     publicProfileDirectory,
