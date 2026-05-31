@@ -46,12 +46,35 @@ function getPlayerHistoryRating(match) {
   return '-'
 }
 
+function formatChartDateLabel(value, showTime) {
+  const date = new Date(value)
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+
+  if (showTime) {
+    return `${hours}:${minutes}`
+  }
+
+  return `${day}:${month}:${year}`
+}
+
 function getTooltipDateLabel(value) {
-  return new Date(value).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-  })
+  const date = new Date(value)
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year = date.getFullYear()
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const datePart = `${day}:${month}:${year}`
+
+  if (hours === '00' && minutes === '00') {
+    return datePart
+  }
+
+  return `${datePart} ${hours}:${minutes}`
 }
 
 function getClosestPointId(points, mouseEvent) {
@@ -115,6 +138,35 @@ function buildChartModel(ratingHistory) {
     }
   })
 
+  const maxXLabels = 4
+  const xLabelIndices = new Set()
+
+  if (points.length <= maxXLabels) {
+    points.forEach((_, index) => xLabelIndices.add(index))
+  } else {
+    xLabelIndices.add(0)
+    xLabelIndices.add(points.length - 1)
+    xLabelIndices.add(Math.round((points.length - 1) / 3))
+    xLabelIndices.add(Math.round(((points.length - 1) * 2) / 3))
+  }
+
+  const firstPlayedAt = new Date(points[0].playedAt)
+  const sameCalendarDay = points.every((point) => {
+    const date = new Date(point.playedAt)
+    return (
+      date.getFullYear() === firstPlayedAt.getFullYear() &&
+      date.getMonth() === firstPlayedAt.getMonth() &&
+      date.getDate() === firstPlayedAt.getDate()
+    )
+  })
+
+  const xLabels = Array.from(xLabelIndices)
+    .sort((left, right) => left - right)
+    .map((index) => ({
+      value: formatChartDateLabel(points[index].playedAt, sameCalendarDay),
+      x: points[index].x,
+    }))
+
   return {
     polylinePoints: points.map((point) => `${point.x},${point.y}`).join(' '),
     points,
@@ -123,6 +175,7 @@ function buildChartModel(ratingHistory) {
       { value: Math.round((displayMin + displayMax) / 2), y: plotTop + plotHeight / 2 },
       { value: displayMin, y: plotBottom },
     ],
+    xLabels,
     gridLines: [
       plotTop + plotHeight * 0.25,
       plotTop + plotHeight * 0.5,
@@ -186,6 +239,19 @@ export default function ProfilePage() {
   const chart = buildChartModel(visibleRatingHistory)
   const hoveredPoint =
     chart.points.find((point) => point.id === hoveredPointId) ?? null
+
+  const hoveredTooltipPosition = hoveredPoint
+    ? {
+        x: Math.min(
+          Math.max(hoveredPoint.x - 90, chart.plot.left + 8),
+          chart.plot.right - 180 - 8,
+        ),
+        y:
+          hoveredPoint.y - 56 < chart.plot.top + 8
+            ? hoveredPoint.y + 10
+            : hoveredPoint.y - 56,
+      }
+    : null
 
   const canonicalUsername = currentUser.username
   const canonicalProfilePath = `/member/${encodeURIComponent(canonicalUsername)}`
@@ -370,6 +436,23 @@ export default function ProfilePage() {
                     {label.value}
                   </text>
                 ))}
+                {chart.xLabels?.map((label, index) => (
+                  <text
+                    key={`${label.value}-${label.x}`}
+                    x={label.x}
+                    y={chart.plot.bottom + 20}
+                    className={styles.chartLabel}
+                    textAnchor={
+                      index === 0
+                        ? 'start'
+                        : index === chart.xLabels.length - 1
+                          ? 'end'
+                          : 'middle'
+                    }
+                  >
+                    {label.value}
+                  </text>
+                ))}
                 {chart.points.length > 1 && (
                   <polyline
                     points={chart.polylinePoints}
@@ -387,10 +470,10 @@ export default function ProfilePage() {
                     }`}
                   />
                 ))}
-                {hoveredPoint && (
+                {hoveredPoint && hoveredTooltipPosition && (
                   <foreignObject
-                    x={hoveredPoint.x - 90}
-                    y={hoveredPoint.y - 56}
+                    x={hoveredTooltipPosition.x}
+                    y={hoveredTooltipPosition.y}
                     width="180"
                     height="40"
                     className={styles.chartTooltipObject}
