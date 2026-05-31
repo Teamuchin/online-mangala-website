@@ -93,6 +93,27 @@ async function register(req, res) {
     return res.status(201).json({ message: 'User registered successfully', token, user });
   } catch (error) {
     console.error('Register error:', error);
+
+    if (error.code === '23505') {
+      const constraintName = String(error.constraint || '');
+
+      if (
+        constraintName === 'users_email_key' ||
+        /email/i.test(String(error.detail || ''))
+      ) {
+        return res.status(409).json({ message: 'Email is already registered' });
+      }
+
+      if (
+        constraintName === 'users_username_lower_unique_idx' ||
+        /username/i.test(String(error.detail || ''))
+      ) {
+        return res.status(409).json({ message: 'Username is already taken' });
+      }
+
+      return res.status(409).json({ message: 'User already exists' });
+    }
+
     return res.status(500).json({ message: 'Internal server error' });
   }
 }

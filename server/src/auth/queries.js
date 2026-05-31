@@ -45,7 +45,7 @@ LIMIT 1;
 const findUserByEmailQuery = `
 SELECT id, username, email, password_hash, elo, is_bot, created_at
 FROM users
-WHERE email = $1
+WHERE LOWER(email) = LOWER($1)
 LIMIT 1;
 `;
 
