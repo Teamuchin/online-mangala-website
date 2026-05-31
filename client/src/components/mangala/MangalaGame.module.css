@@ -56,6 +56,9 @@
 .boardColumn {
   display: grid;
   gap: 16px;
+  align-items: center;
+  justify-items: center;
+  min-height: 0;
 }
 
 .playerPanel {
@@ -209,11 +212,15 @@
 
 .boardShell {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  grid-template-rows: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-rows: 1fr 1fr;
   column-gap: 10px;
   row-gap: 10px;
-  align-items: center;
+  align-items: stretch;
+  justify-items: stretch;
+  width: 100%;
+  min-height: 0;
+  max-width: 100%;
   background: #f1b35d;
   border: 2px solid #6f4326;
   border-radius: 18px;
@@ -223,17 +230,20 @@
 .leftStore {
   grid-column: 1;
   grid-row: 1 / span 2;
+  align-self: stretch;
 }
 
 .rightStore {
   grid-column: 8;
   grid-row: 1 / span 2;
+  align-self: stretch;
 }
 
 .pitRow {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
+  min-height: 0;
 }
 
 .topPitRow {
@@ -258,6 +268,8 @@
   align-items: center;
   gap: 6px;
   padding: 0;
+  min-height: 0;
+  width: 100%;
 }
 
 .pit:disabled {
@@ -394,7 +406,8 @@
   padding: 0;
   text-align: center;
   color: #5e3820;
-  min-height: 100%;
+  min-height: 0;
+  height: 100%;
 }
 
 .storeLabel {
@@ -414,7 +427,8 @@
 .storeSurface {
   position: relative;
   width: 100%;
-  min-height: 244px;
+  min-height: 0;
+  height: 100%;
   padding-top: 38px;
   padding-bottom: 30px;
   border: 2px solid #6f4326;
@@ -660,16 +674,22 @@
 
   .boardShell {
     grid-template-columns: repeat(8, minmax(0, 1fr));
-    grid-template-rows: repeat(2, minmax(0, 1fr));
+    grid-template-rows: 1fr 1fr;
     column-gap: 8px;
     row-gap: 8px;
+    align-items: stretch;
+    justify-items: stretch;
+    width: 100%;
+    min-height: 0;
+    max-width: 100%;
     padding: 14px 10px;
     border-top-left-radius: 0;
     border-top-right-radius: 0;
   }
 
   .storeSurface {
-    min-height: 190px;
+    min-height: 0;
+    height: 100%;
     padding-top: 32px;
     padding-bottom: 24px;
   }
@@ -733,8 +753,15 @@
   }
 
   .boardShell {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-rows: 1fr 1fr;
     column-gap: 6px;
     row-gap: 6px;
+    align-items: stretch;
+    justify-items: stretch;
+    width: 100%;
+    min-height: 0;
+    max-width: 100%;
     padding: 12px 8px;
     border-top-left-radius: 0;
     border-top-right-radius: 0;
@@ -742,6 +769,7 @@
 
   .pitRow {
     gap: 6px;
+    min-height: 0;
   }
 
   .pitSurface {
@@ -749,13 +777,15 @@
     --stone-gap: 1px;
     --stone-step: calc(var(--stone-size) + var(--stone-gap));
     width: 88%;
+    max-height: 100%;
   }
 
   .storeSurface {
     --store-stone-size: 9px;
     --store-stone-gap: 1px;
     --store-stone-step: calc(var(--store-stone-size) + var(--store-stone-gap));
-    min-height: 160px;
+    min-height: 0;
+    height: 100%;
     padding-top: 28px;
     padding-bottom: 20px;
   }
