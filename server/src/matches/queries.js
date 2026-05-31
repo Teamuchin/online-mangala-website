@@ -40,6 +40,16 @@ WHERE matches.id = $1
 LIMIT 1;
 `;
 
+const findMatchByIdForUpdateQuery = `
+SELECT ${MATCH_SELECT_FIELDS}
+FROM matches
+JOIN users AS bottom_user ON bottom_user.id = matches.bottom_player_id
+JOIN users AS top_user ON top_user.id = matches.top_player_id
+WHERE matches.id = $1
+LIMIT 1
+FOR UPDATE OF matches;
+`;
+
 const findMatchesByUserIdQuery = `
 SELECT ${MATCH_SELECT_FIELDS}
 FROM matches
@@ -80,6 +90,7 @@ RETURNING *;
 module.exports = {
   createMatchQuery,
   findMatchByIdQuery,
+  findMatchByIdForUpdateQuery,
   findMatchesByUserIdQuery,
   listActiveMatchesQuery,
   updateMatchQuery,

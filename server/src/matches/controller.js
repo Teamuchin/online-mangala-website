@@ -7,6 +7,7 @@ const { applyMove, getLegalMoves } = require('./gameLogic');
 const {
   createMatchQuery,
   findMatchByIdQuery,
+  findMatchByIdForUpdateQuery,
   findMatchesByUserIdQuery,
   listActiveMatchesQuery,
   updateMatchQuery,
@@ -508,6 +509,78 @@ async function persistUpdatedMatch(client, matchId, payload) {
   }
 }
 
+async function readMatchForUpdate(client, matchId) {
+  const result = await client.query(findMatchByIdForUpdateQuery, [matchId]);
+  return result.rows[0] ?? null;
+}
+
+function buildTimeoutPayload(existingMatch, snapshot) {
+  const payload = normalizeMatchPayload(
+    {
+      is_rated: existingMatch.is_rated,
+      status: 'finished',
+      winner_side: getOpponent(snapshot.timedOutSide),
+      result_reason: 'timeout',
+      bottom_rating_before: existingMatch.bottom_rating_before,
+      top_rating_before: existingMatch.top_rating_before,
+      bottom_rating_change: existingMatch.bottom_rating_change,
+      top_rating_change: existingMatch.top_rating_change,
+      started_at: existingMatch.started_at,
+      finished_at: new Date().toISOString(),
+      moves: existingMatch.moves,
+      game_state: {
+        ...(existingMatch.game_state ?? {}),
+        currentPlayer: snapshot.currentPlayer,
+        bottomTimeLeft: snapshot.bottomTimeLeft,
+        topTimeLeft: snapshot.topTimeLeft,
+        lastTurnStartedAt: null,
+      },
+    },
+    {
+      requireId: false,
+      existingMatch,
+    },
+  );
+
+  const serverRatedResult = buildServerRatedResult(existingMatch, payload);
+
+  if (serverRatedResult) {
+    payload.bottomRatingBefore = serverRatedResult.bottomRatingBefore;
+    payload.topRatingBefore = serverRatedResult.topRatingBefore;
+    payload.bottomRatingChange = serverRatedResult.bottomRatingChange;
+    payload.topRatingChange = serverRatedResult.topRatingChange;
+  }
+
+  return payload;
+}
+
+async function finalizeLockedMatchByTimeout(client, existingMatch, now = Date.now()) {
+  if (!existingMatch || existingMatch.status !== 'active') {
+    return {
+      didTimeout: false,
+      match: existingMatch,
+    };
+  }
+
+  const snapshot = resolveClockSnapshot(existingMatch, now);
+
+  if (!snapshot.timedOutSide) {
+    return {
+      didTimeout: false,
+      match: hydrateMatchForResponse(existingMatch, now),
+    };
+  }
+
+  const payload = buildTimeoutPayload(existingMatch, snapshot);
+  await persistUpdatedMatch(client, existingMatch.id, payload);
+  const refreshedMatchResult = await client.query(findMatchByIdQuery, [existingMatch.id]);
+
+  return {
+    didTimeout: true,
+    match: refreshedMatchResult.rows[0] ?? null,
+  };
+}
+
 async function finalizeMatchByTimeout(matchId) {
   clearScheduledMatchTimeout(matchId);
 
@@ -515,69 +588,20 @@ async function finalizeMatchByTimeout(matchId) {
 
   try {
     await client.query('BEGIN');
-    const existingMatchResult = await client.query(findMatchByIdQuery, [matchId]);
+    const existingMatch = await readMatchForUpdate(client, matchId);
 
-    if (existingMatchResult.rows.length === 0) {
+    if (!existingMatch) {
       await client.query('ROLLBACK');
       return null;
     }
-
-    const existingMatch = existingMatchResult.rows[0];
-
-    if (existingMatch.status !== 'active') {
-      await client.query('COMMIT');
-      return existingMatch;
-    }
-
-    const snapshot = resolveClockSnapshot(existingMatch, Date.now());
-
-    if (!snapshot.timedOutSide) {
-      await client.query('COMMIT');
-      scheduleMatchTimeout(existingMatch);
-      return hydrateMatchForResponse(existingMatch);
-    }
-
-    const payload = normalizeMatchPayload(
-      {
-        is_rated: existingMatch.is_rated,
-        status: 'finished',
-        winner_side: getOpponent(snapshot.timedOutSide),
-        result_reason: 'timeout',
-        bottom_rating_before: existingMatch.bottom_rating_before,
-        top_rating_before: existingMatch.top_rating_before,
-        bottom_rating_change: existingMatch.bottom_rating_change,
-        top_rating_change: existingMatch.top_rating_change,
-        started_at: existingMatch.started_at,
-        finished_at: new Date().toISOString(),
-        moves: existingMatch.moves,
-        game_state: {
-          ...(existingMatch.game_state ?? {}),
-          currentPlayer: snapshot.currentPlayer,
-          bottomTimeLeft: snapshot.bottomTimeLeft,
-          topTimeLeft: snapshot.topTimeLeft,
-          lastTurnStartedAt: null,
-        },
-      },
-      {
-        requireId: false,
-        existingMatch,
-      },
-    );
-
-    const serverRatedResult = buildServerRatedResult(existingMatch, payload);
-
-    if (serverRatedResult) {
-      payload.bottomRatingBefore = serverRatedResult.bottomRatingBefore;
-      payload.topRatingBefore = serverRatedResult.topRatingBefore;
-      payload.bottomRatingChange = serverRatedResult.bottomRatingChange;
-      payload.topRatingChange = serverRatedResult.topRatingChange;
-    }
-
-    await persistUpdatedMatch(client, matchId, payload);
-    const refreshedMatchResult = await client.query(findMatchByIdQuery, [matchId]);
+    const resolved = await finalizeLockedMatchByTimeout(client, existingMatch);
     await client.query('COMMIT');
 
-    return refreshedMatchResult.rows[0];
+    if (!resolved.didTimeout) {
+      scheduleMatchTimeout(existingMatch);
+    }
+
+    return resolved.match;
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -713,145 +737,150 @@ async function submitMove(req, res) {
       return res.status(400).json({ message: 'Match id is required' });
     }
 
-    const existingMatchResult = await db.query(findMatchByIdQuery, [matchId]);
-
-    if (existingMatchResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Match not found' });
-    }
-
-    const existingMatch = existingMatchResult.rows[0];
-
-    if (
-      !isSameUserId(authenticatedUserId, existingMatch.bottom_player_id) &&
-      !isSameUserId(authenticatedUserId, existingMatch.top_player_id)
-    ) {
-      return res.status(403).json({ message: 'You cannot play moves for other players' });
-    }
-
-    if (existingMatch.status === 'finished') {
-      return res.status(400).json({
-        message: 'Match is already finished',
-        match: existingMatch,
-      });
-    }
-
-    const timeoutResolvedMatch = await finalizeMatchByTimeout(matchId);
-    const activeMatch =
-      timeoutResolvedMatch && timeoutResolvedMatch.id === existingMatch.id
-        ? timeoutResolvedMatch
-        : existingMatch;
-
-    if (activeMatch.status === 'finished') {
-      return res.status(409).json({
-        message: 'Match timed out',
-        match: activeMatch,
-      });
-    }
-
-    const board = buildFlatBoard(activeMatch?.game_state?.board);
-
-    if (!board) {
-      return res.status(500).json({ message: 'Stored match board is invalid' });
-    }
-
-    const clockSnapshot = resolveClockSnapshot(activeMatch, Date.now());
-    let currentPlayer = clockSnapshot.currentPlayer;
-    const actingSide =
-      isSameUserId(authenticatedUserId, activeMatch.bottom_player_id) ? 'bottom' : 'top';
-    const submittedPitIndex =
-      req.body?.pitIndex === undefined ? null : parseInteger(req.body.pitIndex);
-    const nextMoves = Array.isArray(activeMatch.moves) ? [...activeMatch.moves] : [];
-    let currentBoard = board;
-    let currentStatus = 'active';
-    let winnerSide = null;
-    let resultReason = null;
-
-    if (submittedPitIndex === null) {
-      if (!isBotSide(activeMatch, currentPlayer)) {
-        return res.status(400).json({ message: 'pitIndex is required for a human turn' });
-      }
-    } else {
-      if (currentPlayer !== actingSide) {
-        return res.status(403).json({ message: 'It is not your turn' });
-      }
-
-      const legalMoves = getLegalMoves(currentBoard, currentPlayer);
-
-      if (!legalMoves.includes(submittedPitIndex)) {
-        return res.status(400).json({ message: 'Illegal move' });
-      }
-    }
-
-    const pitIndexToApply =
-      submittedPitIndex === null ? chooseBotMove(currentBoard, currentPlayer) : submittedPitIndex;
-
-    if (pitIndexToApply === null) {
-      return res.status(400).json({ message: 'No legal move available' });
-    }
-
-    const moveResult = applyMove(currentBoard, currentPlayer, pitIndexToApply);
-
-    if (!moveResult) {
-      return res.status(400).json({ message: 'Illegal move' });
-    }
-
-    moveResult.playerSide = currentPlayer;
-    nextMoves.push(buildMovePayload(moveResult, nextMoves.length + 1));
-    currentBoard = moveResult.board;
-    currentPlayer = moveResult.currentPlayer;
-
-    if (moveResult.gameStatus === 'finished') {
-      currentStatus = 'finished';
-      winnerSide = moveResult.winner;
-      resultReason = 'normal';
-    }
-
-    const payload = normalizeMatchPayload(
-      {
-        is_rated: activeMatch.is_rated,
-        status: currentStatus,
-        winner_side: winnerSide,
-        result_reason: resultReason,
-        bottom_rating_before: activeMatch.bottom_rating_before,
-        top_rating_before: activeMatch.top_rating_before,
-        bottom_rating_change: activeMatch.bottom_rating_change,
-        top_rating_change: activeMatch.top_rating_change,
-        started_at: activeMatch.started_at,
-        finished_at:
-          currentStatus === 'finished'
-            ? activeMatch.finished_at ?? new Date().toISOString()
-            : null,
-        moves: nextMoves,
-        game_state: {
-          currentPlayer,
-          board: buildBoardStatePayload(currentBoard),
-          bottomTimeLeft: clockSnapshot.bottomTimeLeft,
-          topTimeLeft: clockSnapshot.topTimeLeft,
-          lastTurnStartedAt: currentStatus === 'active' ? new Date().toISOString() : null,
-        },
-      },
-      {
-        requireId: false,
-        existingMatch: activeMatch,
-      },
-    );
-
-    const serverRatedResult = buildServerRatedResult(activeMatch, payload);
-
-    if (serverRatedResult) {
-      payload.bottomRatingBefore = serverRatedResult.bottomRatingBefore;
-      payload.topRatingBefore = serverRatedResult.topRatingBefore;
-      payload.bottomRatingChange = serverRatedResult.bottomRatingChange;
-      payload.topRatingChange = serverRatedResult.topRatingChange;
-    } else {
-      payload.bottomRatingBefore = activeMatch.bottom_rating_before;
-      payload.topRatingBefore = activeMatch.top_rating_before;
-    }
-
     const client = await db.getClient();
 
     try {
       await client.query('BEGIN');
+      const existingMatch = await readMatchForUpdate(client, matchId);
+
+      if (!existingMatch) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ message: 'Match not found' });
+      }
+
+      if (
+        !isSameUserId(authenticatedUserId, existingMatch.bottom_player_id) &&
+        !isSameUserId(authenticatedUserId, existingMatch.top_player_id)
+      ) {
+        await client.query('ROLLBACK');
+        return res.status(403).json({ message: 'You cannot play moves for other players' });
+      }
+
+      if (existingMatch.status === 'finished') {
+        await client.query('COMMIT');
+        return res.status(400).json({
+          message: 'Match is already finished',
+          match: existingMatch,
+        });
+      }
+
+      const timeoutResolution = await finalizeLockedMatchByTimeout(client, existingMatch);
+
+      if (timeoutResolution.didTimeout) {
+        await client.query('COMMIT');
+        return res.status(409).json({
+          message: 'Match timed out',
+          match: timeoutResolution.match,
+        });
+      }
+
+      const activeMatch = timeoutResolution.match;
+      const board = buildFlatBoard(activeMatch?.game_state?.board);
+
+      if (!board) {
+        await client.query('ROLLBACK');
+        return res.status(500).json({ message: 'Stored match board is invalid' });
+      }
+
+      const clockSnapshot = resolveClockSnapshot(activeMatch, Date.now());
+      let currentPlayer = clockSnapshot.currentPlayer;
+      const actingSide =
+        isSameUserId(authenticatedUserId, activeMatch.bottom_player_id) ? 'bottom' : 'top';
+      const submittedPitIndex =
+        req.body?.pitIndex === undefined ? null : parseInteger(req.body.pitIndex);
+      const nextMoves = Array.isArray(activeMatch.moves) ? [...activeMatch.moves] : [];
+      let currentBoard = board;
+      let currentStatus = 'active';
+      let winnerSide = null;
+      let resultReason = null;
+
+      if (submittedPitIndex === null) {
+        if (!isBotSide(activeMatch, currentPlayer)) {
+          await client.query('ROLLBACK');
+          return res.status(400).json({ message: 'pitIndex is required for a human turn' });
+        }
+      } else {
+        if (currentPlayer !== actingSide) {
+          await client.query('ROLLBACK');
+          return res.status(403).json({ message: 'It is not your turn' });
+        }
+
+        const legalMoves = getLegalMoves(currentBoard, currentPlayer);
+
+        if (!legalMoves.includes(submittedPitIndex)) {
+          await client.query('ROLLBACK');
+          return res.status(400).json({ message: 'Illegal move' });
+        }
+      }
+
+      const pitIndexToApply =
+        submittedPitIndex === null ? chooseBotMove(currentBoard, currentPlayer) : submittedPitIndex;
+
+      if (pitIndexToApply === null) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ message: 'No legal move available' });
+      }
+
+      const moveResult = applyMove(currentBoard, currentPlayer, pitIndexToApply);
+
+      if (!moveResult) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({ message: 'Illegal move' });
+      }
+
+      moveResult.playerSide = currentPlayer;
+      nextMoves.push(buildMovePayload(moveResult, nextMoves.length + 1));
+      currentBoard = moveResult.board;
+      currentPlayer = moveResult.currentPlayer;
+
+      if (moveResult.gameStatus === 'finished') {
+        currentStatus = 'finished';
+        winnerSide = moveResult.winner;
+        resultReason = 'normal';
+      }
+
+      const payload = normalizeMatchPayload(
+        {
+          is_rated: activeMatch.is_rated,
+          status: currentStatus,
+          winner_side: winnerSide,
+          result_reason: resultReason,
+          bottom_rating_before: activeMatch.bottom_rating_before,
+          top_rating_before: activeMatch.top_rating_before,
+          bottom_rating_change: activeMatch.bottom_rating_change,
+          top_rating_change: activeMatch.top_rating_change,
+          started_at: activeMatch.started_at,
+          finished_at:
+            currentStatus === 'finished'
+              ? activeMatch.finished_at ?? new Date().toISOString()
+              : null,
+          moves: nextMoves,
+          game_state: {
+            currentPlayer,
+            board: buildBoardStatePayload(currentBoard),
+            bottomTimeLeft: clockSnapshot.bottomTimeLeft,
+            topTimeLeft: clockSnapshot.topTimeLeft,
+            lastTurnStartedAt: currentStatus === 'active' ? new Date().toISOString() : null,
+          },
+        },
+        {
+          requireId: false,
+          existingMatch: activeMatch,
+        },
+      );
+
+      const serverRatedResult = buildServerRatedResult(activeMatch, payload);
+
+      if (serverRatedResult) {
+        payload.bottomRatingBefore = serverRatedResult.bottomRatingBefore;
+        payload.topRatingBefore = serverRatedResult.topRatingBefore;
+        payload.bottomRatingChange = serverRatedResult.bottomRatingChange;
+        payload.topRatingChange = serverRatedResult.topRatingChange;
+      } else {
+        payload.bottomRatingBefore = activeMatch.bottom_rating_before;
+        payload.topRatingBefore = activeMatch.top_rating_before;
+      }
+
       await persistUpdatedMatch(client, matchId, payload);
       const refreshedMatchResult = await client.query(findMatchByIdQuery, [matchId]);
       await client.query('COMMIT');
@@ -878,74 +907,72 @@ async function resignMatch(req, res) {
       return res.status(400).json({ message: 'Match id is required' });
     }
 
-    const existingMatchResult = await db.query(findMatchByIdQuery, [matchId]);
-
-    if (existingMatchResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Match not found' });
-    }
-
-    const existingMatch = existingMatchResult.rows[0];
-
-    if (
-      !isSameUserId(authenticatedUserId, existingMatch.bottom_player_id) &&
-      !isSameUserId(authenticatedUserId, existingMatch.top_player_id)
-    ) {
-      return res.status(403).json({ message: 'You cannot resign for other players' });
-    }
-
-    const timeoutResolvedMatch = await finalizeMatchByTimeout(matchId);
-    const activeMatch =
-      timeoutResolvedMatch && timeoutResolvedMatch.id === existingMatch.id
-        ? timeoutResolvedMatch
-        : existingMatch;
-
-    if (activeMatch.status === 'finished') {
-      return res.status(200).json(hydrateMatchForResponse(activeMatch));
-    }
-
-    const resigningSide =
-      isSameUserId(authenticatedUserId, activeMatch.bottom_player_id) ? 'bottom' : 'top';
-    const clockSnapshot = resolveClockSnapshot(activeMatch, Date.now());
-    const payload = normalizeMatchPayload(
-      {
-        is_rated: activeMatch.is_rated,
-        status: 'finished',
-        winner_side: getOpponent(resigningSide),
-        result_reason: 'resign',
-        bottom_rating_before: activeMatch.bottom_rating_before,
-        top_rating_before: activeMatch.top_rating_before,
-        bottom_rating_change: activeMatch.bottom_rating_change,
-        top_rating_change: activeMatch.top_rating_change,
-        started_at: activeMatch.started_at,
-        finished_at: new Date().toISOString(),
-        moves: activeMatch.moves,
-        game_state: {
-          ...(activeMatch.game_state ?? {}),
-          currentPlayer: clockSnapshot.currentPlayer,
-          bottomTimeLeft: clockSnapshot.bottomTimeLeft,
-          topTimeLeft: clockSnapshot.topTimeLeft,
-          lastTurnStartedAt: null,
-        },
-      },
-      {
-        requireId: false,
-        existingMatch: activeMatch,
-      },
-    );
-
-    const serverRatedResult = buildServerRatedResult(activeMatch, payload);
-
-    if (serverRatedResult) {
-      payload.bottomRatingBefore = serverRatedResult.bottomRatingBefore;
-      payload.topRatingBefore = serverRatedResult.topRatingBefore;
-      payload.bottomRatingChange = serverRatedResult.bottomRatingChange;
-      payload.topRatingChange = serverRatedResult.topRatingChange;
-    }
-
     const client = await db.getClient();
 
     try {
       await client.query('BEGIN');
+      const existingMatch = await readMatchForUpdate(client, matchId);
+
+      if (!existingMatch) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ message: 'Match not found' });
+      }
+
+      if (
+        !isSameUserId(authenticatedUserId, existingMatch.bottom_player_id) &&
+        !isSameUserId(authenticatedUserId, existingMatch.top_player_id)
+      ) {
+        await client.query('ROLLBACK');
+        return res.status(403).json({ message: 'You cannot resign for other players' });
+      }
+
+      const timeoutResolution = await finalizeLockedMatchByTimeout(client, existingMatch);
+      const activeMatch = timeoutResolution.match;
+
+      if (activeMatch.status === 'finished') {
+        await client.query('COMMIT');
+        return res.status(200).json(hydrateMatchForResponse(activeMatch));
+      }
+
+      const resigningSide =
+        isSameUserId(authenticatedUserId, activeMatch.bottom_player_id) ? 'bottom' : 'top';
+      const clockSnapshot = resolveClockSnapshot(activeMatch, Date.now());
+      const payload = normalizeMatchPayload(
+        {
+          is_rated: activeMatch.is_rated,
+          status: 'finished',
+          winner_side: getOpponent(resigningSide),
+          result_reason: 'resign',
+          bottom_rating_before: activeMatch.bottom_rating_before,
+          top_rating_before: activeMatch.top_rating_before,
+          bottom_rating_change: activeMatch.bottom_rating_change,
+          top_rating_change: activeMatch.top_rating_change,
+          started_at: activeMatch.started_at,
+          finished_at: new Date().toISOString(),
+          moves: activeMatch.moves,
+          game_state: {
+            ...(activeMatch.game_state ?? {}),
+            currentPlayer: clockSnapshot.currentPlayer,
+            bottomTimeLeft: clockSnapshot.bottomTimeLeft,
+            topTimeLeft: clockSnapshot.topTimeLeft,
+            lastTurnStartedAt: null,
+          },
+        },
+        {
+          requireId: false,
+          existingMatch: activeMatch,
+        },
+      );
+
+      const serverRatedResult = buildServerRatedResult(activeMatch, payload);
+
+      if (serverRatedResult) {
+        payload.bottomRatingBefore = serverRatedResult.bottomRatingBefore;
+        payload.topRatingBefore = serverRatedResult.topRatingBefore;
+        payload.bottomRatingChange = serverRatedResult.bottomRatingChange;
+        payload.topRatingChange = serverRatedResult.topRatingChange;
+      }
+
       await persistUpdatedMatch(client, matchId, payload);
       const refreshedMatchResult = await client.query(findMatchByIdQuery, [matchId]);
       await client.query('COMMIT');
