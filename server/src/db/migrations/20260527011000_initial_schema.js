@@ -374,12 +374,89 @@ exports.up = (pgm) => {
       ) THEN
         ALTER TABLE matches ADD COLUMN moves JSONB NOT NULL DEFAULT '[]'::jsonb;
       END IF;
+
+      IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE table_schema = table_schema_name
+          AND table_name = 'matches'
+          AND constraint_name = 'matches_status_check'
+      ) THEN
+        ALTER TABLE matches
+        ADD CONSTRAINT matches_status_check
+        CHECK (status IN ('active', 'finished'));
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE table_schema = table_schema_name
+          AND table_name = 'matches'
+          AND constraint_name = 'matches_winner_side_check'
+      ) THEN
+        ALTER TABLE matches
+        ADD CONSTRAINT matches_winner_side_check
+        CHECK (winner_side IN ('bottom', 'top', 'draw') OR winner_side IS NULL);
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE table_schema = table_schema_name
+          AND table_name = 'matches'
+          AND constraint_name = 'matches_result_reason_check'
+      ) THEN
+        ALTER TABLE matches
+        ADD CONSTRAINT matches_result_reason_check
+        CHECK (result_reason IN ('normal', 'resign', 'timeout') OR result_reason IS NULL);
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE table_schema = table_schema_name
+          AND table_name = 'matches'
+          AND constraint_name = 'matches_distinct_players_check'
+      ) THEN
+        ALTER TABLE matches
+        ADD CONSTRAINT matches_distinct_players_check
+        CHECK (bottom_player_id <> top_player_id);
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE table_schema = table_schema_name
+          AND table_name = 'matches'
+          AND constraint_name = 'matches_bottom_player_id_fkey'
+      ) THEN
+        ALTER TABLE matches
+        ADD CONSTRAINT matches_bottom_player_id_fkey
+        FOREIGN KEY (bottom_player_id) REFERENCES users(id);
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE table_schema = table_schema_name
+          AND table_name = 'matches'
+          AND constraint_name = 'matches_top_player_id_fkey'
+      ) THEN
+        ALTER TABLE matches
+        ADD CONSTRAINT matches_top_player_id_fkey
+        FOREIGN KEY (top_player_id) REFERENCES users(id);
+      END IF;
     END
     $$;
   `);
 };
 
 exports.down = (pgm) => {
-  pgm.sql('DROP TABLE IF EXISTS matches;');
-  pgm.sql('DROP TABLE IF EXISTS users;');
+  pgm.sql(`
+    DO $$
+    BEGIN
+      RAISE EXCEPTION 'Rollback for 20260527011000_initial_schema is intentionally unsupported because it would destroy existing users and matches data.';
+    END
+    $$;
+  `);
 };
