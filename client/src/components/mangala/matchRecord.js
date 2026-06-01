@@ -44,28 +44,27 @@ export function formatPitLabel(player, pitIndex) {
 }
 
 export function buildReplayDescription(matchRecord, positionIndex, players) {
-  if (positionIndex === 0) {
-    return 'Viewing the start position.'
-  }
+  const position = matchRecord.positions[positionIndex]
 
-  const move = matchRecord.moves[positionIndex - 1]
-
-  if (!move) {
+  if (!position) {
     return 'Viewing the latest position.'
   }
 
-  const playerName = players[move.player].name
-  const pitLabel = formatPitLabel(move.player, move.fromPit)
+  if (position.gameStatus === 'finished') {
+    if (position.winner === 'draw') {
+      return 'The match ends in a draw.'
+    }
 
-  if (move.extraTurn) {
-    return `${playerName} played pit ${pitLabel} and moved again.`
+    if (position.winner && players[position.winner]) {
+      return `${players[position.winner].name} wins.`
+    }
   }
 
-  if (move.captured > 0) {
-    return `${playerName} played pit ${pitLabel} and captured ${move.captured}.`
+  if (position.currentPlayer && players[position.currentPlayer]) {
+    return `${players[position.currentPlayer].name} to move`
   }
 
-  return `${playerName} played pit ${pitLabel}.`
+  return 'Viewing the selected position.'
 }
 
 export function buildReplayEntries(matchRecord, players) {
