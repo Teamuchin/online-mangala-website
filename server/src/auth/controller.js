@@ -8,6 +8,7 @@ const {
   findUserByIdQuery,
   createUserQuery,
   updateUserPasswordQuery,
+  updateUserUsernameQuery,
 } = require('./queries');
 
 const SALT_ROUNDS = 10;
@@ -157,80 +158,144 @@ async function login(req, res) {
 
 async function updateMe(req, res) {
   try {
-    const userId = String(req.auth?.userId || '').trim();
-    const currentPassword = String(req.body?.currentPassword || '');
-    const newPassword = String(req.body?.newPassword || '');
-    const confirmPassword = String(req.body?.confirmPassword || '');
+    const userId = String(req.auth?.userId || "").trim();
+    const currentPassword = String(req.body?.currentPassword || "");
+    const newPassword = String(req.body?.newPassword || "");
+    const confirmPassword = String(req.body?.confirmPassword || "");
 
     if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      return res.status(401).json({ message: "Unauthorized" });
     }
 
     const existingUserResult = await db.query(findUserByIdQuery, [userId]);
 
     if (existingUserResult.rows.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    if (isBotUser(existingUserResult.rows[0])) {
-      return res.status(403).json({ message: 'Bot accounts cannot manage account settings' });
+    const existingUser = existingUserResult.rows[0];
+
+    if (isBotUser(existingUser)) {
+      return res.status(403).json({ message: "Bot accounts cannot manage account settings" });
     }
 
     if (!currentPassword) {
-      return res.status(400).json({ message: 'Enter your password first' });
+      return res.status(400).json({ message: "Enter your password first" });
     }
 
     const isCurrentPasswordValid = await bcrypt.compare(
       currentPassword,
-      existingUserResult.rows[0].password_hash,
+      existingUser.password_hash,
     );
 
     if (!isCurrentPasswordValid) {
-      return res.status(401).json({ message: 'Password is incorrect' });
+      return res.status(401).json({ message: "Password is incorrect" });
     }
 
-    const wantsPasswordChange = newPassword || confirmPassword;
+    const hasUsernameField = Object.prototype.hasOwnProperty.call(req.body || {}, "username");
+    const requestedUsername = hasUsernameField
+      ? String(req.body.username || "").trim()
+      : existingUser.username;
+    const wantsUsernameChange = requestedUsername !== existingUser.username;
+    const wantsPasswordChange = Boolean(newPassword || confirmPassword);
 
-    if (!wantsPasswordChange) {
-      const user = sanitizeProfileUser(existingUserResult.rows[0]);
+    if (hasUsernameField && !USERNAME_REGEX.test(requestedUsername)) {
+      return res.status(400).json({
+        message: "Username must be 3-15 characters and use only letters, numbers, underscores, or hyphens",
+      });
+    }
+
+    if (wantsUsernameChange && requestedUsername.toLowerCase() !== existingUser.username.toLowerCase()) {
+      const existingUsernameResult = await db.query(findUserByUsernameQuery, [requestedUsername]);
+      const usernameOwner = existingUsernameResult.rows[0];
+
+      if (usernameOwner && String(usernameOwner.id) !== userId) {
+        return res.status(409).json({ message: "Username is already taken" });
+      }
+    }
+
+    if (wantsPasswordChange) {
+      if (!newPassword || !confirmPassword) {
+        return res.status(400).json({ message: "Fill new password and confirm password to change password" });
+      }
+
+      if (newPassword !== confirmPassword) {
+        return res.status(400).json({ message: "New password and confirmation do not match" });
+      }
+
+      if (newPassword.length < PASSWORD_MIN_LENGTH || newPassword.length > PASSWORD_MAX_LENGTH) {
+        return res.status(400).json({
+          message: "New password must be " + PASSWORD_MIN_LENGTH + "-" + PASSWORD_MAX_LENGTH + " characters long",
+        });
+      }
+    }
+
+    if (!wantsUsernameChange && !wantsPasswordChange) {
+      const user = sanitizeProfileUser(existingUser);
       const token = signAuthToken(user);
 
       return res.status(200).json({
-        message: 'No account details changed',
+        message: "No account details changed",
         user,
         token,
       });
     }
 
-    if (!newPassword || !confirmPassword) {
-      return res.status(400).json({ message: 'Fill new password and confirm password to change password' });
-    }
+    const newPasswordHash = wantsPasswordChange
+      ? await bcrypt.hash(newPassword, SALT_ROUNDS)
+      : null;
+    const client = await db.getClient();
 
-    if (newPassword !== confirmPassword) {
-      return res.status(400).json({ message: 'New password and confirmation do not match' });
-    }
+    try {
+      await client.query("BEGIN");
 
-    if (newPassword.length < PASSWORD_MIN_LENGTH || newPassword.length > PASSWORD_MAX_LENGTH) {
-      return res.status(400).json({
-        message: `New password must be ${PASSWORD_MIN_LENGTH}-${PASSWORD_MAX_LENGTH} characters long`,
+      if (wantsUsernameChange) {
+        await client.query(updateUserUsernameQuery, [userId, requestedUsername]);
+      }
+
+      if (wantsPasswordChange) {
+        await client.query(updateUserPasswordQuery, [userId, newPasswordHash]);
+      }
+
+      const refreshedUserResult = await client.query(findUserByIdQuery, [userId]);
+      await client.query("COMMIT");
+
+      const user = sanitizeProfileUser(refreshedUserResult.rows[0]);
+      const token = signAuthToken(user);
+      const message = wantsUsernameChange && wantsPasswordChange
+        ? "Account updated successfully"
+        : wantsUsernameChange
+          ? "Username updated successfully"
+          : "Password updated successfully";
+
+      return res.status(200).json({
+        message,
+        user,
+        token,
       });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error("Update account error:", error);
+
+    if (error.code === "23505") {
+      const constraintName = String(error.constraint || "");
+
+      if (
+        constraintName === "users_username_lower_unique_idx" ||
+        /username/i.test(String(error.detail || ""))
+      ) {
+        return res.status(409).json({ message: "Username is already taken" });
+      }
+
+      return res.status(409).json({ message: "User already exists" });
     }
 
-    const newPasswordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-    await db.query(updateUserPasswordQuery, [userId, newPasswordHash]);
-
-    const refreshedUserResult = await db.query(findUserByIdQuery, [userId]);
-    const user = sanitizeProfileUser(refreshedUserResult.rows[0]);
-    const token = signAuthToken(user);
-
-    return res.status(200).json({
-      message: 'Password updated successfully',
-      user,
-      token,
-    });
-  } catch (error) {
-    console.error('Update account error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: "Internal server error" });
   }
 }
 

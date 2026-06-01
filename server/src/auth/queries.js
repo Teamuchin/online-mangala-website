@@ -81,6 +81,13 @@ SET password_hash = $2
 WHERE id = $1;
 `;
 
+const updateUserUsernameQuery = `
+UPDATE users
+SET username = $2
+WHERE id = $1
+RETURNING id, username, email, elo, is_bot, created_at;
+`;
+
 const updateSeededBotUserQuery = `
 UPDATE users
 SET username = $2,
@@ -112,6 +119,7 @@ module.exports = {
   createUserQuery,
   createBotUserQuery,
   updateUserPasswordQuery,
+  updateUserUsernameQuery,
   updateSeededBotUserQuery,
   updateUserEloQuery,
 };

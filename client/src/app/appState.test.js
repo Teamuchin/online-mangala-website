@@ -73,7 +73,7 @@ test('buildAccountFormState derives an editable draft from the current user', ()
   )
 })
 
-test('buildProfileUpdatesFromForm only keeps supported profile fields', () => {
+test('buildProfileUpdatesFromForm only keeps username updates', () => {
   assert.deepEqual(
     buildProfileUpdatesFromForm({
       username: 'NewName',
@@ -84,7 +84,6 @@ test('buildProfileUpdatesFromForm only keeps supported profile fields', () => {
     }),
     {
       username: 'NewName',
-      email: 'new@example.com',
     },
   )
 })

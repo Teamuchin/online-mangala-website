@@ -9,6 +9,8 @@ import styles from './AccountSettings.module.css'
 import { useAppData } from '../app/useAppData.js'
 import { updateMeRequest } from '../app/authApi.js'
 
+const USERNAME_REGEX = /^[A-Za-z0-9_-]{3,15}$/
+
 export default function AccountSettings() {
   const { accountSettingsFields, currentUser, logOut, updateCurrentUser } = useAppData()
   const [formState, setFormState] = useState(() => buildAccountFormState(currentUser))
@@ -16,6 +18,7 @@ export default function AccountSettings() {
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const guestMode = isGuestUser(currentUser)
+  const usernameField = accountSettingsFields.find((field) => field.id === 'username')
   const passwordFields = accountSettingsFields.filter(
     (field) => field.id !== 'username' && field.id !== 'email',
   )
@@ -52,6 +55,13 @@ export default function AccountSettings() {
 
       if (!String(formState.currentPassword || '').trim()) {
         setErrorMessage('Enter your password first.')
+        return
+      }
+
+      const requestedUsername = String(formState.username || '').trim()
+
+      if (!USERNAME_REGEX.test(requestedUsername)) {
+        setErrorMessage('Username must be 3-15 characters and use only letters, numbers, underscores, or hyphens.')
         return
       }
 
@@ -102,10 +112,21 @@ export default function AccountSettings() {
         {errorMessage && <p className={styles.saveMessage}>{errorMessage}</p>}
         <div className={styles.nonButtonInput}>
           <div className={styles.readOnlyGroup}>
-            <div className={styles.readOnlyField}>
-              <span className={styles.readOnlyLabel}>Username</span>
-              <span className={styles.readOnlyValue}>{currentUser.username}</span>
-            </div>
+            {usernameField && (
+              <label className={styles.editableField} htmlFor={usernameField.id}>
+                <span className={styles.readOnlyLabel}>Username</span>
+                <input
+                  id={usernameField.id}
+                  value={formState.username}
+                  type={usernameField.type}
+                  name={usernameField.name}
+                  placeholder={usernameField.placeholder}
+                  className={styles[usernameField.className]}
+                  onChange={handleFieldChange}
+                  autoComplete="username"
+                />
+              </label>
+            )}
             <div className={styles.readOnlyField}>
               <span className={styles.readOnlyLabel}>Email</span>
               <span className={styles.readOnlyValue}>{currentUser.email}</span>
