@@ -559,6 +559,12 @@ function isBotSide(existingMatch, side) {
     : existingMatch.top_player_is_bot === true;
 }
 
+function getBotUsernameForSide(match, side) {
+  return side === 'bottom'
+    ? match.bottom_player_username ?? ''
+    : match.top_player_username ?? '';
+}
+
 async function submitMove(req, res) {
   try {
     const authenticatedUserId = normalizeUserId(req.auth?.userId);
@@ -645,7 +651,13 @@ async function submitMove(req, res) {
       }
 
       const pitIndexToApply =
-        submittedPitIndex === null ? chooseBotMove(currentBoard, currentPlayer) : submittedPitIndex;
+        submittedPitIndex === null
+          ? chooseBotMove(
+              currentBoard,
+              currentPlayer,
+              getBotUsernameForSide(activeMatch, currentPlayer),
+            )
+          : submittedPitIndex;
 
       if (pitIndexToApply === null) {
         await client.query('ROLLBACK');
