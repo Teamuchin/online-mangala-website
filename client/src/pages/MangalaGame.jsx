@@ -714,7 +714,7 @@ function MangalaGameScreen({
               hasMoves={game.matchRecord.moves.length > 0}
               isReviewing={isReviewing}
               matchTypeLabel={matchTypeLabel}
-              showReset={isPracticeMode}
+              showReset={false}
               onFirst={handleReplayFirst}
               onLast={handleReplayLast}
               onNext={handleReplayNext}

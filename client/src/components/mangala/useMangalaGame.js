@@ -33,6 +33,27 @@ function buildUnavailableGameState() {
   }
 }
 
+function buildSimpleTurnMessage(gameState) {
+  if (gameState.gameStatus === 'finished') {
+    if (gameState.winner === 'draw') {
+      return 'The match ends in a draw.'
+    }
+
+    if (gameState.winner && gameState.players[gameState.winner]) {
+      return `${gameState.players[gameState.winner].name} wins.`
+    }
+  }
+
+  return `${gameState.players[gameState.currentPlayer].name} to move`
+}
+
+function applySimpleTurnMessage(gameState) {
+  return {
+    ...gameState,
+    turnMessage: buildSimpleTurnMessage(gameState),
+  }
+}
+
 function scheduleAnimatedMove({
   animationTimeoutsRef,
   clearAnimationTimeouts,
@@ -300,7 +321,8 @@ export function useMangalaGame(initialConfig) {
         return buildAnimatingMoveState(currentGame, pitIndex)
       }
 
-      return finalizeMoveState(currentGame, currentGame, pitIndex, moveResult)
+      const nextGame = finalizeMoveState(currentGame, currentGame, pitIndex, moveResult)
+      return isPracticeBoard ? applySimpleTurnMessage(nextGame) : nextGame
     })
   }
 
@@ -357,7 +379,9 @@ export function useMangalaGame(initialConfig) {
         ...currentGame,
         gameStatus: 'finished',
         winner,
-        turnMessage: `${currentGame.players[winner].name} wins by resignation.`,
+        turnMessage: isPracticeBoard
+          ? `${currentGame.players[winner].name} wins.`
+          : `${currentGame.players[winner].name} wins by resignation.`,
         moveInProgress: false,
       }
     })
@@ -410,7 +434,8 @@ export function useMangalaGame(initialConfig) {
           return buildAnimatingMoveState(currentGame, pitIndex)
         }
 
-        return finalizeMoveState(currentGame, currentGame, pitIndex, moveResult)
+        const nextGame = finalizeMoveState(currentGame, currentGame, pitIndex, moveResult)
+        return isPracticeBoard ? applySimpleTurnMessage(nextGame) : nextGame
       })
 
       botTurnTimeoutRef.current = null
