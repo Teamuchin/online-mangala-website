@@ -122,7 +122,7 @@ export default function AccountSettings() {
                   value={formState.username}
                   type={usernameField.type}
                   name={usernameField.name}
-                  placeholder={usernameField.placeholder}
+                  placeholder={t('account.username')}
                   className={styles[usernameField.className]}
                   onChange={handleFieldChange}
                   autoComplete="username"
@@ -141,7 +141,13 @@ export default function AccountSettings() {
               value={formState[field.id]}
               type={field.type}
               name={field.name}
-              placeholder={field.placeholder}
+              placeholder={
+                field.id === 'currentPassword'
+                  ? t('account.currentPassword')
+                  : field.id === 'newPassword'
+                    ? t('account.newPassword')
+                    : t('account.confirmNewPassword')
+              }
               className={styles[field.className]}
               onChange={handleFieldChange}
             />

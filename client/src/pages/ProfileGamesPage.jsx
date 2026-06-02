@@ -148,7 +148,7 @@ export default function ProfileGamesPage() {
 
         setBackendProfile(null)
         setBackendMatches([])
-        setLoadError(error.message || t('leaderboard.loadFailed'))
+        setLoadError(error.message || t('profileGames.loadFailed'))
       } finally {
         if (!isCancelled) {
           setIsLoading(false)

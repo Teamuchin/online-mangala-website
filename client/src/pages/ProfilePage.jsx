@@ -291,7 +291,7 @@ export default function ProfilePage() {
 
         setBackendProfile(null)
         setBackendMatches([])
-        setLoadError(error.message || 'Could not load profile.')
+        setLoadError(error.message || t('profile.loadFailed'))
       } finally {
         if (!isCancelled) {
           setIsLoading(false)

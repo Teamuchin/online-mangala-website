@@ -1,10 +1,11 @@
 import styles from './Banner.module.css'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAppData } from '../app/useAppData.js'
-import { RULES } from '../components/mangala/constants.js'
+import { useGlobalHeader } from '../app/useGlobalHeader.js'
 
 export default function Banner() {
   const navigate = useNavigate()
+  const { t } = useGlobalHeader()
   const {
     bannerActions,
     bannerSloganLines,
@@ -13,12 +14,44 @@ export default function Banner() {
   } = useAppData()
 
   const visibleActions = isAuthenticated
-    ? [{ to: '/', className: 'loginbtn', label: 'Go Home' }]
+    ? [{ to: '/', className: 'loginbtn', label: t('banner.goHome') }]
     : bannerActions
 
   const handleGuestStart = () => {
     continueAsGuest()
     navigate('/')
+  }
+
+  const getActionLabel = (action) => {
+    if (action.label === 'Play as Guest') {
+      return t('auth.playAsGuest')
+    }
+
+    if (action.label === 'Log in') {
+      return t('auth.logIn')
+    }
+
+    if (action.label === 'Sign up') {
+      return t('auth.signUp')
+    }
+
+    if (action.label === 'Play') {
+      return t('banner.play')
+    }
+
+    if (action.label === 'Learn') {
+      return t('banner.learn')
+    }
+
+    if (action.label === 'About') {
+      return t('banner.about')
+    }
+
+    if (action.label === 'Go Home') {
+      return t('banner.goHome')
+    }
+
+    return action.label
   }
 
   return (
@@ -36,27 +69,27 @@ export default function Banner() {
         </div>
         <div className={styles.bodybuttons}>
           {visibleActions.map((action) =>
-            action.label === 'Play as Guest' ? (
+            action.label === 'Play as Guest' || action.label === t('banner.playAsGuest') ? (
               <button
                 key={action.label}
                 type="button"
                 className={styles[action.className]}
                 onClick={handleGuestStart}
               >
-                {action.label}
+                {t('auth.playAsGuest')}
               </button>
             ) : (
               <Link key={action.label} to={action.to} className={styles[action.className]}>
-                {action.label}
+                {getActionLabel(action)}
               </Link>
             ),
           )}
         </div>
         <section className={styles.learnRules}>
-          <h2>Rules</h2>
+          <h2>{t('banner.rules')}</h2>
           <div className={styles.rulesList}>
-            {RULES.map((rule) => (
-              <p key={rule}>{rule}</p>
+            {[1, 2, 3, 4, 5].map((ruleIndex) => (
+              <p key={ruleIndex}>{t(`banner.rule${ruleIndex}`)}</p>
             ))}
           </div>
         </section>

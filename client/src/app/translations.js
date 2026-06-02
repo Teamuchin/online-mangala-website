@@ -91,6 +91,19 @@ export const translations = {
       queueLookingRated: 'Dereceli oyun aranıyor...',
       queueLookingUnrated: 'Derecesiz oyun aranıyor...',
     },
+    banner: {
+      play: 'Oyna',
+      learn: 'Öğren',
+      about: 'Hakkında',
+      goHome: 'Ana Sayfaya Dön',
+      playAsGuest: 'Misafir Olarak Oyna',
+      rules: 'Kurallar',
+      rule1: 'Her taraf 6 kuyudaki taşlara 4 taş ile başlar.',
+      rule2: 'Taşlar saat yönünün tersine dağıtılır ve rakip hazinesi atlanır.',
+      rule3: 'Son taşın kendi hazinene düşmesi sana bir tur daha kazandırır.',
+      rule4: 'Son taş rakip kuyusunda kalıp sayıyı çift yaparsa o taşlar alınır.',
+      rule5: 'Oyun, iki taraftan birinin kuyuları boşaldığında biter.',
+    },
     playModal: {
       matchmaking: 'Eşleştirme',
       gameSetup: 'Oyun Kurulumu',
@@ -127,6 +140,7 @@ export const translations = {
       challengeTitle: 'Meydan Oku',
       challengeText: 'Maç türünü seç.',
       challengeError: 'Maç başlatılamadı.',
+      loadFailed: 'Profil yüklenemedi.',
       ai: 'AI',
     },
     profileGames: {
@@ -135,6 +149,7 @@ export const translations = {
       title: 'Maç Geçmişi',
       backToOverview: 'Genel Görünüme Dön',
       date: 'Tarih',
+      loadFailed: 'Maç geçmişi yüklenemedi.',
       pages: 'Maç geçmişi sayfaları',
     },
     matchmaking: {
@@ -146,6 +161,9 @@ export const translations = {
       title: 'Hesap Ayarları',
       username: 'Kullanıcı adı',
       email: 'E-posta',
+      currentPassword: 'Mevcut şifre',
+      newPassword: 'Yeni şifre',
+      confirmNewPassword: 'Yeni şifreyi onayla',
       pleaseLogInAgain: 'Hesabınızı güncellemek için lütfen tekrar giriş yapın.',
       enterPasswordFirst: 'Önce şifrenizi girin.',
       usernameRules:
@@ -277,6 +295,19 @@ export const translations = {
       queueLookingRated: 'Looking for a rated game...',
       queueLookingUnrated: 'Looking for an unrated game...',
     },
+    banner: {
+      play: 'Play',
+      learn: 'Learn',
+      about: 'About',
+      goHome: 'Go Home',
+      playAsGuest: 'Play as Guest',
+      rules: 'Rules',
+      rule1: 'Each side begins with 4 stones in all 6 pits.',
+      rule2: 'Stones are distributed counter-clockwise and the opponent store is skipped.',
+      rule3: 'Landing your last stone in your own store grants another turn.',
+      rule4: 'If the last stone lands in an opponent pit and makes it even, those stones are captured.',
+      rule5: 'The game ends when either player side becomes empty.',
+    },
     playModal: {
       matchmaking: 'Matchmaking',
       gameSetup: 'Game Setup',
@@ -313,6 +344,7 @@ export const translations = {
       challengeTitle: 'Challenge',
       challengeText: 'Choose the match type.',
       challengeError: 'Could not start the match.',
+      loadFailed: 'Could not load profile.',
       ai: 'AI',
     },
     profileGames: {
@@ -321,6 +353,7 @@ export const translations = {
       title: 'Match History',
       backToOverview: 'Back to Overview',
       date: 'Date',
+      loadFailed: 'Could not load match history.',
       pages: 'Match history pages',
     },
     matchmaking: {
@@ -332,6 +365,9 @@ export const translations = {
       title: 'Account Settings',
       username: 'Username',
       email: 'Email',
+      currentPassword: 'Current Password',
+      newPassword: 'New Password',
+      confirmNewPassword: 'Confirm New Password',
       pleaseLogInAgain: 'Please log in again to update your account.',
       enterPasswordFirst: 'Enter your password first.',
       usernameRules:

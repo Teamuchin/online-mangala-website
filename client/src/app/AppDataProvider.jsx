@@ -18,8 +18,16 @@ import { getLeaderboardUsersRequest } from './userApi.js'
 
 const AUTH_STATE_STORAGE_KEY = 'mangala.authState'
 const CURRENT_USER_STORAGE_KEY = 'mangala.currentUser'
+const LANGUAGE_STORAGE_KEY = 'mangala.language'
 
 function formatMemberSince(createdAt) {
+  const preferredLanguage =
+    typeof window === 'undefined'
+      ? 'en-US'
+      : window.localStorage.getItem(LANGUAGE_STORAGE_KEY) === 'tr'
+        ? 'tr-TR'
+        : 'en-US'
+
   if (!createdAt) {
     return 'May 2026'
   }
@@ -30,7 +38,7 @@ function formatMemberSince(createdAt) {
     return 'May 2026'
   }
 
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(preferredLanguage, {
     month: 'short',
     year: 'numeric',
   }).format(parsedDate)
