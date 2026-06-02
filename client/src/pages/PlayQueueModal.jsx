@@ -1,3 +1,4 @@
+import { useGlobalHeader } from '../app/useGlobalHeader.js'
 import styles from './PlayQueueModal.module.css'
 
 function formatQueueTime(elapsedMs) {
@@ -19,6 +20,8 @@ export default function PlayQueueModal({
   queueStatusText,
   rated,
 }) {
+  const { t } = useGlobalHeader()
+
   return (
     <div className={styles.overlay} role="presentation" onClick={onClose}>
       <section
@@ -30,22 +33,26 @@ export default function PlayQueueModal({
       >
         <div className={styles.header}>
           <div>
-            <p className={styles.eyebrow}>{isQueueing ? 'Matchmaking' : 'Game Setup'}</p>
-            <h2 id="play-queue-title">{isQueueing ? 'Searching for a game' : 'Play'}</h2>
+            <p className={styles.eyebrow}>
+              {isQueueing ? t('playModal.matchmaking') : t('playModal.gameSetup')}
+            </p>
+            <h2 id="play-queue-title">
+              {isQueueing ? t('playModal.searchingForGame') : t('playModal.play')}
+            </h2>
           </div>
           <button
             type="button"
             className={styles.closeButton}
             onClick={onClose}
-            aria-label={isQueueing ? 'Cancel search' : 'Close play setup'}
+            aria-label={isQueueing ? t('playModal.cancelSearch') : t('playModal.closePlaySetup')}
           >
             ×
           </button>
         </div>
 
         <div className={styles.section}>
-          <span className={styles.label}>Mode</span>
-          <div className={styles.segmentedControl} role="group" aria-label="Match mode">
+          <span className={styles.label}>{t('playModal.mode')}</span>
+          <div className={styles.segmentedControl} role="group" aria-label={t('playModal.matchMode')}>
             <button
               type="button"
               className={`${styles.optionButton} ${
@@ -54,7 +61,7 @@ export default function PlayQueueModal({
               onClick={() => onRatedChange(true)}
               disabled={isQueueing}
             >
-              Rated
+              {t('common.rated')}
             </button>
             <button
               type="button"
@@ -64,14 +71,14 @@ export default function PlayQueueModal({
               onClick={() => onRatedChange(false)}
               disabled={isQueueing}
             >
-              Unrated
+              {t('common.unrated')}
             </button>
           </div>
         </div>
 
         <div className={styles.section}>
-          <span className={styles.label}>Opponents</span>
-          <div className={styles.segmentedControl} role="group" aria-label="Allow bots">
+          <span className={styles.label}>{t('playModal.opponents')}</span>
+          <div className={styles.segmentedControl} role="group" aria-label={t('playModal.opponents')}>
             <button
               type="button"
               className={`${styles.optionButton} ${
@@ -80,7 +87,7 @@ export default function PlayQueueModal({
               onClick={() => onAllowBotsChange(true)}
               disabled={isQueueing}
             >
-              Allow Bots
+              {t('playModal.allowBots')}
             </button>
             <button
               type="button"
@@ -90,7 +97,7 @@ export default function PlayQueueModal({
               onClick={() => onAllowBotsChange(false)}
               disabled={isQueueing}
             >
-              Humans Only
+              {t('playModal.humansOnly')}
             </button>
           </div>
         </div>
@@ -99,16 +106,16 @@ export default function PlayQueueModal({
           <div className={styles.queueState}>
             <p className={styles.queueStatus}>{queueStatusText}</p>
             <p className={styles.queueHint}>
-              {allowBots ? 'Bots allowed' : 'Human opponents only'}
+              {allowBots ? t('playModal.botsAllowed') : t('playModal.humanOpponentsOnly')}
             </p>
             <div className={styles.queueTimer}>{formatQueueTime(elapsedMs)}</div>
             <button type="button" className={styles.cancelButton} onClick={onClose}>
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         ) : (
           <button type="button" className={styles.startButton} onClick={onStart}>
-            Start Search
+            {t('playModal.startSearch')}
           </button>
         )}
       </section>

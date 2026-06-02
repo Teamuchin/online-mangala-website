@@ -4,6 +4,7 @@ import styles from './Register.module.css'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAppData } from '../app/useAppData.js'
 import { registerRequest } from '../app/authApi.js'
+import { useGlobalHeader } from '../app/useGlobalHeader.js'
 
 const USERNAME_REGEX = /^[A-Za-z0-9_-]{3,15}$/
 const PASSWORD_MIN_LENGTH = 6
@@ -12,6 +13,7 @@ const PASSWORD_MAX_LENGTH = 32
 export default function Register() {
   const navigate = useNavigate()
   const { registerUser } = useAppData()
+  const { t } = useGlobalHeader()
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -25,24 +27,27 @@ export default function Register() {
     const confirmPassword = String(formData.get('confirmpwd') || '')
 
     if (!username || !email || !password) {
-      setErrorMessage('Please fill in username, email, and password.')
+      setErrorMessage(t('auth.registerMissing'))
       return
     }
 
     if (!USERNAME_REGEX.test(username)) {
-      setErrorMessage(
-        'Username must be 3-15 characters and use only letters, numbers, underscores, or hyphens.',
-      )
+      setErrorMessage(t('auth.usernameRules'))
       return
     }
 
     if (password.length < PASSWORD_MIN_LENGTH || password.length > PASSWORD_MAX_LENGTH) {
-      setErrorMessage(`Password must be ${PASSWORD_MIN_LENGTH}-${PASSWORD_MAX_LENGTH} characters long.`)
+      setErrorMessage(
+        t('auth.passwordLength', {
+          min: PASSWORD_MIN_LENGTH,
+          max: PASSWORD_MAX_LENGTH,
+        }),
+      )
       return
     }
 
     if (password !== confirmPassword) {
-      setErrorMessage('Passwords do not match.')
+      setErrorMessage(t('auth.passwordsNoMatch'))
       return
     }
 
@@ -60,7 +65,7 @@ export default function Register() {
       registerUser(response.user)
       navigate('/')
     } catch (error) {
-      setErrorMessage(error.message || 'Registration failed. Please try again.')
+      setErrorMessage(error.message || t('auth.registrationFailed'))
     } finally {
       setIsSubmitting(false)
     }
@@ -79,7 +84,7 @@ export default function Register() {
           defaultValue=""
           type="text"
           name="username"
-          placeholder="Username"
+          placeholder={t('auth.username')}
           className={styles.textinput}
         />
         <input
@@ -87,7 +92,7 @@ export default function Register() {
           defaultValue=""
           type="email"
           name="email"
-          placeholder="Email"
+          placeholder={t('auth.email')}
           className={styles.textinput}
         />
         <input
@@ -95,7 +100,7 @@ export default function Register() {
           defaultValue=""
           type="password"
           name="userpwd"
-          placeholder="Password"
+          placeholder={t('auth.password')}
           className={styles.textinput}
         />
         <input
@@ -103,18 +108,18 @@ export default function Register() {
           defaultValue=""
           type="password"
           name="confirmpwd"
-          placeholder="Confirm Password"
+          placeholder={t('auth.confirmPassword')}
           className={styles.textinput}
         />
         {errorMessage ? <p className={styles.errorMessage}>{errorMessage}</p> : null}
         <button type="submit" className={styles.submitbtn} disabled={isSubmitting}>
-          {isSubmitting ? 'Signing up...' : 'Sign up'}
+          {isSubmitting ? t('auth.signingUp') : t('auth.signUp')}
         </button>
       </form>
-      <hr className={styles.horizline} data-content="OR" />
-      <button type="button" className={styles.submitbtn}>Continue with Google</button>
+      <hr className={styles.horizline} data-content={t('common.or')} />
+      <button type="button" className={styles.submitbtn}>{t('auth.continueWithGoogle')}</button>
       <Link to="/login" className={styles.submitbtn}>
-        Back to Login
+        {t('auth.backToLogin')}
       </Link>
     </div>
   )

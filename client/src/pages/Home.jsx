@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { buildWelcomeMessage } from '../app/appState.js'
 import {
   getActiveMatchesRequest,
   getMatchByIdRequest,
@@ -14,6 +13,7 @@ import { getDisplayName } from '../app/playerNames.js'
 import { buildProfileFromBackendUser } from '../app/profileData.js'
 import { getLeaderboardUsersRequest } from '../app/userApi.js'
 import { useAppData } from '../app/useAppData.js'
+import { useGlobalHeader } from '../app/useGlobalHeader.js'
 import {
   clearStoredActiveMatchSession,
   readStoredMatchSessionByGameId,
@@ -24,8 +24,8 @@ import styles from './Home.module.css'
 const HUMAN_ONLY_TIMEOUT_MS = 60_000
 const HOME_ACTIVE_MATCHES_POLL_INTERVAL_MS = 3000
 
-function buildQueueStatusText(rated) {
-  return rated ? 'Looking for a rated game...' : 'Looking for an unrated game...'
+function buildQueueStatusText(rated, t) {
+  return rated ? t('home.queueLookingRated') : t('home.queueLookingUnrated')
 }
 
 function buildLobbyPlayers(currentUser, users, activeMatches) {
@@ -100,7 +100,7 @@ export default function Home() {
   const [queueState, setQueueState] = useState({
     isSearching: false,
     elapsedMs: 0,
-    statusText: buildQueueStatusText(true),
+    statusText: '',
   })
   const [leaderboardUsers, setLeaderboardUsers] = useState([])
   const [activeMatches, setActiveMatches] = useState([])
@@ -108,6 +108,7 @@ export default function Home() {
   const queueStartedAtRef = useRef(null)
   const { activeMatchSummary, currentUser, isAuthenticated } =
     useAppData()
+  const { t } = useGlobalHeader()
 
   const lobbyPlayers = useMemo(
     () => buildLobbyPlayers(currentUser, leaderboardUsers, activeMatches),
@@ -184,9 +185,9 @@ export default function Home() {
     setQueueState({
       isSearching: false,
       elapsedMs: 0,
-      statusText: buildQueueStatusText(queueConfig.rated),
+      statusText: buildQueueStatusText(queueConfig.rated, t),
     })
-  }, [queueConfig.rated])
+  }, [queueConfig.rated, t])
 
   const cancelQueue = useCallback(() => {
     const token =
@@ -259,9 +260,20 @@ export default function Home() {
     setQueueState({
       isSearching: true,
       elapsedMs: 0,
-      statusText: buildQueueStatusText(queueConfig.rated),
+      statusText: buildQueueStatusText(queueConfig.rated, t),
     })
   }
+
+  useEffect(() => {
+    setQueueState((existingState) =>
+      existingState.isSearching
+        ? existingState
+        : {
+            ...existingState,
+            statusText: buildQueueStatusText(queueConfig.rated, t),
+          },
+    )
+  }, [queueConfig.rated, t])
 
   useEffect(() => {
     let isCancelled = false
@@ -405,16 +417,16 @@ export default function Home() {
       <main className={styles.home}>
         <section className={styles.guestShell}>
           <div className={styles.guestHero}>
-            <h1>Play Mangala online.</h1>
+            <h1>{t('home.guestHeroTitle')}</h1>
             <div className={styles.guestActions}>
               <Link to="/login" className={styles.primaryAction}>
-                Log in
+                {t('auth.logIn')}
               </Link>
               <Link to="/register" className={styles.secondaryAction}>
-                Sign Up
+                {t('auth.signUp')}
               </Link>
               <Link to="/learn" className={styles.ghostAction}>
-                Learn &amp; Train
+                {t('home.learnTrain')}
               </Link>
             </div>
           </div>
@@ -427,7 +439,7 @@ export default function Home() {
     <main className={styles.home}>
       <section className={styles.shell}>
         <section className={styles.heroPanel}>
-          <h1 className={styles.heroTitle}>{buildWelcomeMessage(currentUser)}</h1>
+          <h1 className={styles.heroTitle}>{t('home.welcome', { name: currentUser.username })}</h1>
 
           <div className={styles.heroActions}>
             <button
@@ -435,17 +447,17 @@ export default function Home() {
               className={styles.primaryAction}
               onClick={openPlayModal}
             >
-              {activeMatchSummary?.isActive ? 'Resume Current Game' : 'Play'}
+              {activeMatchSummary?.isActive ? t('home.resumeCurrentGame') : t('home.play')}
             </button>
             <button
               type="button"
               className={styles.secondaryAction}
               onClick={() => navigate('/practice')}
             >
-              Practice Board
+              {t('home.practiceBoard')}
             </button>
             <Link to="/learn" className={styles.ghostAction}>
-              Learn &amp; Train
+              {t('home.learnTrain')}
             </Link>
           </div>
         </section>
@@ -462,7 +474,7 @@ export default function Home() {
                 : ''
             }`}
           >
-            <div className={styles.panelTabs} role="tablist" aria-label="Lobby side panel">
+            <div className={styles.panelTabs} role="tablist" aria-label={t('home.lobbySidePanel')}>
               <button
                 type="button"
                 role="tab"
@@ -474,7 +486,7 @@ export default function Home() {
               >
                 <span className={styles.panelTabLabel}>
                   <span className={styles.availableDot} aria-hidden="true" />
-                  Available Players ({lobbyPlayers.length})
+                  {t('home.availablePlayers')} ({lobbyPlayers.length})
                 </span>
               </button>
               <button
@@ -486,7 +498,7 @@ export default function Home() {
                 }`}
                 onClick={() => setRightPanelTab('leaderboard')}
               >
-                Leaderboard
+                {t('home.leaderboard')}
               </button>
             </div>
 
@@ -494,8 +506,8 @@ export default function Home() {
               lobbyPlayers.length > 0 ? (
                 <div className={styles.tableWrap}>
                   <div className={styles.playerTableHeader}>
-                    <span>Player</span>
-                    <span>Rating</span>
+                    <span>{t('home.player')}</span>
+                    <span>{t('profile.rating')}</span>
                   </div>
                   <div className={styles.playerList}>
                     {lobbyPlayers.map((player) => (
@@ -506,7 +518,7 @@ export default function Home() {
                       >
                         <span className={styles.playerNameCell}>
                           <strong className={styles.playerName}>{getDisplayName(player)}</strong>
-                          {player.isBot && <span className={styles.botBadge}>AI</span>}
+                          {player.isBot && <span className={styles.botBadge}>{t('profile.ai')}</span>}
                         </span>
                         <span className={styles.playerRating}>{player.elo ?? '-'}</span>
                       </Link>
@@ -515,7 +527,7 @@ export default function Home() {
                 </div>
               ) : (
                 <div className={styles.emptyPlayersState}>
-                  <strong>No available players right now.</strong>
+                  <strong>{t('home.noAvailablePlayers')}</strong>
                 </div>
               )
             ) : (
@@ -523,8 +535,8 @@ export default function Home() {
                 <div className={styles.tableWrap}>
                   <div className={styles.leaderboardHeader}>
                     <span>#</span>
-                    <span>Player</span>
-                    <span>Rating</span>
+                    <span>{t('home.player')}</span>
+                    <span>{t('profile.rating')}</span>
                   </div>
                   <div className={styles.leaderboardList}>
                     {leaderboardPreview.map((player, index) => (
@@ -538,7 +550,7 @@ export default function Home() {
                           <strong className={styles.leaderboardName}>
                             {getDisplayName(player)}
                           </strong>
-                          {player.isBot && <span className={styles.botBadge}>AI</span>}
+                          {player.isBot && <span className={styles.botBadge}>{t('profile.ai')}</span>}
                         </span>
                         <span className={styles.leaderboardRating}>{player.elo ?? '-'}</span>
                       </Link>
@@ -547,7 +559,7 @@ export default function Home() {
                 </div>
 
                 <Link to="/leaderboard" className={styles.showMoreLink}>
-                  Show More
+                  {t('home.showMore')}
                 </Link>
               </div>
             )}
@@ -563,7 +575,7 @@ export default function Home() {
                 <h2>
                   <span className={styles.sectionHeadingLabel}>
                     <span className={styles.liveDot} aria-hidden="true" />
-                    Live Matches ({liveMatches.length})
+                    {t('home.liveMatches')} ({liveMatches.length})
                   </span>
                 </h2>
               </div>
@@ -571,15 +583,15 @@ export default function Home() {
               {liveMatches.length > 0 ? (
                 <div className={styles.tableWrap}>
                   <div className={styles.matchTableHeader}>
-                    <span>Player 1</span>
-                    <span>Player 2</span>
+                    <span>{t('home.player1')}</span>
+                    <span>{t('home.player2')}</span>
                   </div>
                   <div className={styles.matchList}>
                     {liveMatches.map((match) => (
                       <Link key={match.gameId} to={match.url} className={styles.matchCard}>
                         <span className={styles.matchPlayerCell}>
                           <strong className={styles.matchPlayerName}>
-                            {getDisplayName(match.bottom) || 'Bottom Player'}{' '}
+                            {getDisplayName(match.bottom) || t('home.bottomPlayer')}{' '}
                             <span className={styles.matchInlineRating}>
                               {match.bottom?.rating ?? '-'}
                             </span>
@@ -587,7 +599,7 @@ export default function Home() {
                         </span>
                         <span className={styles.matchPlayerCell}>
                           <strong className={styles.matchPlayerName}>
-                            {getDisplayName(match.top) || 'Top Player'}{' '}
+                            {getDisplayName(match.top) || t('home.topPlayer')}{' '}
                             <span className={styles.matchInlineRating}>
                               {match.top?.rating ?? '-'}
                             </span>
@@ -599,7 +611,7 @@ export default function Home() {
                 </div>
               ) : (
                 <div className={styles.emptyMatchesState}>
-                  <strong>No matches right now.</strong>
+                  <strong>{t('home.noMatchesNow')}</strong>
                 </div>
               )}
             </section>

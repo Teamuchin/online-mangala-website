@@ -4,10 +4,12 @@ import styles from './Login.module.css'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAppData } from '../app/useAppData.js'
 import { loginRequest } from '../app/authApi.js'
+import { useGlobalHeader } from '../app/useGlobalHeader.js'
 
 export default function Login() {
   const navigate = useNavigate()
   const { continueAsGuest, logIn } = useAppData()
+  const { t } = useGlobalHeader()
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -19,7 +21,7 @@ export default function Login() {
     const password = String(formData.get('userpwd') || '')
 
     if (!credential || !password) {
-      setErrorMessage('Please enter your email/username and password.')
+      setErrorMessage(t('auth.loginMissing'))
       return
     }
 
@@ -37,7 +39,7 @@ export default function Login() {
 
       navigate('/')
     } catch (error) {
-      setErrorMessage(error.message || 'Login failed. Please try again.')
+      setErrorMessage(error.message || t('auth.loginFailed'))
     } finally {
       setIsSubmitting(false)
     }
@@ -61,7 +63,7 @@ export default function Login() {
           defaultValue=""
           type="text"
           name="usercredential"
-          placeholder="Username or Email"
+          placeholder={t('auth.usernameOrEmail')}
           className={styles.textinput}
         />
         <input
@@ -69,11 +71,11 @@ export default function Login() {
           defaultValue=""
           type="password"
           name="userpwd"
-          placeholder="password"
+          placeholder={t('auth.password')}
           className={styles.textinput}
         />
         <div className={styles.rememberdiv}>
-          <label htmlFor="rememberme">Remember me</label>
+          <label htmlFor="rememberme">{t('auth.rememberMe')}</label>
           <input
             id="rememberme"
             type="checkbox"
@@ -83,13 +85,13 @@ export default function Login() {
         </div>
         {errorMessage ? <p className={styles.errorMessage}>{errorMessage}</p> : null}
         <button type="submit" className={styles.submitbtn} disabled={isSubmitting}>
-          {isSubmitting ? 'Logging in...' : 'Log in'}
+          {isSubmitting ? t('auth.loggingIn') : t('auth.logIn')}
         </button>
         <Link to="/register" className={styles.signupbtn}>
-          Sign Up
+          {t('auth.signUp')}
         </Link>
         <button type="button" className={styles.signupbtn} onClick={handleGuestLogin}>
-          Play as Guest
+          {t('auth.playAsGuest')}
         </button>
       </form>
     </div>
