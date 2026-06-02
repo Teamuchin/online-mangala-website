@@ -9,11 +9,13 @@ import { getDisplayName } from '../app/playerNames.js'
 import { buildProfileFromBackendUser } from '../app/profileData.js'
 import { getLeaderboardUsersRequest } from '../app/userApi.js'
 import { useAppData } from '../app/useAppData.js'
+import { useGlobalHeader } from '../app/useGlobalHeader.js'
 import styles from './LeaderboardPage.module.css'
 
 export default function LeaderboardPage() {
   const [searchParams] = useSearchParams()
   const { currentUser } = useAppData()
+  const { t } = useGlobalHeader()
   const [leaderboardUsers, setLeaderboardUsers] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState('')
@@ -39,7 +41,7 @@ export default function LeaderboardPage() {
         }
 
         setLeaderboardUsers([])
-        setLoadError(error.message || 'Could not load leaderboard.')
+        setLoadError(error.message || t('leaderboard.loadFailed'))
       } finally {
         if (!isCancelled) {
           setIsLoading(false)
@@ -52,7 +54,7 @@ export default function LeaderboardPage() {
     return () => {
       isCancelled = true
     }
-  }, [])
+  }, [t])
 
   const leaderboard = useMemo(() => {
     return leaderboardUsers.map((user) =>
@@ -79,15 +81,15 @@ export default function LeaderboardPage() {
         <section className={styles.shell}>
           <header className={styles.header}>
             <div>
-              <p className={styles.kicker}>Competition</p>
-              <h1>Leaderboard</h1>
+              <p className={styles.kicker}>{t('leaderboard.competition')}</p>
+              <h1>{t('leaderboard.title')}</h1>
             </div>
             <Link to="/" className={styles.backLink}>
-              Back to Lobby
+              {t('leaderboard.backToLobby')}
             </Link>
           </header>
           <section className={styles.leaderboardCard}>
-            <div className={styles.emptyCell}>Loading leaderboard...</div>
+            <div className={styles.emptyCell}>{t('leaderboard.loading')}</div>
           </section>
         </section>
       </main>
@@ -99,11 +101,11 @@ export default function LeaderboardPage() {
       <section className={styles.shell}>
         <header className={styles.header}>
           <div>
-            <p className={styles.kicker}>Competition</p>
-            <h1>Leaderboard ({leaderboard.length})</h1>
+            <p className={styles.kicker}>{t('leaderboard.competition')}</p>
+            <h1>{t('leaderboard.title')} ({leaderboard.length})</h1>
           </div>
           <Link to="/" className={styles.backLink}>
-            Back to Lobby
+            {t('leaderboard.backToLobby')}
           </Link>
         </header>
 
@@ -113,8 +115,8 @@ export default function LeaderboardPage() {
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Player</th>
-                  <th>Rating</th>
+                  <th>{t('home.player')}</th>
+                  <th>{t('profile.rating')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -129,7 +131,7 @@ export default function LeaderboardPage() {
                         >
                           <span className={styles.playerNameCell}>
                             <span>{getDisplayName(player)}</span>
-                            {player.isBot && <span className={styles.botBadge}>AI</span>}
+                            {player.isBot && <span className={styles.botBadge}>{t('profile.ai')}</span>}
                           </span>
                         </Link>
                       </td>
@@ -139,7 +141,7 @@ export default function LeaderboardPage() {
                 ) : (
                   <tr>
                     <td colSpan="3" className={styles.emptyCell}>
-                      {loadError || 'No players yet.'}
+                      {loadError || t('leaderboard.noPlayers')}
                     </td>
                   </tr>
                 )}
@@ -148,7 +150,7 @@ export default function LeaderboardPage() {
           </div>
 
           {leaderboard.length > LEADERBOARD_PAGE_SIZE && (
-            <nav className={styles.pagination} aria-label="Leaderboard pages">
+            <nav className={styles.pagination} aria-label={t('leaderboard.pages')}>
               <Link
                 to={`/leaderboard?page=${Math.max(1, currentPage - 1)}`}
                 className={`${styles.pageButton} ${
@@ -156,7 +158,7 @@ export default function LeaderboardPage() {
                 }`}
                 aria-disabled={currentPage === 1}
               >
-                Prev
+                {t('leaderboard.prev')}
               </Link>
               {visiblePages.map((pageNumber) => (
                 <Link
@@ -176,7 +178,7 @@ export default function LeaderboardPage() {
                 }`}
                 aria-disabled={currentPage === pageCount}
               >
-                Next
+                {t('leaderboard.next')}
               </Link>
             </nav>
           )}

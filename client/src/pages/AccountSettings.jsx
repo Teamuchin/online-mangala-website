@@ -8,11 +8,13 @@ import { Navigate } from 'react-router-dom'
 import styles from './AccountSettings.module.css'
 import { useAppData } from '../app/useAppData.js'
 import { updateMeRequest } from '../app/authApi.js'
+import { useGlobalHeader } from '../app/useGlobalHeader.js'
 
 const USERNAME_REGEX = /^[A-Za-z0-9_-]{3,15}$/
 
 export default function AccountSettings() {
   const { accountSettingsFields, currentUser, logOut, updateCurrentUser } = useAppData()
+  const { t } = useGlobalHeader()
   const [formState, setFormState] = useState(() => buildAccountFormState(currentUser))
   const [saveMessage, setSaveMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
@@ -49,19 +51,19 @@ export default function AccountSettings() {
       const token = window.localStorage.getItem('mangala.authToken')
 
       if (!token) {
-        setErrorMessage('Please log in again to update your account.')
+        setErrorMessage(t('account.pleaseLogInAgain'))
         return
       }
 
       if (!String(formState.currentPassword || '').trim()) {
-        setErrorMessage('Enter your password first.')
+        setErrorMessage(t('account.enterPasswordFirst'))
         return
       }
 
       const requestedUsername = String(formState.username || '').trim()
 
       if (!USERNAME_REGEX.test(requestedUsername)) {
-        setErrorMessage('Username must be 3-15 characters and use only letters, numbers, underscores, or hyphens.')
+        setErrorMessage(t('account.usernameRules'))
         return
       }
 
@@ -83,7 +85,7 @@ export default function AccountSettings() {
         newPassword: '',
         confirmPassword: '',
       }))
-      setSaveMessage(response.message || 'Changes saved.')
+      setSaveMessage(response.message || t('account.changesSaved'))
     } catch (error) {
       if (
         error.message === 'Unauthorized' ||
@@ -91,9 +93,9 @@ export default function AccountSettings() {
         error.message === 'Invalid token payload'
       ) {
         logOut()
-        setErrorMessage('Session expired. Please log in again, then retry.')
+        setErrorMessage(t('account.sessionExpired'))
       } else {
-        setErrorMessage(error.message || 'Could not update account settings.')
+        setErrorMessage(error.message || t('account.updateFailed'))
       }
     } finally {
       setIsSubmitting(false)
@@ -106,7 +108,7 @@ export default function AccountSettings() {
 
   return (
     <div className={styles.accountsettings}>
-      <h1>Account Settings</h1>
+      <h1>{t('account.title')}</h1>
       <form className={styles.infochangediv} onSubmit={handleSubmit}>
         {saveMessage && <p className={styles.saveMessage}>{saveMessage}</p>}
         {errorMessage && <p className={styles.saveMessage}>{errorMessage}</p>}
@@ -114,7 +116,7 @@ export default function AccountSettings() {
           <div className={styles.readOnlyGroup}>
             {usernameField && (
               <label className={styles.editableField} htmlFor={usernameField.id}>
-                <span className={styles.readOnlyLabel}>Username</span>
+                <span className={styles.readOnlyLabel}>{t('account.username')}</span>
                 <input
                   id={usernameField.id}
                   value={formState.username}
@@ -128,7 +130,7 @@ export default function AccountSettings() {
               </label>
             )}
             <div className={styles.readOnlyField}>
-              <span className={styles.readOnlyLabel}>Email</span>
+              <span className={styles.readOnlyLabel}>{t('account.email')}</span>
               <span className={styles.readOnlyValue}>{currentUser.email}</span>
             </div>
           </div>
@@ -147,7 +149,7 @@ export default function AccountSettings() {
         </div>
         <input
           type="submit"
-          value={isSubmitting ? 'Saving...' : 'Save Changes'}
+          value={isSubmitting ? t('account.saving') : t('account.saveChanges')}
           className={styles.submitbtn}
           disabled={isSubmitting}
         />

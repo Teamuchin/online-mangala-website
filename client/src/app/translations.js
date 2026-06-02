@@ -127,12 +127,56 @@ export const translations = {
       challengeTitle: 'Meydan Oku',
       challengeText: 'Maç türünü seç.',
       challengeError: 'Maç başlatılamadı.',
-      ai: 'YZ',
+      ai: 'AI',
     },
     matchmaking: {
       targetNotBot: 'Bu kullanıcı bot değil.',
       userBusy: 'Bu kullanıcı şu anda başka bir maç oynuyor.',
       selfBusy: 'Zaten aktif bir maçınız var.',
+    },
+    account: {
+      title: 'Hesap Ayarları',
+      username: 'Kullanıcı adı',
+      email: 'E-posta',
+      pleaseLogInAgain: 'Hesabınızı güncellemek için lütfen tekrar giriş yapın.',
+      enterPasswordFirst: 'Önce şifrenizi girin.',
+      usernameRules:
+        'Kullanıcı adı 3-15 karakter olmalı ve yalnızca harf, sayı, alt çizgi veya tire içermelidir.',
+      changesSaved: 'Değişiklikler kaydedildi.',
+      sessionExpired: 'Oturum süresi doldu. Lütfen yeniden giriş yapıp tekrar deneyin.',
+      updateFailed: 'Hesap ayarları güncellenemedi.',
+      saveChanges: 'Değişiklikleri Kaydet',
+      saving: 'Kaydediliyor...',
+    },
+    leaderboard: {
+      competition: 'Rekabet',
+      title: 'Liderlik Tablosu',
+      backToLobby: 'Lobiye Dön',
+      loading: 'Liderlik tablosu yükleniyor...',
+      loadFailed: 'Liderlik tablosu yüklenemedi.',
+      noPlayers: 'Henüz oyuncu yok.',
+      prev: 'Önceki',
+      next: 'Sonraki',
+      pages: 'Liderlik tablosu sayfaları',
+    },
+    learn: {
+      title:
+        'Mangala, iki kişiyle oynanan geleneksel bir Türk zekâ ve strateji oyunudur. Tahtada her oyuncunun önünde altışar küçük kuyu ve taşların toplandığı birer hazine bulunur. Oyun toplam 48 taşla oynanır.',
+      intro:
+        'Oyunun başında 12 küçük kuyunun her birine dörder taş yerleştirilir. Oyuncular kendi hazinelerinde en fazla taşı toplamayı hedefler. Oyun sonunda hazinesinde daha çok taş bulunan oyuncu kazanır. Aşağıda oyunun temel kuralları özetlenmiştir.',
+      rule1Title: '1. Temel Kural',
+      rule1Text:
+        'Oyuncu kendi bölgesindeki istediği kuyudan taşları alır. Aldığı kuyuda bir taş bırakır ve elindeki kalan taşları saat yönünün tersine, yani sağa doğru, her kuyuya birer birer dağıtır. Son taş kendi hazinesine düşerse oyuncu bir kez daha oynar. Bir kuyuda yalnızca bir taş varsa, oyuncu sırası geldiğinde o taşı sağındaki kuyuya taşıyabilir. Hamlenin sonucunu elde kalan son taş belirler.',
+      rule2Title: '2. Temel Kural',
+      rule2Text:
+        'Oyuncu kendi kuyularında taş dağıtmayı bitirdikten sonra elinde taş kalırsa rakibin bölgesindeki kuyulara taş bırakmaya devam eder. Son taş rakibin kuyusundaki taş sayısını çift yaparsa, oyuncu o kuyudaki tüm taşları alıp kendi hazinesine koyar. Sıra rakibe geçer.',
+      rule3Title: '3. Temel Kural',
+      rule3Text:
+        'Oyuncunun elindeki son taş kendi bölgesindeki boş bir kuyuya düşerse ve tam karşı kuyuda rakibe ait taş varsa, oyuncu hem karşı kuyudaki taşları hem de kendi bıraktığı taşı alıp hazinesine ekler. Sıra rakibe geçer.',
+      rule4Title: '4. Temel Kural',
+      rule4Text:
+        'Oyunculardan birinin bölgesindeki taşlar bittiğinde oyun sona erer. Kendi bölgesinde ilk taşsız kalan oyuncu, rakibin bölgesinde kalan tüm taşları da kazanır. Bu nedenle oyun son ana kadar önemini korur.',
+      source: 'Kaynak: mangala.com.tr',
     },
   },
   en: {
@@ -267,6 +311,50 @@ export const translations = {
       targetNotBot: 'This user is not a bot.',
       userBusy: 'This user is currently playing another match.',
       selfBusy: 'You already have an active match.',
+    },
+    account: {
+      title: 'Account Settings',
+      username: 'Username',
+      email: 'Email',
+      pleaseLogInAgain: 'Please log in again to update your account.',
+      enterPasswordFirst: 'Enter your password first.',
+      usernameRules:
+        'Username must be 3-15 characters and use only letters, numbers, underscores, or hyphens.',
+      changesSaved: 'Changes saved.',
+      sessionExpired: 'Session expired. Please log in again, then retry.',
+      updateFailed: 'Could not update account settings.',
+      saveChanges: 'Save Changes',
+      saving: 'Saving...',
+    },
+    leaderboard: {
+      competition: 'Competition',
+      title: 'Leaderboard',
+      backToLobby: 'Back to Lobby',
+      loading: 'Loading leaderboard...',
+      loadFailed: 'Could not load leaderboard.',
+      noPlayers: 'No players yet.',
+      prev: 'Prev',
+      next: 'Next',
+      pages: 'Leaderboard pages',
+    },
+    learn: {
+      title:
+        'Mangala is a traditional Turkish game of intelligence and strategy played by two people. The board has six small pits in front of each player and a treasury where stones are collected. The game is played with 48 stones.',
+      intro:
+        'At the beginning, four stones are placed in each of the 12 small pits. Players aim to collect the most stones in their treasury. The player with more stones in their treasury at the end wins the game. The main rules are summarized below.',
+      rule1Title: '1. Basic Rule',
+      rule1Text:
+        'The player chooses any pit in their own territory, takes its stones, leaves one stone there, and distributes the rest counterclockwise, one by one, into the following pits. If the last stone lands in the player’s own treasury, that player moves again. If a pit contains only one stone, the player may move that stone to the pit on its right. The final stone in hand determines the result of the move.',
+      rule2Title: '2. Basic Rule',
+      rule2Text:
+        'If the player still has stones after distributing in their own territory, they continue into the opponent’s pits. If the last stone makes the number of stones in an opponent pit even, the player captures all stones in that pit and places them into their own treasury. The turn then passes to the opponent.',
+      rule3Title: '3. Basic Rule',
+      rule3Text:
+        'If the last stone in hand lands in an empty pit in the player’s own territory and the directly opposite pit contains opponent stones, the player captures both the opposite stones and the stone just placed, adding them to the treasury. The turn then passes to the opponent.',
+      rule4Title: '4. Basic Rule',
+      rule4Text:
+        'The game ends when one player’s side runs out of stones. The player whose side becomes empty first also collects all stones remaining on the opponent’s side. For this reason, the game remains intense until the very end.',
+      source: 'Source: mangala.com.tr',
     },
   },
 }
