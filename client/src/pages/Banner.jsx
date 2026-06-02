@@ -6,59 +6,36 @@ import { useGlobalHeader } from '../app/useGlobalHeader.js'
 export default function Banner() {
   const navigate = useNavigate()
   const { t } = useGlobalHeader()
-  const {
-    bannerActions,
-    bannerSloganLines,
-    continueAsGuest,
-    isAuthenticated,
-  } = useAppData()
+  const { continueAsGuest, isAuthenticated } = useAppData()
 
-  const visibleActions = isAuthenticated
-    ? [{ to: '/', className: 'loginbtn', label: t('banner.goHome') }]
-    : bannerActions
+  const actionItems = isAuthenticated
+    ? [{ key: 'home', to: '/', className: 'loginbtn', label: t('banner.goHome') }]
+    : [
+        { key: 'login', to: '/login', className: 'loginbtn', label: t('auth.logIn') },
+        { key: 'signup', to: '/register', className: 'signupbtn', label: t('auth.signUp') },
+        {
+          key: 'guest',
+          to: '/register',
+          className: 'signupbtn',
+          label: t('auth.playAsGuest'),
+          isGuest: true,
+        },
+      ]
 
   const handleGuestStart = () => {
     continueAsGuest()
     navigate('/')
   }
 
-  const getActionLabel = (action) => {
-    if (action.label === 'Play as Guest') {
-      return t('auth.playAsGuest')
-    }
-
-    if (action.label === 'Log in') {
-      return t('auth.logIn')
-    }
-
-    if (action.label === 'Sign up') {
-      return t('auth.signUp')
-    }
-
-    if (action.label === 'Play') {
-      return t('banner.play')
-    }
-
-    if (action.label === 'Learn') {
-      return t('banner.learn')
-    }
-
-    if (action.label === 'About') {
-      return t('banner.about')
-    }
-
-    if (action.label === 'Go Home') {
-      return t('banner.goHome')
-    }
-
-    return action.label
-  }
-
   return (
     <div className={styles.banner}>
       <div className={styles.bannerbody}>
         <div className={styles.bodyslogan}>
-          {bannerSloganLines.map((line) => (
+          {[
+            { accent: t('banner.slogan1Accent'), text: t('banner.slogan1Text') },
+            { accent: t('banner.slogan2Accent'), text: t('banner.slogan2Text'), className: 'shiftedLine' },
+            { accent: t('banner.slogan3Accent'), text: t('banner.slogan3Text') },
+          ].map((line) => (
             <h1
               key={`${line.accent}-${line.text}`}
               className={line.className ? styles[line.className] : undefined}
@@ -68,19 +45,19 @@ export default function Banner() {
           ))}
         </div>
         <div className={styles.bodybuttons}>
-          {visibleActions.map((action) =>
-            action.label === 'Play as Guest' || action.label === t('banner.playAsGuest') ? (
+          {actionItems.map((action) =>
+            action.isGuest ? (
               <button
-                key={action.label}
+                key={action.key}
                 type="button"
                 className={styles[action.className]}
                 onClick={handleGuestStart}
               >
-                {t('auth.playAsGuest')}
+                {action.label}
               </button>
             ) : (
-              <Link key={action.label} to={action.to} className={styles[action.className]}>
-                {getActionLabel(action)}
+              <Link key={action.key} to={action.to} className={styles[action.className]}>
+                {action.label}
               </Link>
             ),
           )}
