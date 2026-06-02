@@ -43,7 +43,7 @@
 .chatBody {
   display: flex;
   flex-direction: column;
-  height: 250px;
+  height: 180px;
 }
 
 .messagesContainer {
