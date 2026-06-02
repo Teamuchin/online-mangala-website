@@ -217,3 +217,24 @@
     display: none;
   }
 }
+
+@media (max-width: 400px) {
+  .brand {
+    gap: 6px;
+  }
+
+  .logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .brandText {
+    display: none;
+  }
+
+  .actionLink,
+  .backToGameLink,
+  .actionButton {
+    padding: 8px 9px;
+  }
+}
