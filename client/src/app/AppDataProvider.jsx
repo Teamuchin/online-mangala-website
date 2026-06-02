@@ -29,13 +29,19 @@ function formatMemberSince(createdAt) {
         : 'en-US'
 
   if (!createdAt) {
-    return 'May 2026'
+    return new Intl.DateTimeFormat(preferredLanguage, {
+      month: 'short',
+      year: 'numeric',
+    }).format(new Date('2026-05-01T00:00:00.000Z'))
   }
 
   const parsedDate = new Date(createdAt)
 
   if (Number.isNaN(parsedDate.getTime())) {
-    return 'May 2026'
+    return new Intl.DateTimeFormat(preferredLanguage, {
+      month: 'short',
+      year: 'numeric',
+    }).format(new Date('2026-05-01T00:00:00.000Z'))
   }
 
   return new Intl.DateTimeFormat(preferredLanguage, {

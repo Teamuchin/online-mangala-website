@@ -304,7 +304,7 @@ export default function ProfilePage() {
     return () => {
       isCancelled = true
     }
-  }, [username])
+  }, [t, username])
 
   if (!username) {
     return isAuthenticated
@@ -505,7 +505,7 @@ export default function ProfilePage() {
                 viewBox="0 0 640 360"
                 className={styles.chartSvg}
                 role="img"
-                aria-label="Rating history chart"
+                aria-label={t('profile.ratingHistory')}
                 onMouseMove={(event) =>
                   setHoveredPointId(getClosestPointId(chart.points, event))
                 }
