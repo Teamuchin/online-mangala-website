@@ -6,6 +6,7 @@ import { getDisplayName } from '../app/playerNames.js'
 import {
   buildHistoryEntryFromBackendMatch,
   buildProfileFromBackendUser,
+  getMatchResultLabel,
 } from '../app/profileData.js'
 import { getUserByUsernameRequest } from '../app/userApi.js'
 import { useAppData } from '../app/useAppData.js'
@@ -309,11 +310,11 @@ export default function ProfileGamesPage() {
                           )}
                             </div>
                           </td>
-                          <td>
-                            <span className={getResultClassName(styles, match.result)}>
-                              {match.result}
-                            </span>
-                          </td>
+                            <td>
+                              <span className={getResultClassName(styles, match.result)}>
+                                {getMatchResultLabel(match.result, t)}
+                              </span>
+                            </td>
                           <td>
                             <div className={styles.ratingCell}>
                               <span>{getPlayerHistoryRating(match)}</span>

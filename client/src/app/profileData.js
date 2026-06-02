@@ -65,6 +65,30 @@ export function buildHistoryEntryFromBackendMatch(match, userId) {
   }
 }
 
+export function getMatchResultLabel(result, t) {
+  if (typeof t !== 'function') {
+    return result
+  }
+
+  if (result === 'Win') {
+    return t('profile.resultWin')
+  }
+
+  if (result === 'Loss') {
+    return t('profile.resultLoss')
+  }
+
+  if (result === 'Draw') {
+    return t('profile.resultDraw')
+  }
+
+  if (result === 'Live') {
+    return t('profile.resultLive')
+  }
+
+  return result
+}
+
 export function buildRatingHistoryFromBackendMatches(matches, userId) {
   return matches
     .filter((match) => match.is_rated && match.status === 'finished')

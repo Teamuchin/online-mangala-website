@@ -9,6 +9,7 @@ import {
   buildHistoryEntryFromBackendMatch,
   buildProfileFromBackendUser,
   buildRatingHistoryFromBackendMatches,
+  getMatchResultLabel,
 } from '../app/profileData.js'
 import { getUserByUsernameRequest } from '../app/userApi.js'
 import { useAppData } from '../app/useAppData.js'
@@ -670,7 +671,7 @@ export default function ProfilePage() {
                             </td>
                             <td>
                               <span className={getResultClassName(styles, match.result)}>
-                                {match.result}
+                                {getMatchResultLabel(match.result, t)}
                               </span>
                             </td>
                             <td>
