@@ -43,28 +43,47 @@ export function formatPitLabel(player, pitIndex) {
   return player === 'top' ? 13 - pitIndex : pitIndex + 1
 }
 
-export function buildReplayDescription(matchRecord, positionIndex, players) {
+export function buildReplayDescription(matchRecord, positionIndex, players, t = null) {
+  const translate = typeof t === 'function' ? t : (key, values = {}) => {
+    if (key === 'game.viewingLatestPosition') {
+      return 'Viewing the latest position.'
+    }
+    if (key === 'game.matchEndsInDraw') {
+      return 'The match ends in a draw.'
+    }
+    if (key === 'game.wins') {
+      return `${values.name} wins.`
+    }
+    if (key === 'game.toMove') {
+      return `${values.name} to move`
+    }
+    if (key === 'game.viewingSelectedPosition') {
+      return 'Viewing the selected position.'
+    }
+    return key
+  }
+
   const position = matchRecord.positions[positionIndex]
 
   if (!position) {
-    return 'Viewing the latest position.'
+    return translate('game.viewingLatestPosition')
   }
 
   if (position.gameStatus === 'finished') {
     if (position.winner === 'draw') {
-      return 'The match ends in a draw.'
+      return translate('game.matchEndsInDraw')
     }
 
     if (position.winner && players[position.winner]) {
-      return `${players[position.winner].name} wins.`
+      return translate('game.wins', { name: players[position.winner].name })
     }
   }
 
   if (position.currentPlayer && players[position.currentPlayer]) {
-    return `${players[position.currentPlayer].name} to move`
+    return translate('game.toMove', { name: players[position.currentPlayer].name })
   }
 
-  return 'Viewing the selected position.'
+  return translate('game.viewingSelectedPosition')
 }
 
 export function buildReplayEntries(matchRecord, players) {

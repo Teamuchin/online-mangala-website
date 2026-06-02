@@ -146,20 +146,22 @@ function buildTurnMessageFromState({ players, currentPlayer, gameStatus, winner 
   return `${players[currentPlayer].name} to move`
 }
 
-function buildFinishedResultText({ currentUserRole, players, winner }) {
+function buildFinishedResultText({ currentUserRole, players, winner, t = null }) {
   if (winner === 'draw') {
-    return 'Draw'
+    return t ? t('common.draw') : 'Draw'
   }
 
   if ((currentUserRole === 'bottom' || currentUserRole === 'top') && winner) {
-    return winner === currentUserRole ? 'You win' : 'You lose'
+    return winner === currentUserRole
+      ? t ? t('game.youWin') : 'You win'
+      : t ? t('game.youLose') : 'You lose'
   }
 
   if (winner && players[winner]) {
-    return `${players[winner].name} wins`
+    return t ? t('game.wins', { name: players[winner].name }) : `${players[winner].name} wins`
   }
 
-  return 'Match finished'
+  return t ? t('game.matchFinished') : 'Match finished'
 }
 
 function getRatingChangeForSide(currentUserRole, ratedOutcome, side) {
@@ -387,7 +389,7 @@ function MangalaGameScreen({
     isAuthenticated,
     refreshCurrentUser,
   } = useAppData()
-  const { setSettingsContent } = useGlobalHeader()
+  const { setSettingsContent, t } = useGlobalHeader()
   const isPracticeBoard = location.pathname === '/practice'
   const seededPlayers = createInitialState().players
   const persistedRouteSession =
@@ -563,6 +565,7 @@ function MangalaGameScreen({
     game.matchRecord,
     activePositionIndex,
     displayedGame.players,
+    t,
   )
   const sidebarDescription = isReviewing ? replayDescription : game.turnMessage
   const stoneToggleRef = useRef(handleStoneToggle)
@@ -597,6 +600,7 @@ function MangalaGameScreen({
           currentUserRole,
           players: game.players,
           winner: game.winner,
+          t,
         })
       : ''
   const topDisplayPlayer = effectiveDisplayedGame.players[visualTopSide]
@@ -640,7 +644,7 @@ function MangalaGameScreen({
           className={styles.headerSettingsOption}
           onClick={() => stoneToggleRef.current()}
         >
-          Visual Stones: {showVisualStones ? 'On' : 'Off'}
+          {t('game.visualStones')}: {showVisualStones ? t('game.on') : t('game.off')}
         </button>
         <button
           type="button"
@@ -648,7 +652,12 @@ function MangalaGameScreen({
           onClick={() => animationToggleRef.current()}
           disabled={!allowMoveAnimation}
         >
-          Move Animation: {!allowMoveAnimation ? 'Unavailable' : animateMoves ? 'On' : 'Off'}
+          {t('game.moveAnimation')}:{' '}
+          {!allowMoveAnimation
+            ? t('game.unavailable')
+            : animateMoves
+              ? t('game.on')
+              : t('game.off')}
         </button>
       </>,
     )
@@ -700,8 +709,8 @@ function MangalaGameScreen({
       <main className={styles.page}>
         <div className={styles.layout}>
           <section className={styles.unavailableState}>
-            <h1>Game unavailable</h1>
-            <p>This game is not available in the current session.</p>
+            <h1>{t('common.gameUnavailable')}</h1>
+            <p>{t('game.gameUnavailableDescription')}</p>
           </section>
         </div>
       </main>
@@ -717,7 +726,7 @@ function MangalaGameScreen({
             className={styles.resultModal}
             role="dialog"
             aria-modal="true"
-            aria-label="Match result"
+            aria-label={t('game.matchResult')}
           >
             <p className={styles.resultModalMessage}>
               {showExternalResultModal && externalResultModalText
@@ -736,7 +745,7 @@ function MangalaGameScreen({
                 setIsResultModalDismissed(true)
               }}
             >
-              Close
+              {t('common.close')}
             </button>
           </div>
         </div>
@@ -796,7 +805,7 @@ function MangalaGameScreen({
               onPrevious={handleReplayPrevious}
               onReset={handleReset}
               resetDisabled={false}
-              resetLabel="Restart match"
+              resetLabel={t('game.restartMatch')}
             />
           </div>
           <div className={styles.playerColumn}>
@@ -828,6 +837,7 @@ export default function MangalaGame() {
   const { gameId } = useParams()
   const location = useLocation()
   const { currentUser } = useAppData()
+  const { t } = useGlobalHeader()
   const [backendMatch, setBackendMatch] = useState(null)
   const [isLoadingBackendMatch, setIsLoadingBackendMatch] = useState(false)
   const [backendMatchError, setBackendMatchError] = useState('')
@@ -881,6 +891,7 @@ export default function MangalaGame() {
           currentUserRole,
           players,
           winner: mapWinnerSideToWinner(backendMatch.winner_side),
+          t,
         }),
       )
       setShowBackendResultModal(true)
@@ -1058,8 +1069,8 @@ export default function MangalaGame() {
       <main className={styles.page}>
         <div className={styles.layout}>
           <section className={styles.unavailableState}>
-            <h1>Loading match</h1>
-            <p>Fetching the latest game state...</p>
+            <h1>{t('common.loadingMatch')}</h1>
+            <p>{t('common.fetchingLatestState')}</p>
           </section>
         </div>
       </main>
@@ -1071,7 +1082,7 @@ export default function MangalaGame() {
       <main className={styles.page}>
         <div className={styles.layout}>
           <section className={styles.unavailableState}>
-            <h1>Game unavailable</h1>
+            <h1>{t('common.gameUnavailable')}</h1>
             <p>{backendMatchError}</p>
           </section>
         </div>

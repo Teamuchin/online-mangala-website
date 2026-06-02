@@ -14,7 +14,7 @@ export default function GlobalHeader() {
     isAuthenticated,
     logOut,
   } = useAppData()
-  const { settingsContent } = useGlobalHeader()
+  const { settingsContent, language, setLanguage, t } = useGlobalHeader()
   const showAccountSettings = isAuthenticated && !isGuestUser(currentUser)
   const isOnGamePage = location.pathname.startsWith('/game/')
   const showBackToGame = activeMatchSummary?.isActive && !isOnGamePage
@@ -24,7 +24,7 @@ export default function GlobalHeader() {
     <header className={styles.header}>
       <div className={styles.inner}>
         <div className={styles.leftCluster}>
-          <Link to="/" className={styles.brand} aria-label="Go home">
+          <Link to="/" className={styles.brand} aria-label={t('header.goHome')}>
             <img src={assets.logo} alt={brandName} className={styles.logo} />
             <span className={styles.brandText}>MangalaOyna</span>
           </Link>
@@ -32,7 +32,7 @@ export default function GlobalHeader() {
           {showBackToGame ? (
             <Link to={activeMatchSummary.url} className={styles.backToGameLink}>
               <span className={styles.liveDot} aria-hidden="true" />
-              <span className={styles.actionText}>Back to Game</span>
+              <span className={styles.actionText}>{t('header.backToGame')}</span>
             </Link>
           ) : null}
         </div>
@@ -42,7 +42,7 @@ export default function GlobalHeader() {
             <Link
               to={profileHref}
               className={styles.actionLink}
-              aria-label="Open profile"
+              aria-label={t('header.openProfile')}
               onClick={(event) => event.currentTarget.blur()}
             >
               <span className={styles.actionIcon} aria-hidden="true">◎</span>
@@ -51,41 +51,51 @@ export default function GlobalHeader() {
           ) : (
             <Link to="/login" className={styles.actionLink}>
               <span className={styles.actionIcon} aria-hidden="true">◎</span>
-              <span className={styles.actionText}>Account</span>
+              <span className={styles.actionText}>{t('header.account')}</span>
             </Link>
           )}
 
           <div className={styles.menu}>
-            <button type="button" className={styles.actionButton} aria-label="Language">
+            <button type="button" className={styles.actionButton} aria-label={t('header.language')}>
               <span className={styles.actionIcon} aria-hidden="true">
                 A
               </span>
-              <span className={styles.actionText}>Language</span>
+              <span className={styles.actionText}>{t('header.language')}</span>
             </button>
             <div className={styles.panel}>
-              <button type="button" className={styles.panelButton}>
-                English
+              <button
+                type="button"
+                className={styles.panelButton}
+                onClick={() => setLanguage('en')}
+                disabled={language === 'en'}
+              >
+                {t('header.english')}
               </button>
-              <button type="button" className={styles.panelButton}>
-                Turkce
+              <button
+                type="button"
+                className={styles.panelButton}
+                onClick={() => setLanguage('tr')}
+                disabled={language === 'tr'}
+              >
+                {t('header.turkish')}
               </button>
             </div>
           </div>
 
           <div className={styles.menu}>
-            <button type="button" className={styles.actionButton} aria-label="Settings">
+            <button type="button" className={styles.actionButton} aria-label={t('header.settings')}>
               <span className={styles.actionIcon} aria-hidden="true">⚙</span>
-              <span className={styles.actionText}>Settings</span>
+              <span className={styles.actionText}>{t('header.settings')}</span>
             </button>
             <div className={styles.panel}>
               {showAccountSettings ? (
                 <Link to="/account" className={styles.panelLink}>
-                  Account Settings
+                  {t('header.accountSettings')}
                 </Link>
               ) : null}
               {isAuthenticated ? (
                 <Link to="/login" className={styles.panelLink} onClick={logOut}>
-                  Log out
+                  {t('header.logOut')}
                 </Link>
               ) : null}
               {settingsContent}

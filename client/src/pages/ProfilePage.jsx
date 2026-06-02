@@ -4,6 +4,7 @@ import { isGuestUser } from '../app/appState.js'
 import { getMatchesByUserIdRequest } from '../app/matchApi.js'
 import { challengeBotRequest } from '../app/matchmakingApi.js'
 import { getDisplayName } from '../app/playerNames.js'
+import { useGlobalHeader } from '../app/useGlobalHeader.js'
 import {
   buildHistoryEntryFromBackendMatch,
   buildProfileFromBackendUser,
@@ -214,6 +215,7 @@ export default function ProfilePage() {
     isAuthenticated,
     publicProfileDirectory,
   } = useAppData()
+  const { t } = useGlobalHeader()
   const [hoveredPointId, setHoveredPointId] = useState(null)
   const [backendProfile, setBackendProfile] = useState(null)
   const [backendMatches, setBackendMatches] = useState([])
@@ -311,8 +313,8 @@ export default function ProfilePage() {
         <main className={styles.profilePage}>
           <section className={styles.profileShell}>
             <section className={styles.missingProfileCard}>
-              <h1>No such player</h1>
-              <p>This username doesn&apos;t match any player.</p>
+              <h1>{t('common.noSuchPlayer')}</h1>
+              <p>{t('profile.noSuchPlayerDescription')}</p>
             </section>
           </section>
         </main>
@@ -324,8 +326,8 @@ export default function ProfilePage() {
       <main className={styles.profilePage}>
         <section className={styles.profileShell}>
           <section className={styles.missingProfileCard}>
-            <h1>No such player</h1>
-            <p>This username doesn&apos;t match any player.</p>
+            <h1>{t('common.noSuchPlayer')}</h1>
+            <p>{t('profile.noSuchPlayerDescription')}</p>
           </section>
         </section>
       </main>
@@ -347,8 +349,8 @@ export default function ProfilePage() {
       <main className={styles.profilePage}>
         <section className={styles.profileShell}>
           <section className={styles.missingProfileCard}>
-            <h1>Loading profile</h1>
-            <p>Fetching player details...</p>
+            <h1>{t('profile.loadingProfile')}</h1>
+            <p>{t('profile.fetchingPlayerDetails')}</p>
           </section>
         </section>
       </main>
@@ -360,7 +362,7 @@ export default function ProfilePage() {
       <main className={styles.profilePage}>
         <section className={styles.profileShell}>
           <section className={styles.missingProfileCard}>
-            <h1>No such player</h1>
+            <h1>{t('common.noSuchPlayer')}</h1>
             <p>{loadError}</p>
           </section>
         </section>
@@ -403,7 +405,15 @@ export default function ProfilePage() {
         },
       })
     } catch (error) {
-      setChallengeError(error.message || 'Could not start the match.')
+      if (error.message === 'This user is not a bot.') {
+        setChallengeError(t('matchmaking.targetNotBot'))
+      } else if (error.message === 'This user is currently playing another match.') {
+        setChallengeError(t('matchmaking.userBusy'))
+      } else if (error.message === 'You already have an active match.') {
+        setChallengeError(t('matchmaking.selfBusy'))
+      } else {
+        setChallengeError(error.message || t('profile.challengeError'))
+      }
     } finally {
       setIsChallengeSubmitting(false)
     }
@@ -417,11 +427,11 @@ export default function ProfilePage() {
             className={styles.challengeModal}
             role="dialog"
             aria-modal="true"
-            aria-label="Challenge bot"
+            aria-label={t('profile.challengeTitle')}
             onClick={(event) => event.stopPropagation()}
           >
-            <h2>Challenge</h2>
-            <p className={styles.challengeText}>Choose the match type.</p>
+            <h2>{t('profile.challengeTitle')}</h2>
+            <p className={styles.challengeText}>{t('profile.challengeText')}</p>
             {challengeError && <p className={styles.challengeError}>{challengeError}</p>}
             <div className={styles.challengeActions}>
               <button
@@ -430,7 +440,7 @@ export default function ProfilePage() {
                 onClick={() => void handleChallengeBot(true)}
                 disabled={isChallengeSubmitting}
               >
-                Rated
+                {t('common.rated')}
               </button>
               <button
                 type="button"
@@ -438,7 +448,7 @@ export default function ProfilePage() {
                 onClick={() => void handleChallengeBot(false)}
                 disabled={isChallengeSubmitting}
               >
-                Unrated
+                {t('common.unrated')}
               </button>
               <button
                 type="button"
@@ -446,7 +456,7 @@ export default function ProfilePage() {
                 onClick={() => setIsChallengeModalOpen(false)}
                 disabled={isChallengeSubmitting}
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </div>
@@ -458,7 +468,7 @@ export default function ProfilePage() {
             <div className={styles.identityText}>
               <h1>
                 <span>{profileDisplayName}</span>
-                {profile.isBot && <span className={styles.botBadge}>AI</span>}
+                {profile.isBot && <span className={styles.botBadge}>{t('profile.ai')}</span>}
                 {canChallengeBot && (
                   <button
                     type="button"
@@ -468,19 +478,19 @@ export default function ProfilePage() {
                       setIsChallengeModalOpen(true)
                     }}
                   >
-                    Challenge
+                    {t('profile.challenge')}
                   </button>
                 )}
               </h1>
               <div className={styles.metaRow}>
-                <span>{isOnline ? 'Online' : 'Offline'}</span>
+                <span>{isOnline ? t('profile.online') : t('profile.offline')}</span>
                 <span className={styles.metaDivider}>|</span>
-                <span>Member since {profile.memberSince}</span>
+                <span>{t('profile.memberSince')} {profile.memberSince}</span>
               </div>
             </div>
           </div>
           <div className={styles.headerRating}>
-            <span className={styles.sectionLabel}>Rating</span>
+            <span className={styles.sectionLabel}>{t('profile.rating')}</span>
             <strong className={styles.headerRatingValue}>{profile.elo ?? '-'}</strong>
           </div>
         </header>
@@ -488,7 +498,7 @@ export default function ProfilePage() {
         <section className={styles.ratingSection}>
           <div className={styles.chartCard}>
             <div className={styles.chartHeader}>
-              <span className={styles.sectionLabel}>Rating History</span>
+              <span className={styles.sectionLabel}>{t('profile.ratingHistory')}</span>
             </div>
             <div className={styles.chartFrame}>
               <svg
@@ -588,7 +598,7 @@ export default function ProfilePage() {
                 )}
               </svg>
               {chart.points.length === 0 && (
-                <div className={styles.emptyChartText}>No rating history yet.</div>
+                <div className={styles.emptyChartText}>{t('profile.noRatingHistory')}</div>
               )}
             </div>
           </div>
@@ -596,16 +606,16 @@ export default function ProfilePage() {
           <div className={styles.historyCard}>
             <div className={styles.historyHeader}>
               <span className={styles.sectionLabel}>
-                Match History ({allMatches.length})
+                {t('profile.matchHistory')} ({allMatches.length})
               </span>
             </div>
             <div className={styles.tableWrap}>
               <table className={styles.historyTable}>
                 <thead>
                   <tr>
-                    <th>Opponent</th>
-                    <th>Result</th>
-                    <th>Rating</th>
+                    <th>{t('profile.opponent')}</th>
+                    <th>{t('profile.result')}</th>
+                    <th>{t('profile.score')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -638,7 +648,7 @@ export default function ProfilePage() {
                                   {opponentDisplayName}
                                 </Link>
                                 {opponentProfile?.isBot && (
-                                  <span className={styles.inlineBotBadge}>AI</span>
+                                  <span className={styles.inlineBotBadge}>{t('profile.ai')}</span>
                                 )}
                             {typeof match.opponentRating === 'number' && (
                               <span className={styles.opponentMeta}>
@@ -686,7 +696,7 @@ export default function ProfilePage() {
                   ) : (
                     <tr>
                       <td colSpan="3" className={styles.emptyCell}>
-                        No matches saved yet.
+                        {t('profile.noMatchesSaved')}
                       </td>
                     </tr>
                   )}
@@ -699,7 +709,7 @@ export default function ProfilePage() {
                   to={`/member/${encodeURIComponent(profile.username)}/games`}
                   className={styles.seeMoreLink}
                 >
-                  See More
+                  {t('profile.seeMore')}
                 </Link>
               </div>
             )}
