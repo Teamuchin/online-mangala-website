@@ -12,7 +12,10 @@ import {
   readStoredMatchSessionByGameId,
 } from '../components/mangala/gamePersistence.js'
 import { createInitialState, INITIAL_BOARD } from '../components/mangala/gameLogic.js'
-import { buildPositionSnapshot, buildReplayDescription } from '../components/mangala/matchRecord.js'
+import {
+  buildPositionDescription,
+  buildPositionSnapshot,
+} from '../components/mangala/matchRecord.js'
 import { buildResolvedLastMove } from '../components/mangala/movePresentation.js'
 import ReplayControls from '../components/mangala/ReplayControls.jsx'
 import PlayerPanel from '../components/mangala/PlayerPanel.jsx'
@@ -561,13 +564,13 @@ function MangalaGameScreen({
         ? buildBackendRatedOutcome(backendMatch, currentUserRole)
         : null
       : null
-  const replayDescription = buildReplayDescription(
+  const positionDescription = buildPositionDescription(
     game.matchRecord,
     activePositionIndex,
     displayedGame.players,
     t,
   )
-  const sidebarDescription = isReviewing ? replayDescription : game.turnMessage
+  const sidebarDescription = game.moveInProgress ? game.turnMessage : positionDescription
   const stoneToggleRef = useRef(handleStoneToggle)
   const animationToggleRef = useRef(handleAnimationToggle)
   const [clockNow, setClockNow] = useState(() => Date.now())

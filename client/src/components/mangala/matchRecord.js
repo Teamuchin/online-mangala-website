@@ -43,7 +43,7 @@ export function formatPitLabel(player, pitIndex) {
   return player === 'top' ? 13 - pitIndex : pitIndex + 1
 }
 
-export function buildReplayDescription(matchRecord, positionIndex, players, t = null) {
+export function buildPositionDescription(matchRecord, positionIndex, players, t = null) {
   const translate = typeof t === 'function' ? t : (key, values = {}) => {
     if (key === 'game.viewingLatestPosition') {
       return 'Viewing the latest position.'
@@ -84,6 +84,10 @@ export function buildReplayDescription(matchRecord, positionIndex, players, t = 
   }
 
   return translate('game.viewingSelectedPosition')
+}
+
+export function buildReplayDescription(matchRecord, positionIndex, players, t = null) {
+  return buildPositionDescription(matchRecord, positionIndex, players, t)
 }
 
 export function buildReplayEntries(matchRecord, players) {
