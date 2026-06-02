@@ -129,6 +129,14 @@ export const translations = {
       challengeError: 'Maç başlatılamadı.',
       ai: 'AI',
     },
+    profileGames: {
+      loading: 'Maç geçmişi yükleniyor',
+      fetching: 'Oyuncu maçları getiriliyor...',
+      title: 'Maç Geçmişi',
+      backToOverview: 'Genel Görünüme Dön',
+      date: 'Tarih',
+      pages: 'Maç geçmişi sayfaları',
+    },
     matchmaking: {
       targetNotBot: 'Bu kullanıcı bot değil.',
       userBusy: 'Bu kullanıcı şu anda başka bir maç oynuyor.',
@@ -306,6 +314,14 @@ export const translations = {
       challengeText: 'Choose the match type.',
       challengeError: 'Could not start the match.',
       ai: 'AI',
+    },
+    profileGames: {
+      loading: 'Loading match history',
+      fetching: 'Fetching player matches...',
+      title: 'Match History',
+      backToOverview: 'Back to Overview',
+      date: 'Date',
+      pages: 'Match history pages',
     },
     matchmaking: {
       targetNotBot: 'This user is not a bot.',

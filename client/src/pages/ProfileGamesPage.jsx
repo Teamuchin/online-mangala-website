@@ -9,6 +9,7 @@ import {
 } from '../app/profileData.js'
 import { getUserByUsernameRequest } from '../app/userApi.js'
 import { useAppData } from '../app/useAppData.js'
+import { useGlobalHeader } from '../app/useGlobalHeader.js'
 import styles from './ProfileGamesPage.module.css'
 
 const MATCHES_PER_PAGE = 10
@@ -71,8 +72,8 @@ function getVisiblePages(currentPage, pageCount) {
   ]
 }
 
-function formatDateLabel(value) {
-  return new Date(value).toLocaleDateString('en-US', {
+function formatDateLabel(value, locale) {
+  return new Date(value).toLocaleDateString(locale, {
     year: 'numeric',
     month: 'short',
     day: '2-digit',
@@ -108,6 +109,7 @@ export default function ProfileGamesPage() {
     isAuthenticated,
     publicProfileDirectory,
   } = useAppData()
+  const { language, t } = useGlobalHeader()
   const [backendProfile, setBackendProfile] = useState(null)
   const [backendMatches, setBackendMatches] = useState([])
   const [isLoading, setIsLoading] = useState(false)
@@ -146,7 +148,7 @@ export default function ProfileGamesPage() {
 
         setBackendProfile(null)
         setBackendMatches([])
-        setLoadError(error.message || 'Could not load match history.')
+        setLoadError(error.message || t('leaderboard.loadFailed'))
       } finally {
         if (!isCancelled) {
           setIsLoading(false)
@@ -159,7 +161,7 @@ export default function ProfileGamesPage() {
     return () => {
       isCancelled = true
     }
-  }, [username])
+  }, [t, username])
 
   if (!username) {
     return isAuthenticated
@@ -168,8 +170,8 @@ export default function ProfileGamesPage() {
         <main className={styles.page}>
           <section className={styles.shell}>
             <section className={styles.missingCard}>
-              <h1>No such player</h1>
-              <p>This username doesn&apos;t match any player.</p>
+              <h1>{t('common.noSuchPlayer')}</h1>
+              <p>{t('profile.noSuchPlayerDescription')}</p>
             </section>
           </section>
         </main>
@@ -181,8 +183,8 @@ export default function ProfileGamesPage() {
       <main className={styles.page}>
         <section className={styles.shell}>
           <section className={styles.missingCard}>
-            <h1>No such player</h1>
-            <p>This username doesn&apos;t match any player.</p>
+            <h1>{t('common.noSuchPlayer')}</h1>
+            <p>{t('profile.noSuchPlayerDescription')}</p>
           </section>
         </section>
       </main>
@@ -212,8 +214,8 @@ export default function ProfileGamesPage() {
       <main className={styles.page}>
         <section className={styles.shell}>
           <section className={styles.missingCard}>
-            <h1>Loading match history</h1>
-            <p>Fetching player matches...</p>
+            <h1>{t('profileGames.loading')}</h1>
+            <p>{t('profileGames.fetching')}</p>
           </section>
         </section>
       </main>
@@ -225,7 +227,7 @@ export default function ProfileGamesPage() {
       <main className={styles.page}>
         <section className={styles.shell}>
           <section className={styles.missingCard}>
-            <h1>No such player</h1>
+            <h1>{t('common.noSuchPlayer')}</h1>
             <p>{loadError}</p>
           </section>
         </section>
@@ -238,11 +240,11 @@ export default function ProfileGamesPage() {
       <section className={styles.shell}>
         <header className={styles.header}>
           <div>
-            <p className={styles.kicker}>Profile</p>
-            <h1>Match History ({allMatches.length})</h1>
+            <p className={styles.kicker}>{t('header.account')}</p>
+            <h1>{t('profileGames.title')} ({allMatches.length})</h1>
           </div>
           <Link to={`/member/${encodeURIComponent(profile.username)}`} className={styles.backLink}>
-            Back to Overview
+            {t('profileGames.backToOverview')}
           </Link>
         </header>
 
@@ -251,10 +253,10 @@ export default function ProfileGamesPage() {
             <table className={styles.historyTable}>
               <thead>
                 <tr>
-                  <th>Opponent</th>
-                  <th>Result</th>
-                  <th>Rating</th>
-                  <th>Date</th>
+                  <th>{t('profile.opponent')}</th>
+                  <th>{t('profile.result')}</th>
+                  <th>{t('profile.score')}</th>
+                  <th>{t('profileGames.date')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -328,7 +330,7 @@ export default function ProfileGamesPage() {
                               )}
                             </div>
                           </td>
-                          <td>{formatDateLabel(match.playedAt)}</td>
+                          <td>{formatDateLabel(match.playedAt, language === 'tr' ? 'tr-TR' : 'en-US')}</td>
                         </tr>
                       )
                     })()
@@ -336,7 +338,7 @@ export default function ProfileGamesPage() {
                 ) : (
                   <tr>
                     <td colSpan="4" className={styles.emptyCell}>
-                      No matches saved yet.
+                      {t('profile.noMatchesSaved')}
                     </td>
                   </tr>
                 )}
@@ -345,7 +347,7 @@ export default function ProfileGamesPage() {
           </div>
 
           {allMatches.length > MATCHES_PER_PAGE && (
-            <nav className={styles.pagination} aria-label="Match history pages">
+            <nav className={styles.pagination} aria-label={t('profileGames.pages')}>
               <Link
                 to={`${profileGamesPath}?page=${Math.max(1, currentPage - 1)}`}
                 className={`${styles.pageButton} ${
@@ -353,7 +355,7 @@ export default function ProfileGamesPage() {
                 }`}
                 aria-disabled={currentPage === 1}
               >
-                Prev
+                {t('leaderboard.prev')}
               </Link>
               {visiblePages.map((pageNumber) => (
                 <Link
@@ -373,7 +375,7 @@ export default function ProfileGamesPage() {
                 }`}
                 aria-disabled={currentPage === pageCount}
               >
-                Next
+                {t('leaderboard.next')}
               </Link>
             </nav>
           )}
