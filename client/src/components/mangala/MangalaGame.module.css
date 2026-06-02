@@ -328,8 +328,8 @@
   position: relative;
   width: 92%;
   aspect-ratio: 0.52 / 1;
-  --stone-size: 15px;
-  --stone-gap: 4px;
+  --stone-size: clamp(10px, calc(2.4876vw + 1.04px), 15px);
+  --stone-gap: clamp(1px, calc(1.8785vw - 6.15px), 4px);
   --stone-step: calc(var(--stone-size) + var(--stone-gap));
   border: 2px solid #6f4326;
   border-radius: 999px;
@@ -477,8 +477,8 @@
   border: 2px solid #6f4326;
   border-radius: 999px;
   background: #cf8f49;
-  --store-stone-size: 15px;
-  --store-stone-gap: 4px;
+  --store-stone-size: clamp(10px, calc(2.4876vw + 1.04px), 15px);
+  --store-stone-gap: clamp(1px, calc(1.8785vw - 6.15px), 4px);
   --store-stone-step: calc(var(--store-stone-size) + var(--store-stone-gap));
 }
 
@@ -751,6 +751,11 @@
   .pitRow {
     gap: 8px;
   }
+
+  .stoneRow,
+  .storeRow {
+    width: 70%;
+  }
 }
 
 @media (max-width: 640px) {
@@ -816,17 +821,11 @@
   }
 
   .pitSurface {
-    --stone-size: 9px;
-    --stone-gap: 1px;
-    --stone-step: calc(var(--stone-size) + var(--stone-gap));
     width: 88%;
     max-height: 100%;
   }
 
   .storeSurface {
-    --store-stone-size: 9px;
-    --store-stone-gap: 1px;
-    --store-stone-step: calc(var(--store-stone-size) + var(--store-stone-gap));
     min-height: 0;
     height: 100%;
     padding-top: 28px;
@@ -855,6 +854,27 @@
 
   .stoneRow,
   .storeRow {
-    width: 56%;
+    width: 76%;
+  }
+}
+
+@media (max-width: 560px) {
+  .stoneRow,
+  .storeRow {
+    width: 80%;
+  }
+}
+
+@media (max-width: 360px) {
+  .pitSurface {
+    --stone-size: clamp(9px, calc(1.2923vw + 5.54px), 10px);
+    --stone-gap: clamp(1px, calc(1.8785vw - 6.15px), 4px);
+    --stone-step: calc(var(--stone-size) + var(--stone-gap));
+  }
+
+  .storeSurface {
+    --store-stone-size: clamp(9px, calc(1.2923vw + 5.54px), 10px);
+    --store-stone-gap: clamp(1px, calc(1.8785vw - 6.15px), 4px);
+    --store-stone-step: calc(var(--store-stone-size) + var(--store-stone-gap));
   }
 }
