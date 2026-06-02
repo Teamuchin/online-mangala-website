@@ -15,6 +15,77 @@
   gap: 20px;
 }
 
+.challengeOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(55, 28, 10, 0.34);
+  z-index: 40;
+}
+
+.challengeModal {
+  width: min(340px, 100%);
+  display: grid;
+  gap: 16px;
+  padding: 24px 22px;
+  border: 1px solid rgba(90, 47, 18, 0.18);
+  border-radius: 20px;
+  background: rgba(255, 248, 235, 0.98);
+  box-shadow: 0 14px 28px rgba(112, 69, 36, 0.12);
+}
+
+.challengeModal h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.challengeText {
+  margin: 0;
+  color: rgba(90, 47, 18, 0.82);
+}
+
+.challengeError {
+  margin: 0;
+  color: #b33a28;
+  font-weight: 700;
+}
+
+.challengeActions {
+  display: grid;
+  gap: 10px;
+}
+
+.challengeButton,
+.challengeCancelButton,
+.challengeProfileButton {
+  border: 1px solid rgba(90, 47, 18, 0.22);
+  border-radius: 12px;
+  background: rgba(90, 47, 18, 0.08);
+  color: #5a2f12;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.challengeButton,
+.challengeCancelButton {
+  padding: 10px 12px;
+}
+
+.challengeProfileButton {
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  line-height: 1;
+}
+
+.challengeButton:disabled,
+.challengeCancelButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .profileHeader,
 .chartCard,
 .historyCard,

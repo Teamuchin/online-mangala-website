@@ -68,6 +68,17 @@ WHERE matches.status = 'active'
 ORDER BY matches.started_at DESC;
 `;
 
+const findActiveMatchByUserIdQuery = `
+SELECT ${MATCH_SELECT_FIELDS}
+FROM matches
+JOIN users AS bottom_user ON bottom_user.id = matches.bottom_player_id
+JOIN users AS top_user ON top_user.id = matches.top_player_id
+WHERE matches.status = 'active'
+  AND (matches.bottom_player_id = $1::int OR matches.top_player_id = $1::int)
+ORDER BY matches.started_at DESC
+LIMIT 1;
+`;
+
 const updateMatchQuery = `
 UPDATE matches
 SET
@@ -93,5 +104,6 @@ module.exports = {
   findMatchByIdForUpdateQuery,
   findMatchesByUserIdQuery,
   listActiveMatchesQuery,
+  findActiveMatchByUserIdQuery,
   updateMatchQuery,
 };

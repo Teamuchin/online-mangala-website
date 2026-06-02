@@ -67,3 +67,11 @@ export function leaveMatchmakingQueueRequest(token) {
     token,
   })
 }
+
+export function challengeBotRequest(payload, token) {
+  return request('/api/matchmaking/challenge-bot', {
+    method: 'POST',
+    body: payload,
+    token,
+  })
+}

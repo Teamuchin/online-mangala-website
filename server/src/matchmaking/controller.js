@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const db = require('../db');
 const { findUserByIdQuery } = require('../auth/queries');
-const { createMatchQuery } = require('../matches/queries');
+const { createMatchQuery, findActiveMatchByUserIdQuery } = require('../matches/queries');
 const {
   cleanupQueueEntries,
   consumeQueueEntry,
@@ -67,6 +67,11 @@ function buildMatchedResponse(entry) {
 
 async function readUserById(userId) {
   const result = await db.query(findUserByIdQuery, [userId]);
+  return result.rows[0] ?? null;
+}
+
+async function readActiveMatchByUserId(userId) {
+  const result = await db.query(findActiveMatchByUserIdQuery, [userId]);
   return result.rows[0] ?? null;
 }
 
@@ -302,7 +307,73 @@ function leaveQueue(req, res) {
   }
 }
 
+async function challengeBot(req, res) {
+  try {
+    const userId = String(req.auth?.userId || '').trim();
+    const botUserId = String(req.body?.botUserId || '').trim();
+    const rated = Boolean(req.body?.rated);
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    if (!botUserId) {
+      return res.status(400).json({ message: 'Bot user id is required' });
+    }
+
+    if (userId === botUserId) {
+      return res.status(400).json({ message: 'You cannot challenge yourself' });
+    }
+
+    cleanupQueueEntries();
+    removeQueueEntry(userId);
+
+    const [currentUser, botUser, currentUserActiveMatch, botUserActiveMatch] = await Promise.all([
+      readUserById(userId),
+      readUserById(botUserId),
+      readActiveMatchByUserId(userId),
+      readActiveMatchByUserId(botUserId),
+    ]);
+
+    if (!currentUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (!botUser) {
+      return res.status(404).json({ message: 'Target user not found' });
+    }
+
+    if (botUser.is_bot !== true) {
+      return res.status(400).json({ message: 'This user is not a bot.' });
+    }
+
+    if (currentUserActiveMatch) {
+      return res.status(409).json({ message: 'You already have an active match.' });
+    }
+
+    if (botUserActiveMatch) {
+      return res.status(409).json({ message: 'This user is currently playing another match.' });
+    }
+
+    const players = buildMatchPlayers(currentUser, botUser);
+    const gameId = await createBackendMatch(players, rated);
+
+    return res.status(200).json({
+      status: 'matched',
+      rated,
+      allowBots: false,
+      gameId,
+      players,
+      matchedAt: Date.now(),
+    });
+  } catch (error) {
+    console.error('Challenge bot error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
 module.exports = {
+  challengeBot,
   getQueueStatus,
   joinQueue,
   leaveQueue,

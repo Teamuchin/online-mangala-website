@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { isGuestUser } from '../app/appState.js'
 import { getMatchesByUserIdRequest } from '../app/matchApi.js'
+import { challengeBotRequest } from '../app/matchmakingApi.js'
 import { getDisplayName } from '../app/playerNames.js'
 import {
   buildHistoryEntryFromBackendMatch,
@@ -218,6 +219,9 @@ export default function ProfilePage() {
   const [backendMatches, setBackendMatches] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState('')
+  const [isChallengeModalOpen, setIsChallengeModalOpen] = useState(false)
+  const [isChallengeSubmitting, setIsChallengeSubmitting] = useState(false)
+  const [challengeError, setChallengeError] = useState('')
   const fallbackProfile = username
     ? resolveProfile(publicProfileDirectory, currentUser, username)
     : currentUser
@@ -335,6 +339,8 @@ export default function ProfilePage() {
   const profileDisplayName = backendProfile
     ? profile.username
     : getDisplayName(profile)
+  const canChallengeBot =
+    isAuthenticated && !isGuestUser(currentUser) && profile.isBot === true
 
   if (isLoading && !profile) {
     return (
@@ -362,8 +368,90 @@ export default function ProfilePage() {
     )
   }
 
+  const handleChallengeBot = async (rated) => {
+    const token =
+      typeof window === 'undefined'
+        ? ''
+        : window.localStorage.getItem('mangala.authToken') ?? ''
+
+    if (!token || !profile?.id || isChallengeSubmitting) {
+      return
+    }
+
+    setIsChallengeSubmitting(true)
+    setChallengeError('')
+
+    try {
+      const result = await challengeBotRequest(
+        {
+          botUserId: profile.id,
+          rated,
+        },
+        token,
+      )
+
+      setIsChallengeModalOpen(false)
+      navigate(`/game/${result.gameId}`, {
+        state: {
+          backendMatchId: result.gameId,
+          matchMode: 'computer',
+          queueSettings: {
+            rated,
+            allowBots: true,
+          },
+          initialPlayers: result.players,
+        },
+      })
+    } catch (error) {
+      setChallengeError(error.message || 'Could not start the match.')
+    } finally {
+      setIsChallengeSubmitting(false)
+    }
+  }
+
   return (
     <main className={styles.profilePage}>
+      {isChallengeModalOpen && (
+        <div className={styles.challengeOverlay} onClick={() => setIsChallengeModalOpen(false)}>
+          <div
+            className={styles.challengeModal}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Challenge bot"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h2>Challenge</h2>
+            <p className={styles.challengeText}>Choose the match type.</p>
+            {challengeError && <p className={styles.challengeError}>{challengeError}</p>}
+            <div className={styles.challengeActions}>
+              <button
+                type="button"
+                className={styles.challengeButton}
+                onClick={() => void handleChallengeBot(true)}
+                disabled={isChallengeSubmitting}
+              >
+                Rated
+              </button>
+              <button
+                type="button"
+                className={styles.challengeButton}
+                onClick={() => void handleChallengeBot(false)}
+                disabled={isChallengeSubmitting}
+              >
+                Unrated
+              </button>
+              <button
+                type="button"
+                className={styles.challengeCancelButton}
+                onClick={() => setIsChallengeModalOpen(false)}
+                disabled={isChallengeSubmitting}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <section className={styles.profileShell}>
         <header className={styles.profileHeader}>
           <div className={styles.identityBlock}>
@@ -371,6 +459,18 @@ export default function ProfilePage() {
               <h1>
                 <span>{profileDisplayName}</span>
                 {profile.isBot && <span className={styles.botBadge}>AI</span>}
+                {canChallengeBot && (
+                  <button
+                    type="button"
+                    className={styles.challengeProfileButton}
+                    onClick={() => {
+                      setChallengeError('')
+                      setIsChallengeModalOpen(true)
+                    }}
+                  >
+                    Challenge
+                  </button>
+                )}
               </h1>
               <div className={styles.metaRow}>
                 <span>{isOnline ? 'Online' : 'Offline'}</span>
