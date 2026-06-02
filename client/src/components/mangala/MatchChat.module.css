@@ -1,0 +1,150 @@
+.chatContainer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chatWindow {
+  width: 100%;
+  background: rgba(255, 247, 235, 0.9);
+  border: 2px solid #6f4326;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 14px 30px rgba(90, 47, 18, 0.12);
+  color: #5e3820;
+}
+
+.chatHeader {
+  padding: 14px 18px;
+  border-bottom: 2px solid rgba(111, 67, 38, 0.15);
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #5e3820;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s;
+}
+
+.chatHeader:hover {
+  background: rgba(255, 247, 235, 1);
+}
+
+.chatHeaderIcon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.chatBody {
+  display: flex;
+  flex-direction: column;
+  height: 250px;
+}
+
+.messagesContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.message {
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.ownMessage {
+  align-self: flex-end;
+  background: #f1b35d;
+  border: 2px solid #6f4326;
+  color: #5e3820;
+  border-bottom-right-radius: 4px;
+}
+
+.opponentMessage {
+  align-self: flex-start;
+  background: white;
+  border: 2px solid rgba(111, 67, 38, 0.4);
+  color: #5e3820;
+  border-bottom-left-radius: 4px;
+}
+
+.messageSender {
+  font-size: 0.75rem;
+  font-weight: 800;
+  opacity: 0.7;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.inputForm {
+  display: flex;
+  padding: 10px;
+  background: rgba(255, 248, 235, 0.5);
+  border-top: 2px solid rgba(111, 67, 38, 0.15);
+}
+
+.inputField {
+  flex: 1;
+  background: white;
+  border: 2px solid #6f4326;
+  border-radius: 20px;
+  padding: 8px 14px;
+  color: #5e3820;
+  font-size: 0.95rem;
+  outline: none;
+  transition: box-shadow 0.2s;
+}
+
+.inputField:focus {
+  box-shadow: 0 0 0 3px rgba(111, 67, 38, 0.2);
+}
+
+.inputField:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.sendButton {
+  background: #3ea733;
+  color: white;
+  border: 2px solid #2d7a25;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  margin-left: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+}
+
+.sendButton:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.sendButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.noMessages {
+  text-align: center;
+  color: rgba(94, 56, 32, 0.6);
+  font-size: 0.95rem;
+  margin-top: 10px;
+  font-weight: 600;
+}

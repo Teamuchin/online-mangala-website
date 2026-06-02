@@ -327,6 +327,7 @@
 .pitSurface {
   position: relative;
   width: 92%;
+  flex-shrink: 0;
   aspect-ratio: 0.52 / 1;
   --stone-size: clamp(10px, calc(2.4876vw + 1.04px), 15px);
   --stone-gap: clamp(1px, calc(1.8785vw - 6.15px), 4px);
@@ -645,7 +646,7 @@
   color: #8a4020;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .page {
     height: auto;
     min-height: calc(100svh - 72px);

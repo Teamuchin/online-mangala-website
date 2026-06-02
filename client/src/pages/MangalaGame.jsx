@@ -21,6 +21,7 @@ import ReplayControls from '../components/mangala/ReplayControls.jsx'
 import PlayerPanel from '../components/mangala/PlayerPanel.jsx'
 import { useBackendMoveAnimationQueue } from '../components/mangala/useBackendMoveAnimationQueue.js'
 import { useMangalaGame } from '../components/mangala/useMangalaGame.js'
+import MatchChat from '../components/mangala/MatchChat.jsx'
 import styles from '../components/mangala/MangalaGame.module.css'
 
 const RESERVED_LOCAL_GAME_IDS = new Set(['local'])
@@ -810,6 +811,9 @@ function MangalaGameScreen({
               resetDisabled={false}
               resetLabel={t('game.restartMatch')}
             />
+            {isOnlineMatch && currentUserRole !== 'spectator' && syncTargetMatchId && (
+              <MatchChat matchId={syncTargetMatchId} isActive={game.gameStatus === 'playing'} />
+            )}
           </div>
           <div className={styles.playerColumn}>
             <PlayerPanel

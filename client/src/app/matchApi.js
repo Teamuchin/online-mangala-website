@@ -77,3 +77,17 @@ export function getMatchesByUserIdRequest(userId) {
 export function getActiveMatchesRequest() {
   return request('/api/matches/active')
 }
+
+export function getMatchChatRequest(matchId, token) {
+  return request(`/api/matches/${matchId}/chat`, {
+    token,
+  })
+}
+
+export function postMatchChatRequest(matchId, text, token) {
+  return request(`/api/matches/${matchId}/chat`, {
+    method: 'POST',
+    body: { text },
+    token,
+  })
+}

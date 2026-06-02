@@ -10,6 +10,7 @@ const {
   listActiveMatchesQuery,
   updateMatchQuery,
 } = require('./queries');
+const chatStore = require('./chatStore');
 
 const DEFAULT_TIME_LEFT_SECONDS = 300;
 const matchTimeoutHandles = new Map();
@@ -510,6 +511,8 @@ async function finalizeMatchByTimeout(matchId) {
 
     if (!resolved.didTimeout) {
       scheduleMatchTimeout(existingMatch);
+    } else {
+      chatStore.scheduleCleanup(matchId);
     }
 
     return resolved.match;
@@ -727,8 +730,14 @@ async function submitMove(req, res) {
       await persistUpdatedMatch(client, matchId, payload);
       const refreshedMatchResult = await client.query(findMatchByIdQuery, [matchId]);
       await client.query('COMMIT');
-      scheduleMatchTimeout(refreshedMatchResult.rows[0]);
-      return res.status(200).json(hydrateMatchForResponse(refreshedMatchResult.rows[0]));
+      
+      const updatedMatch = refreshedMatchResult.rows[0];
+      if (updatedMatch.status === 'finished') {
+        chatStore.scheduleCleanup(matchId);
+      } else {
+        scheduleMatchTimeout(updatedMatch);
+      }
+      return res.status(200).json(hydrateMatchForResponse(updatedMatch));
     } catch (error) {
       await client.query('ROLLBACK');
       throw error;
@@ -820,6 +829,7 @@ async function resignMatch(req, res) {
       const refreshedMatchResult = await client.query(findMatchByIdQuery, [matchId]);
       await client.query('COMMIT');
       clearScheduledMatchTimeout(matchId);
+      chatStore.scheduleCleanup(matchId);
       return res.status(200).json(refreshedMatchResult.rows[0]);
     } catch (error) {
       await client.query('ROLLBACK');
@@ -886,6 +896,84 @@ async function getActiveMatches(req, res) {
   }
 }
 
+async function getChat(req, res) {
+  try {
+    const authenticatedUserId = normalizeUserId(req.auth?.userId);
+    const matchId = String(req.params?.id || '').trim();
+
+    if (!matchId) {
+      return res.status(400).json({ message: 'Match id is required' });
+    }
+
+    const result = await db.query(findMatchByIdQuery, [matchId]);
+    const existingMatch = result.rows[0];
+
+    if (!existingMatch) {
+      return res.status(404).json({ message: 'Match not found' });
+    }
+
+    if (
+      !isSameUserId(authenticatedUserId, existingMatch.bottom_player_id) &&
+      !isSameUserId(authenticatedUserId, existingMatch.top_player_id)
+    ) {
+      return res.status(403).json({ message: 'You cannot access chat for this match' });
+    }
+
+    const messages = chatStore.getMessages(matchId);
+    return res.status(200).json(messages);
+  } catch (error) {
+    console.error('Get chat error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+async function postChat(req, res) {
+  try {
+    const authenticatedUserId = normalizeUserId(req.auth?.userId);
+    const matchId = String(req.params?.id || '').trim();
+    const text = String(req.body?.text || '').trim();
+
+    if (!matchId) {
+      return res.status(400).json({ message: 'Match id is required' });
+    }
+    if (!text || text.length > 500) {
+      return res.status(400).json({ message: 'Valid text is required (max 500 characters)' });
+    }
+
+    const result = await db.query(findMatchByIdQuery, [matchId]);
+    const existingMatch = result.rows[0];
+
+    if (!existingMatch) {
+      return res.status(404).json({ message: 'Match not found' });
+    }
+
+    if (
+      !isSameUserId(authenticatedUserId, existingMatch.bottom_player_id) &&
+      !isSameUserId(authenticatedUserId, existingMatch.top_player_id)
+    ) {
+      return res.status(403).json({ message: 'You cannot access chat for this match' });
+    }
+
+    if (existingMatch.status !== 'active') {
+      return res.status(403).json({ message: 'Cannot send messages to a finished match' });
+    }
+
+    const isBottom = isSameUserId(authenticatedUserId, existingMatch.bottom_player_id);
+    const username = isBottom ? existingMatch.bottom_player_username : existingMatch.top_player_username;
+
+    const message = chatStore.addMessage(matchId, {
+      senderId: authenticatedUserId,
+      username,
+      text,
+    });
+
+    return res.status(201).json(message);
+  } catch (error) {
+    console.error('Post chat error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
 module.exports = {
   submitMove,
   resignMatch,
@@ -893,4 +981,6 @@ module.exports = {
   getMatchesByUserId,
   getActiveMatches,
   initializeMatchTimeouts,
+  getChat,
+  postChat,
 };
