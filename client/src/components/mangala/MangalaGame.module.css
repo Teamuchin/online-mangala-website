@@ -17,6 +17,49 @@
   display: grid;
 }
 
+.resultModalOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(55, 28, 10, 0.34);
+  z-index: 30;
+}
+
+.resultModal {
+  min-width: min(320px, 100%);
+  max-width: 360px;
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  padding: 26px 22px 22px;
+  border: 2px solid #6f4326;
+  border-radius: 18px;
+  background: rgba(255, 247, 235, 0.98);
+  color: #5a2f12;
+  box-shadow: 0 16px 36px rgba(55, 28, 10, 0.2);
+  text-align: center;
+}
+
+.resultModalMessage {
+  font-size: clamp(1.6rem, 3vw, 2rem);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.resultModalButton {
+  border: 2px solid #6f4326;
+  border-radius: 10px;
+  padding: 8px 18px;
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: #5e3820;
+  background: rgba(255, 248, 235, 0.92);
+  cursor: pointer;
+}
+
 .unavailableState {
   display: grid;
   gap: 12px;

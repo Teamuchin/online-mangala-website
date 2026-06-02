@@ -146,6 +146,22 @@ function buildTurnMessageFromState({ players, currentPlayer, gameStatus, winner 
   return `${players[currentPlayer].name} to move`
 }
 
+function buildFinishedResultText({ currentUserRole, players, winner }) {
+  if (winner === 'draw') {
+    return 'Draw'
+  }
+
+  if ((currentUserRole === 'bottom' || currentUserRole === 'top') && winner) {
+    return winner === currentUserRole ? 'You win' : 'You lose'
+  }
+
+  if (winner && players[winner]) {
+    return `${players[winner].name} wins`
+  }
+
+  return 'Match finished'
+}
+
 function getRatingChangeForSide(currentUserRole, ratedOutcome, side) {
   if (!ratedOutcome || (currentUserRole !== 'bottom' && currentUserRole !== 'top')) {
     return null
@@ -360,6 +376,9 @@ function MangalaGameScreen({
   onSubmitAuthoritativeMove = null,
   onSubmitAuthoritativeResign = null,
   isSubmittingAuthoritativeMove = false,
+  showExternalResultModal = false,
+  externalResultModalText = '',
+  onCloseExternalResultModal = null,
 }) {
   const location = useLocation()
   const {
@@ -549,6 +568,9 @@ function MangalaGameScreen({
   const stoneToggleRef = useRef(handleStoneToggle)
   const animationToggleRef = useRef(handleAnimationToggle)
   const [clockNow, setClockNow] = useState(() => Date.now())
+  const [isResultModalDismissed, setIsResultModalDismissed] = useState(false)
+  const previousGameStatusRef = useRef(game.gameStatus)
+  const [shouldShowResultModal, setShouldShowResultModal] = useState(false)
   const allowMoveAnimation = true
   const effectiveDisplayedGame = syncTargetMatchId
     ? {
@@ -569,6 +591,14 @@ function MangalaGameScreen({
           lastMove: backendAnimationDisplay.lastMove,
         }
       : effectiveDisplayedGame
+  const finishedResultText =
+    game.gameStatus === 'finished'
+      ? buildFinishedResultText({
+          currentUserRole,
+          players: game.players,
+          winner: game.winner,
+        })
+      : ''
   const topDisplayPlayer = effectiveDisplayedGame.players[visualTopSide]
   const bottomDisplayPlayer = effectiveDisplayedGame.players[visualBottomSide]
   const boardInteractionDisabled =
@@ -651,6 +681,20 @@ function MangalaGameScreen({
     refreshCurrentUser,
   ])
 
+  useEffect(() => {
+    const previousStatus = previousGameStatusRef.current
+
+    if (game.gameStatus === 'finished' && previousStatus === 'playing') {
+      setShouldShowResultModal(true)
+      setIsResultModalDismissed(false)
+    } else if (game.gameStatus !== 'finished') {
+      setShouldShowResultModal(false)
+      setIsResultModalDismissed(false)
+    }
+
+    previousGameStatusRef.current = game.gameStatus
+  }, [game.gameStatus])
+
   if (isUnavailable) {
     return (
       <main className={styles.page}>
@@ -666,6 +710,37 @@ function MangalaGameScreen({
 
   return (
     <main className={styles.page}>
+      {((showExternalResultModal && externalResultModalText) ||
+        (shouldShowResultModal && !isResultModalDismissed)) && (
+        <div className={styles.resultModalOverlay}>
+          <div
+            className={styles.resultModal}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Match result"
+          >
+            <p className={styles.resultModalMessage}>
+              {showExternalResultModal && externalResultModalText
+                ? externalResultModalText
+                : finishedResultText}
+            </p>
+            <button
+              type="button"
+              className={styles.resultModalButton}
+              onClick={() => {
+                if (showExternalResultModal && onCloseExternalResultModal) {
+                  onCloseExternalResultModal()
+                  return
+                }
+
+                setIsResultModalDismissed(true)
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
       <div className={styles.layout}>
         <section className={styles.matchArena}>
           <div className={styles.playerColumn}>
@@ -752,12 +827,16 @@ function MangalaGameScreen({
 export default function MangalaGame() {
   const { gameId } = useParams()
   const location = useLocation()
+  const { currentUser } = useAppData()
   const [backendMatch, setBackendMatch] = useState(null)
   const [isLoadingBackendMatch, setIsLoadingBackendMatch] = useState(false)
   const [backendMatchError, setBackendMatchError] = useState('')
   const [isSubmittingAuthoritativeMove, setIsSubmittingAuthoritativeMove] = useState(false)
   const [backendAnimationEnabled, setBackendAnimationEnabled] = useState(false)
+  const [showBackendResultModal, setShowBackendResultModal] = useState(false)
+  const [backendResultModalText, setBackendResultModalText] = useState('')
   const botAutoMoveTimeoutRef = useRef(null)
+  const previousBackendStatusRef = useRef(null)
   const persistedMatchSession =
     typeof window === 'undefined' || typeof gameId !== 'string'
       ? null
@@ -775,6 +854,45 @@ export default function MangalaGame() {
     backendMatch,
     enabled: backendAnimationEnabled,
   })
+
+  useEffect(() => {
+    const previousStatus = previousBackendStatusRef.current
+    const currentStatus = backendMatch?.status ?? null
+
+    if (currentStatus === 'finished' && previousStatus === 'active' && backendMatch) {
+      const currentUserId = currentUser?.id ?? null
+      const bottomId = String(backendMatch.bottom_player_id ?? '')
+      const topId = String(backendMatch.top_player_id ?? '')
+      const currentUserRole =
+        currentUserId === null
+          ? 'spectator'
+          : String(currentUserId) === bottomId
+            ? 'bottom'
+            : String(currentUserId) === topId
+              ? 'top'
+              : 'spectator'
+      const players = buildPlayersFromBackendMatch(
+        backendMatch,
+        currentUser,
+      )
+
+      setBackendResultModalText(
+        buildFinishedResultText({
+          currentUserRole,
+          players,
+          winner: mapWinnerSideToWinner(backendMatch.winner_side),
+        }),
+      )
+      setShowBackendResultModal(true)
+    }
+
+    if (currentStatus !== 'finished') {
+      setShowBackendResultModal(false)
+      setBackendResultModalText('')
+    }
+
+    previousBackendStatusRef.current = currentStatus
+  }, [backendMatch, currentUser])
 
   const submitAuthoritativeMove = async (pitIndex = null) => {
     if (!targetBackendMatchId || isSubmittingAuthoritativeMove) {
@@ -972,6 +1090,9 @@ export default function MangalaGame() {
       onSubmitAuthoritativeMove={submitAuthoritativeMove}
       onSubmitAuthoritativeResign={submitAuthoritativeResign}
       isSubmittingAuthoritativeMove={isSubmittingAuthoritativeMove}
+      showExternalResultModal={showBackendResultModal}
+      externalResultModalText={backendResultModalText}
+      onCloseExternalResultModal={() => setShowBackendResultModal(false)}
     />
   )
 }
