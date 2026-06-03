@@ -118,7 +118,7 @@ export function AppDataProvider({ children }) {
     const storedAuthState = window.localStorage.getItem(AUTH_STATE_STORAGE_KEY)
 
     if (!storedAuthState) {
-      const token = window.localStorage.getItem('mangala.authToken') ?? ''
+      const token = window.localStorage.getItem('mangala.authToken') ?? window.sessionStorage.getItem('mangala.authToken') ?? ''
       return Boolean(token) || isGuestUser(currentUser)
     }
 
@@ -128,7 +128,7 @@ export function AppDataProvider({ children }) {
         JSON.parse(storedAuthState),
       ).isAuthenticated
     } catch {
-      const token = window.localStorage.getItem('mangala.authToken') ?? ''
+      const token = window.localStorage.getItem('mangala.authToken') ?? window.sessionStorage.getItem('mangala.authToken') ?? ''
       return Boolean(token) || isGuestUser(currentUser)
     }
   })
@@ -149,7 +149,7 @@ export function AppDataProvider({ children }) {
     const token =
       typeof window === 'undefined'
         ? ''
-        : window.localStorage.getItem('mangala.authToken') ?? ''
+        : window.localStorage.getItem('mangala.authToken') ?? window.sessionStorage.getItem('mangala.authToken') ?? ''
 
     if (!token || !isAuthenticated || isGuestUser(currentUser)) {
       return null
@@ -181,6 +181,7 @@ export function AppDataProvider({ children }) {
   const logOut = () => {
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem('mangala.authToken')
+      window.sessionStorage.removeItem('mangala.authToken')
     }
 
     setCurrentUser(staticAppData.initialCurrentUser)
@@ -249,7 +250,7 @@ export function AppDataProvider({ children }) {
     const token =
       typeof window === 'undefined'
         ? ''
-        : window.localStorage.getItem('mangala.authToken') ?? ''
+        : window.localStorage.getItem('mangala.authToken') ?? window.sessionStorage.getItem('mangala.authToken') ?? ''
 
     if (!token || !isAuthenticated || isGuestUser(currentUser)) {
       return undefined

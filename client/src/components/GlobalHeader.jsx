@@ -26,7 +26,7 @@ export default function GlobalHeader() {
   
   useEffect(() => {
     let isCancelled = false
-    const token = typeof window === 'undefined' ? '' : window.localStorage.getItem('mangala.authToken') ?? ''
+    const token = typeof window === 'undefined' ? '' : (window.localStorage.getItem('mangala.authToken') || window.sessionStorage.getItem('mangala.authToken')) ?? ''
     
     if (!token || !isAuthenticated || isGuestUser(currentUser)) {
       return undefined
@@ -55,7 +55,7 @@ export default function GlobalHeader() {
   }, [isAuthenticated, currentUser])
 
   const handleAcceptRequest = async (username) => {
-    const token = typeof window === 'undefined' ? '' : window.localStorage.getItem('mangala.authToken') ?? ''
+    const token = typeof window === 'undefined' ? '' : (window.localStorage.getItem('mangala.authToken') || window.sessionStorage.getItem('mangala.authToken')) ?? ''
     if (!token) return
     try {
       await acceptFriendRequest(token, username)
@@ -66,7 +66,7 @@ export default function GlobalHeader() {
   }
 
   const handleRejectRequest = async (username) => {
-    const token = typeof window === 'undefined' ? '' : window.localStorage.getItem('mangala.authToken') ?? ''
+    const token = typeof window === 'undefined' ? '' : (window.localStorage.getItem('mangala.authToken') || window.sessionStorage.getItem('mangala.authToken')) ?? ''
     if (!token) return
     try {
       await rejectFriendRequest(token, username)

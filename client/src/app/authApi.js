@@ -57,6 +57,10 @@ export function loginRequest(payload) {
   return request('/api/auth/login', payload)
 }
 
+export function guestLoginRequest() {
+  return request('/api/auth/guest')
+}
+
 export function updateMeRequest(payload, token) {
   return request('/api/auth/me', payload, { method: 'PATCH', token })
 }

@@ -316,7 +316,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     let isCancelled = false
-    const token = typeof window === 'undefined' ? '' : window.localStorage.getItem('mangala.authToken') ?? ''
+    const token = typeof window === 'undefined' ? '' : (window.localStorage.getItem('mangala.authToken') || window.sessionStorage.getItem('mangala.authToken')) ?? ''
     
     if (!token || !isAuthenticated || isGuestUser(currentUser) || !profile || String(profile.id) === String(currentUser.id)) {
       return undefined
@@ -415,7 +415,7 @@ export default function ProfilePage() {
     const token =
       typeof window === 'undefined'
         ? ''
-        : window.localStorage.getItem('mangala.authToken') ?? ''
+        : (window.localStorage.getItem('mangala.authToken') || window.sessionStorage.getItem('mangala.authToken')) ?? ''
 
     if (!token || !profile?.id || isChallengeSubmitting) {
       return
@@ -461,7 +461,7 @@ export default function ProfilePage() {
   }
 
   const handleAddFriend = async () => {
-    const token = typeof window === 'undefined' ? '' : window.localStorage.getItem('mangala.authToken') ?? ''
+    const token = typeof window === 'undefined' ? '' : (window.localStorage.getItem('mangala.authToken') || window.sessionStorage.getItem('mangala.authToken')) ?? ''
     if (!token) return
     setFriendshipActionLoading(true)
     try {
@@ -475,7 +475,7 @@ export default function ProfilePage() {
   }
 
   const handleRemoveFriend = async () => {
-    const token = typeof window === 'undefined' ? '' : window.localStorage.getItem('mangala.authToken') ?? ''
+    const token = typeof window === 'undefined' ? '' : (window.localStorage.getItem('mangala.authToken') || window.sessionStorage.getItem('mangala.authToken')) ?? ''
     if (!token) return
     setFriendshipActionLoading(true)
     try {
@@ -551,7 +551,7 @@ export default function ProfilePage() {
                   </button>
                 )}
                 
-                {isAuthenticated && !isGuestUser(currentUser) && String(profile.id) !== String(currentUser.id) && !profile.isBot && friendshipStatus !== null && (
+                {isAuthenticated && !isGuestUser(currentUser) && String(profile.id) !== String(currentUser.id) && !profile.isBot && !profile.username?.startsWith('Guest-') && friendshipStatus !== null && (
                   <>
                     {friendshipStatus === 'none' && (
                        <button type="button" className={styles.addFriendButton} onClick={handleAddFriend} disabled={friendshipActionLoading}>{t('profile.addFriend')}</button>

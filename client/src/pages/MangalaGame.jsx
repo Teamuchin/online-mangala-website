@@ -920,7 +920,7 @@ export default function MangalaGame() {
     const token =
       typeof window === 'undefined'
         ? ''
-        : window.localStorage.getItem('mangala.authToken') ?? ''
+        : (window.localStorage.getItem('mangala.authToken') || window.sessionStorage.getItem('mangala.authToken')) ?? ''
 
     if (!token) {
       return
@@ -949,7 +949,7 @@ export default function MangalaGame() {
     const token =
       typeof window === 'undefined'
         ? ''
-        : window.localStorage.getItem('mangala.authToken') ?? ''
+        : (window.localStorage.getItem('mangala.authToken') || window.sessionStorage.getItem('mangala.authToken')) ?? ''
 
     if (!token) {
       return

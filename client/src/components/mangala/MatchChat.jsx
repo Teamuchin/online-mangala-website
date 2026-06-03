@@ -15,7 +15,7 @@ export default function MatchChat({ matchId, isActive }) {
   const messagesEndRef = useRef(null);
   
   const getToken = () => {
-    return typeof window !== 'undefined' ? window.localStorage.getItem('mangala.authToken') || '' : '';
+    return typeof window !== 'undefined' ? (window.localStorage.getItem('mangala.authToken') || window.sessionStorage.getItem('mangala.authToken')) || '' : '';
   };
 
   const scrollToBottom = () => {

@@ -324,9 +324,31 @@ async function getMe(req, res) {
   }
 }
 
+async function guestLogin(req, res) {
+  try {
+    const randomSuffix = Math.random().toString(36).substring(2, 7).toLowerCase();
+    const username = `Guest-${randomSuffix}`;
+    const email = `guest-${randomSuffix}@example.com`;
+    const randomPassword = Math.random().toString(36).slice(-10);
+
+    const passwordHash = await bcrypt.hash(randomPassword, SALT_ROUNDS);
+    const createUserResult = await db.query(createUserQuery, [username, email, passwordHash]);
+
+    const userRow = createUserResult.rows[0];
+    const user = sanitizeProfileUser(userRow);
+    const token = signAuthToken(user);
+
+    return res.status(201).json({ message: 'Guest login successful', token, user });
+  } catch (error) {
+    console.error('Guest login error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
 module.exports = {
   register,
   login,
   getMe,
   updateMe,
+  guestLogin,
 };

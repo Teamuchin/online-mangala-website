@@ -1,11 +1,12 @@
 const express = require('express');
-const { getMe, login, register, updateMe } = require('../auth/controller');
+const { getMe, login, register, updateMe, guestLogin } = require('../auth/controller');
 const { requireAuth } = require('../auth/middleware');
 
 const router = express.Router();
 
 router.post('/register', register);
 router.post('/login', login);
+router.post('/guest', guestLogin);
 router.get('/me', requireAuth, getMe);
 router.patch('/me', requireAuth, updateMe);
 

@@ -3,7 +3,7 @@ import AuthBrand from '../components/AuthBrand.jsx'
 import styles from './Login.module.css'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAppData } from '../app/useAppData.js'
-import { loginRequest } from '../app/authApi.js'
+import { loginRequest, guestLoginRequest } from '../app/authApi.js'
 import { useGlobalHeader } from '../app/useGlobalHeader.js'
 
 export default function Login() {
@@ -45,9 +45,22 @@ export default function Login() {
     }
   }
 
-  const handleGuestLogin = () => {
-    continueAsGuest()
-    navigate('/')
+  const handleGuestLogin = async () => {
+    try {
+      setIsSubmitting(true)
+      setErrorMessage('')
+      
+      const response = await guestLoginRequest()
+      
+      window.sessionStorage.setItem('mangala.authToken', response.token)
+      logIn(response.user)
+      
+      navigate('/')
+    } catch (error) {
+      setErrorMessage(error.message || t('auth.loginFailed'))
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (

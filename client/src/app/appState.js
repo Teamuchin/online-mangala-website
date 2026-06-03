@@ -3,7 +3,7 @@ export function buildWelcomeMessage(currentUser) {
 }
 
 export function isGuestUser(currentUser) {
-  return currentUser.email === 'guest@example.com'
+  return Boolean(currentUser?.email?.startsWith('guest-') && currentUser?.email?.endsWith('@example.com'))
 }
 
 export function mergeStoredAuthState(defaultAuthState, storedAuthState) {

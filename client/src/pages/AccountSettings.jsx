@@ -48,7 +48,7 @@ export default function AccountSettings() {
     try {
       setIsSubmitting(true)
 
-      const token = window.localStorage.getItem('mangala.authToken')
+      const token = window.localStorage.getItem('mangala.authToken') || window.sessionStorage.getItem('mangala.authToken')
 
       if (!token) {
         setErrorMessage(t('account.pleaseLogInAgain'))
