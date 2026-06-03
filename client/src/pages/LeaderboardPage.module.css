@@ -27,8 +27,32 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 18px;
   padding: 24px 28px;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.searchInput {
+  padding: 8px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(121, 70, 35, 0.2);
+  background: rgba(255, 249, 240, 0.9);
+  color: #5a2f12;
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+  min-width: 200px;
+}
+
+.searchInput:focus {
+  border-color: #ca8957;
+  box-shadow: 0 0 0 3px rgba(202, 137, 87, 0.15);
 }
 
 .kicker {

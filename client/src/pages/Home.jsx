@@ -12,6 +12,7 @@ import {
 import { getDisplayName } from '../app/playerNames.js'
 import { buildProfileFromBackendUser } from '../app/profileData.js'
 import { getLeaderboardUsersRequest } from '../app/userApi.js'
+import { getFriendsRequest } from '../app/friendsApi.js'
 import { useAppData } from '../app/useAppData.js'
 import { useGlobalHeader } from '../app/useGlobalHeader.js'
 import {
@@ -28,6 +29,13 @@ function buildQueueStatusText(rated, t) {
   return rated ? t('home.queueLookingRated') : t('home.queueLookingUnrated')
 }
 
+function isPlayerOnline(player) {
+  if (player.isBot || player.is_bot) return true
+  const lastSeen = player.lastSeen || player.last_seen
+  if (!lastSeen) return false
+  return Date.now() - new Date(lastSeen).getTime() <= 45000
+}
+
 function buildLobbyPlayers(currentUser, users, activeMatches) {
   const seenIds = new Set()
   const participants = new Set(
@@ -38,7 +46,7 @@ function buildLobbyPlayers(currentUser, users, activeMatches) {
   )
   const players = users
     .filter((player) => {
-      if (!player?.id || seenIds.has(player.id)) {
+      if (!player?.id || seenIds.has(player.id) || String(player.id) === String(currentUser?.id)) {
         return false
       }
 
@@ -46,7 +54,12 @@ function buildLobbyPlayers(currentUser, users, activeMatches) {
       return true
     })
     .map((player) => {
-      const status = participants.has(String(player.id)) ? 'playing' : 'online'
+      let status = 'offline'
+      if (participants.has(String(player.id))) {
+        status = 'playing'
+      } else if (isPlayerOnline(player)) {
+        status = 'online'
+      }
 
       return {
         ...player,
@@ -58,6 +71,38 @@ function buildLobbyPlayers(currentUser, users, activeMatches) {
   return players.sort((left, right) => {
     return (right.elo ?? 0) - (left.elo ?? 0)
   })
+}
+
+function buildFriendsWithStatus(friends, activeMatches, lobbyPlayers) {
+  const activeUserIds = new Set(
+    activeMatches.flatMap((match) => [
+      String(match.bottom_player_id),
+      String(match.top_player_id),
+    ])
+  )
+  
+  return friends
+    .filter((f) => f.status === 'accepted')
+    .map((friend) => {
+      let status = 'offline'
+      if (activeUserIds.has(String(friend.id))) {
+        status = 'playing'
+      } else if (isPlayerOnline(friend)) {
+        status = 'online'
+      }
+
+      return {
+        ...friend,
+        onlineStatus: status,
+      }
+    })
+    .sort((left, right) => {
+      if (left.onlineStatus === 'playing' && right.onlineStatus !== 'playing') return -1
+      if (left.onlineStatus !== 'playing' && right.onlineStatus === 'playing') return 1
+      if (left.onlineStatus === 'online' && right.onlineStatus === 'offline') return -1
+      if (left.onlineStatus === 'offline' && right.onlineStatus === 'online') return 1
+      return (right.elo ?? 0) - (left.elo ?? 0)
+    })
 }
 
 function buildLiveMatches(activeMatches, currentUser) {
@@ -104,6 +149,7 @@ export default function Home() {
   })
   const [leaderboardUsers, setLeaderboardUsers] = useState([])
   const [activeMatches, setActiveMatches] = useState([])
+  const [friends, setFriends] = useState([])
   const [rightPanelTab, setRightPanelTab] = useState('players')
   const queueStartedAtRef = useRef(null)
   const { activeMatchSummary, currentUser, isAuthenticated } =
@@ -117,6 +163,10 @@ export default function Home() {
   const liveMatches = useMemo(
     () => buildLiveMatches(activeMatches, currentUser),
     [activeMatches, currentUser],
+  )
+  const friendsList = useMemo(
+    () => buildFriendsWithStatus(friends, activeMatches, lobbyPlayers),
+    [friends, activeMatches, lobbyPlayers],
   )
   const leaderboardPreview = useMemo(
     () =>
@@ -295,9 +345,14 @@ export default function Home() {
     }
 
     void loadLeaderboard()
+    
+    const intervalId = window.setInterval(() => {
+      void loadLeaderboard()
+    }, 15000)
 
     return () => {
       isCancelled = true
+      window.clearInterval(intervalId)
     }
   }, [])
 
@@ -330,6 +385,37 @@ export default function Home() {
       window.clearInterval(intervalId)
     }
   }, [])
+
+  useEffect(() => {
+    let isCancelled = false
+    const token = typeof window === 'undefined' ? '' : window.localStorage.getItem('mangala.authToken') ?? ''
+    
+    if (!token || !isAuthenticated) {
+      return undefined
+    }
+
+    const loadFriends = async () => {
+      try {
+        const data = await getFriendsRequest(token)
+        if (isCancelled) return
+        setFriends(data)
+      } catch (error) {
+        if (!isCancelled) {
+          console.error('Load friends error:', error)
+        }
+      }
+    }
+
+    void loadFriends()
+    const intervalId = window.setInterval(() => {
+      void loadFriends()
+    }, HOME_ACTIVE_MATCHES_POLL_INTERVAL_MS)
+
+    return () => {
+      isCancelled = true
+      window.clearInterval(intervalId)
+    }
+  }, [isAuthenticated])
 
   useEffect(() => {
     if (!queueState.isSearching) {
@@ -612,6 +698,54 @@ export default function Home() {
               ) : (
                 <div className={styles.emptyMatchesState}>
                   <strong>{t('home.noMatchesNow')}</strong>
+                </div>
+              )}
+            </section>
+
+            <section
+              className={`${styles.friendsPanel} ${
+                friendsList.length === 0 ? styles.friendsPanelEmpty : ''
+              } ${friendsList.length > 0 ? styles.friendsPanelFilled : ''}`}
+            >
+              <div className={styles.sectionHeading}>
+                <h2>
+                  <span className={styles.sectionHeadingLabel}>
+                    <span className={styles.availableDot} aria-hidden="true" />
+                    {t('home.friends')} ({friendsList.length})
+                  </span>
+                </h2>
+              </div>
+
+              {friendsList.length > 0 ? (
+                <div className={styles.tableWrap}>
+                  <div className={styles.friendTableHeader}>
+                    <span>{t('home.player')}</span>
+                    <span>{t('profile.rating')}</span>
+                  </div>
+                  <div className={styles.friendList}>
+                    {friendsList.map((friend) => (
+                      <Link
+                        key={friend.id}
+                        to={`/member/${encodeURIComponent(friend.username)}`}
+                        className={styles.playerRow}
+                      >
+                        <span className={styles.playerNameCell}>
+                          <strong className={styles.playerName}>{getDisplayName(friend)}</strong>
+                          {friend.onlineStatus === 'playing' && (
+                            <span className={styles.botBadge} style={{ background: '#d44434', color: '#fff' }}>{t('profile.resultLive')}</span>
+                          )}
+                          {friend.onlineStatus === 'online' && (
+                            <span className={styles.botBadge} style={{ background: '#45a458', color: '#fff' }}>{t('profile.online')}</span>
+                          )}
+                        </span>
+                        <span className={styles.playerRating}>{friend.elo ?? '-'}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.emptyFriendsState}>
+                  <strong>{t('home.noFriendsYet')}</strong>
                 </div>
               )}
             </section>

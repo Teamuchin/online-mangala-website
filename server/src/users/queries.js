@@ -3,7 +3,8 @@ const PUBLIC_USER_SELECT_FIELDS = `
   username,
   elo,
   is_bot,
-  created_at
+  created_at,
+  last_seen
 `;
 
 const findPublicUserByUsernameQuery = `

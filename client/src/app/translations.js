@@ -13,6 +13,11 @@ export const translations = {
       turkish: 'Türkçe',
       openProfile: 'Profili Aç',
       goHome: 'Ana Sayfaya Dön',
+      notifications: 'Bildirimler',
+      noNewNotifications: 'Yeni bildirim yok',
+      wantsToBeFriends: 'seninle arkadaş olmak istiyor!',
+      accept: 'Kabul Et',
+      reject: 'Reddet',
     },
     common: {
       close: 'Kapat',
@@ -90,6 +95,8 @@ export const translations = {
       topPlayer: 'Üst Oyuncu',
       queueLookingRated: 'Dereceli oyun aranıyor...',
       queueLookingUnrated: 'Derecesiz oyun aranıyor...',
+      friends: 'Arkadaşlar',
+      noFriendsYet: 'Henüz arkadaşın yok.',
     },
     banner: {
       slogan1Accent: 'Oyna',
@@ -152,6 +159,9 @@ export const translations = {
       challengeError: 'Maç başlatılamadı.',
       loadFailed: 'Profil yüklenemedi.',
       ai: 'AI',
+      addFriend: 'Arkadaş Ekle',
+      removeFriend: 'Arkadaşlıktan Çıkar',
+      requestPending: 'İstek Bekliyor',
     },
     profileGames: {
       loading: 'Maç geçmişi yükleniyor',
@@ -194,6 +204,7 @@ export const translations = {
       prev: 'Önceki',
       next: 'Sonraki',
       pages: 'Liderlik tablosu sayfaları',
+      searchUsers: 'Oyuncu ara...',
     },
     learn: {
       title:
@@ -227,6 +238,11 @@ export const translations = {
       turkish: 'Türkçe',
       openProfile: 'Open profile',
       goHome: 'Go home',
+      notifications: 'Notifications',
+      noNewNotifications: 'No new notifications',
+      wantsToBeFriends: 'wants to be friends!',
+      accept: 'Accept',
+      reject: 'Reject',
     },
     common: {
       close: 'Close',
@@ -304,6 +320,8 @@ export const translations = {
       topPlayer: 'Top Player',
       queueLookingRated: 'Looking for a rated game...',
       queueLookingUnrated: 'Looking for an unrated game...',
+      friends: 'Friends',
+      noFriendsYet: 'You have no friends yet.',
     },
     banner: {
       slogan1Accent: 'Play',
@@ -366,6 +384,9 @@ export const translations = {
       challengeError: 'Could not start the match.',
       loadFailed: 'Could not load profile.',
       ai: 'AI',
+      addFriend: 'Add Friend',
+      removeFriend: 'Remove Friend',
+      requestPending: 'Request Pending',
     },
     profileGames: {
       loading: 'Loading match history',
@@ -408,6 +429,7 @@ export const translations = {
       prev: 'Prev',
       next: 'Next',
       pages: 'Leaderboard pages',
+      searchUsers: 'Search users...',
     },
     learn: {
       title:

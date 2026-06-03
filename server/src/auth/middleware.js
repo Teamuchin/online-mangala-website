@@ -1,4 +1,8 @@
 const jwt = require('jsonwebtoken');
+const db = require('../db');
+
+const userLastSeenUpdates = new Map();
+const LAST_SEEN_UPDATE_INTERVAL_MS = 30000;
 
 function normalizeToken(rawToken = '') {
   let token = String(rawToken || '').trim();
@@ -48,6 +52,15 @@ function requireAuth(req, res, next) {
       ...payload,
       userId,
     };
+
+    const now = Date.now();
+    const lastUpdate = userLastSeenUpdates.get(userId) || 0;
+    
+    if (now - lastUpdate > LAST_SEEN_UPDATE_INTERVAL_MS) {
+      userLastSeenUpdates.set(userId, now);
+      db.query('UPDATE users SET last_seen = NOW() WHERE id = $1', [userId])
+        .catch(err => console.error('Failed to update last_seen:', err));
+    }
 
     return next();
   } catch {

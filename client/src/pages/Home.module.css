@@ -25,6 +25,7 @@
 .heroPanel,
 .matchesPanel,
 .playersPanel,
+.friendsPanel,
 .emptyPanel {
   border: 1px solid rgba(121, 70, 35, 0.1);
   border-radius: 28px;
@@ -135,11 +136,13 @@
 
 .mainColumn {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 18px;
 }
 
 .matchesPanel,
-.playersPanel {
+.playersPanel,
+.friendsPanel {
   padding: 20px;
   display: grid;
   gap: 18px;
@@ -153,10 +156,10 @@
   overflow: hidden;
 }
 
-.matchesPanel {
+.matchesPanel,
+.friendsPanel {
   grid-template-rows: auto minmax(0, 1fr);
   box-sizing: border-box;
-  max-width: 390px;
   min-height: 0;
   overflow: hidden;
 }
@@ -171,11 +174,13 @@
   min-height: 0;
 }
 
-.matchesPanelFilled {
+.matchesPanelFilled,
+.friendsPanelFilled {
   max-height: 380px;
 }
 
-.matchesPanelEmpty {
+.matchesPanelEmpty,
+.friendsPanelEmpty {
   height: auto;
   max-height: none;
   min-height: 0;
@@ -217,6 +222,7 @@
 }
 
 .matchesPanelFilled .tableWrap,
+.friendsPanelFilled .tableWrap,
 .playersPanelFilled .tableWrap,
 .playersPanel .tableWrap {
   min-height: 0;
@@ -225,12 +231,14 @@
 }
 
 .playersPanelFilled .tableWrap,
-.matchesPanelFilled .tableWrap {
+.matchesPanelFilled .tableWrap,
+.friendsPanelFilled .tableWrap {
   max-height: 320px;
 }
 
 .matchTableHeader,
 .playerTableHeader,
+.friendTableHeader,
 .leaderboardHeader {
   display: grid;
   align-items: center;
@@ -247,7 +255,8 @@
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.4fr);
 }
 
-.playerTableHeader {
+.playerTableHeader,
+.friendTableHeader {
   grid-template-columns: minmax(0, 1fr) 56px;
 }
 
@@ -257,6 +266,7 @@
 
 .matchList,
 .playerList,
+.friendList,
 .leaderboardList {
   display: grid;
   gap: 6px;
@@ -358,7 +368,8 @@
   font-weight: 700;
 }
 
-.emptyMatchesState {
+.emptyMatchesState,
+.emptyFriendsState {
   padding: 4px 4px 0;
   color: rgba(90, 47, 18, 0.82);
 }
@@ -368,7 +379,8 @@
   color: rgba(90, 47, 18, 0.82);
 }
 
-.emptyMatchesState strong {
+.emptyMatchesState strong,
+.emptyFriendsState strong {
   font-size: 0.98rem;
   font-weight: 700;
 }
@@ -394,32 +406,45 @@
   align-content: start;
 }
 
+.friendList {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+  padding-bottom: 2px;
+  align-content: start;
+}
+
 .matchList,
-.playerList {
+.playerList,
+.friendList {
   scrollbar-width: thin;
   scrollbar-color: rgba(121, 70, 35, 0.38) rgba(255, 247, 236, 0.42);
 }
 
 .matchList::-webkit-scrollbar,
-.playerList::-webkit-scrollbar {
+.playerList::-webkit-scrollbar,
+.friendList::-webkit-scrollbar {
   width: 9px;
 }
 
 .matchList::-webkit-scrollbar-track,
-.playerList::-webkit-scrollbar-track {
+.playerList::-webkit-scrollbar-track,
+.friendList::-webkit-scrollbar-track {
   background: rgba(255, 247, 236, 0.42);
   border-radius: 999px;
 }
 
 .matchList::-webkit-scrollbar-thumb,
-.playerList::-webkit-scrollbar-thumb {
+.playerList::-webkit-scrollbar-thumb,
+.friendList::-webkit-scrollbar-thumb {
   background: rgba(121, 70, 35, 0.38);
   border-radius: 999px;
   border: 2px solid rgba(255, 247, 236, 0.42);
 }
 
 .matchList::-webkit-scrollbar-thumb:hover,
-.playerList::-webkit-scrollbar-thumb:hover {
+.playerList::-webkit-scrollbar-thumb:hover,
+.friendList::-webkit-scrollbar-thumb:hover {
   background: rgba(121, 70, 35, 0.52);
 }
 
@@ -555,6 +580,7 @@
   .heroPanel,
   .matchesPanel,
   .playersPanel,
+  .friendsPanel,
   .guestHero {
     padding: 20px;
     border-radius: 22px;
@@ -583,6 +609,7 @@
 
   .matchTableHeader,
   .playerTableHeader,
+  .friendTableHeader,
   .leaderboardHeader {
     display: none;
   }

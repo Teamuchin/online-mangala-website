@@ -22,6 +22,7 @@ export function buildProfileFromBackendUser(user) {
     isBot: user.is_bot === true,
     memberSince: formatMemberSince(user.created_at),
     createdAt: user.created_at,
+    lastSeen: user.last_seen,
   }
 }
 

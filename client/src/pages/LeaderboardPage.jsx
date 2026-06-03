@@ -13,12 +13,13 @@ import { useGlobalHeader } from '../app/useGlobalHeader.js'
 import styles from './LeaderboardPage.module.css'
 
 export default function LeaderboardPage() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { currentUser } = useAppData()
   const { t } = useGlobalHeader()
   const [leaderboardUsers, setLeaderboardUsers] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [loadError, setLoadError] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     let isCancelled = false
@@ -57,7 +58,7 @@ export default function LeaderboardPage() {
   }, [t])
 
   const leaderboard = useMemo(() => {
-    return leaderboardUsers.map((user) =>
+    let mapped = leaderboardUsers.map((user) =>
       String(user.id) === String(currentUser.id)
         ? {
             ...user,
@@ -65,7 +66,14 @@ export default function LeaderboardPage() {
           }
         : user,
     )
-  }, [currentUser.id, currentUser.username, leaderboardUsers])
+
+    if (searchQuery.trim()) {
+      const lowerQuery = searchQuery.trim().toLowerCase()
+      mapped = mapped.filter((u) => u.username.toLowerCase().includes(lowerQuery))
+    }
+
+    return mapped
+  }, [currentUser.id, currentUser.username, leaderboardUsers, searchQuery])
   const pageCount = getLeaderboardPageCount(leaderboard.length)
   const rawPage = Number.parseInt(searchParams.get('page') ?? '1', 10)
   const currentPage = Number.isNaN(rawPage)
@@ -104,9 +112,23 @@ export default function LeaderboardPage() {
             <p className={styles.kicker}>{t('leaderboard.competition')}</p>
             <h1>{t('leaderboard.title')} ({leaderboard.length})</h1>
           </div>
-          <Link to="/" className={styles.backLink}>
-            {t('leaderboard.backToLobby')}
-          </Link>
+          <div className={styles.headerRight}>
+            <input 
+              type="text" 
+              placeholder={t('leaderboard.searchUsers')} 
+              className={styles.searchInput}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                if (searchParams.get('page') && searchParams.get('page') !== '1') {
+                  setSearchParams({ page: '1' })
+                }
+              }}
+            />
+            <Link to="/" className={styles.backLink}>
+              {t('leaderboard.backToLobby')}
+            </Link>
+          </div>
         </header>
 
         <section className={styles.leaderboardCard}>

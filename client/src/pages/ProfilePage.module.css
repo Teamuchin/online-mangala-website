@@ -86,6 +86,44 @@
   opacity: 0.6;
 }
 
+.addFriendButton,
+.removeFriendButton,
+.pendingFriendButton {
+  border: 1px solid rgba(90, 47, 18, 0.22);
+  border-radius: 12px;
+  background: rgba(90, 47, 18, 0.08);
+  color: #5a2f12;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  line-height: 1;
+  transition: opacity 150ms ease;
+}
+
+.addFriendButton {
+  background: #45a458;
+  color: white;
+  border-color: #3b8b4a;
+}
+
+.removeFriendButton {
+  background: #d3362d;
+  color: white;
+  border-color: #b32e26;
+}
+
+.pendingFriendButton {
+  background: rgba(90, 47, 18, 0.2);
+  cursor: not-allowed;
+}
+
+.addFriendButton:disabled,
+.removeFriendButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .profileHeader,
 .chartCard,
 .historyCard,

@@ -272,9 +272,16 @@ export function AppDataProvider({ children }) {
     }
 
     void loadCurrentUser()
+    
+    const intervalId = setInterval(() => {
+      if (!isCancelled) {
+        void loadCurrentUser()
+      }
+    }, 20000)
 
     return () => {
       isCancelled = true
+      clearInterval(intervalId)
     }
   }, [currentUser.email, isAuthenticated])
 

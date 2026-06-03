@@ -6,6 +6,7 @@ const authRoutes = require('./routes/auth');
 const matchmakingRoutes = require('./routes/matchmaking');
 const matchRoutes = require('./routes/matches');
 const userRoutes = require('./routes/users');
+const friendsRoutes = require('./routes/friends');
 const { ensureSeededBotUsers } = require('./auth/botSeed');
 const { initializeMatchTimeouts } = require('./matches/controller');
 
@@ -17,6 +18,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/matchmaking', matchmakingRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/friends', friendsRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {

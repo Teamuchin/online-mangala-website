@@ -12,6 +12,11 @@ import {
   getMatchResultLabel,
 } from '../app/profileData.js'
 import { getUserByUsernameRequest } from '../app/userApi.js'
+import {
+  getFriendsRequest,
+  sendFriendRequest,
+  removeFriendRequest,
+} from '../app/friendsApi.js'
 import { useAppData } from '../app/useAppData.js'
 import styles from './ProfilePage.module.css'
 
@@ -225,6 +230,8 @@ export default function ProfilePage() {
   const [isChallengeModalOpen, setIsChallengeModalOpen] = useState(false)
   const [isChallengeSubmitting, setIsChallengeSubmitting] = useState(false)
   const [challengeError, setChallengeError] = useState('')
+  const [friendshipStatus, setFriendshipStatus] = useState(null)
+  const [friendshipActionLoading, setFriendshipActionLoading] = useState(false)
   const fallbackProfile = username
     ? resolveProfile(publicProfileDirectory, currentUser, username)
     : currentUser
@@ -307,6 +314,37 @@ export default function ProfilePage() {
     }
   }, [t, username])
 
+  useEffect(() => {
+    let isCancelled = false
+    const token = typeof window === 'undefined' ? '' : window.localStorage.getItem('mangala.authToken') ?? ''
+    
+    if (!token || !isAuthenticated || isGuestUser(currentUser) || !profile || String(profile.id) === String(currentUser.id)) {
+      return undefined
+    }
+
+    const checkFriendship = async () => {
+      try {
+        const data = await getFriendsRequest(token)
+        if (isCancelled) return
+        
+        const friendship = data.find(f => String(f.id) === String(profile.id)) 
+        if (friendship) {
+          setFriendshipStatus(friendship.status)
+        } else {
+          setFriendshipStatus('none')
+        }
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    
+    void checkFriendship()
+    
+    return () => {
+      isCancelled = true
+    }
+  }, [isAuthenticated, currentUser, profile])
+
   if (!username) {
     return isAuthenticated
       ? <Navigate to={canonicalProfilePath} replace />
@@ -336,7 +374,9 @@ export default function ProfilePage() {
   }
 
   const isOnline =
-    isAuthenticated && !isGuestUser(currentUser) && String(profile.id) === String(currentUser.id)
+    (isAuthenticated && !isGuestUser(currentUser) && String(profile.id) === String(currentUser.id)) ||
+    (profile.lastSeen ? (Date.now() - new Date(profile.lastSeen).getTime() <= 45000) : false) ||
+    profile.isBot || profile.is_bot
   const recentMatches = allMatches.slice(0, 5)
   const hasMoreMatches = allMatches.length > recentMatches.length
   const profileDisplayName = backendProfile
@@ -420,6 +460,34 @@ export default function ProfilePage() {
     }
   }
 
+  const handleAddFriend = async () => {
+    const token = typeof window === 'undefined' ? '' : window.localStorage.getItem('mangala.authToken') ?? ''
+    if (!token) return
+    setFriendshipActionLoading(true)
+    try {
+      await sendFriendRequest(token, profile.username)
+      setFriendshipStatus('pending')
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setFriendshipActionLoading(false)
+    }
+  }
+
+  const handleRemoveFriend = async () => {
+    const token = typeof window === 'undefined' ? '' : window.localStorage.getItem('mangala.authToken') ?? ''
+    if (!token) return
+    setFriendshipActionLoading(true)
+    try {
+      await removeFriendRequest(token, profile.username)
+      setFriendshipStatus('none')
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setFriendshipActionLoading(false)
+    }
+  }
+
   return (
     <main className={styles.profilePage}>
       {isChallengeModalOpen && (
@@ -481,6 +549,20 @@ export default function ProfilePage() {
                   >
                     {t('profile.challenge')}
                   </button>
+                )}
+                
+                {isAuthenticated && !isGuestUser(currentUser) && String(profile.id) !== String(currentUser.id) && !profile.isBot && friendshipStatus !== null && (
+                  <>
+                    {friendshipStatus === 'none' && (
+                       <button type="button" className={styles.addFriendButton} onClick={handleAddFriend} disabled={friendshipActionLoading}>{t('profile.addFriend')}</button>
+                    )}
+                    {friendshipStatus === 'pending' && (
+                       <button type="button" className={styles.pendingFriendButton} disabled>{t('profile.requestPending')}</button>
+                    )}
+                    {friendshipStatus === 'accepted' && (
+                       <button type="button" className={styles.removeFriendButton} onClick={handleRemoveFriend} disabled={friendshipActionLoading}>{t('profile.removeFriend')}</button>
+                    )}
+                  </>
                 )}
               </h1>
               <div className={styles.metaRow}>
