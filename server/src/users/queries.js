@@ -17,6 +17,7 @@ LIMIT 1;
 const listPublicUsersByEloQuery = `
 SELECT ${PUBLIC_USER_SELECT_FIELDS}
 FROM users
+WHERE LOWER(username) NOT LIKE 'guest-%'
 ORDER BY elo DESC, LOWER(username) ASC;
 `;
 

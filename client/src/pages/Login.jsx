@@ -59,9 +59,9 @@ export default function Login() {
       setIsSubmitting(true)
       setResendMessage('')
       const response = await resendVerificationRequest({ email: lastCredential })
-      setResendMessage(response.message || 'Verification email resent.')
+      setResendMessage(response.message || t('auth.verificationResent'))
     } catch (error) {
-      setErrorMessage(error.message || 'Failed to resend verification.')
+      setErrorMessage(error.message || t('auth.verificationResendFailed'))
     } finally {
       setIsSubmitting(false)
     }

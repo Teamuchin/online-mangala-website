@@ -127,7 +127,7 @@ export default function MatchesPage() {
                 <tr>
                   <th>{t('home.player1')}</th>
                   <th>{t('home.player2')}</th>
-                  <th>Action</th>
+                  <th>{t('common.action')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -150,7 +150,7 @@ export default function MatchesPage() {
                       </td>
                       <td>
                         <Link to={match.url} className={styles.playerLink} style={{ fontWeight: 'bold' }}>
-                          Watch
+                          {t('common.watch')}
                         </Link>
                       </td>
                     </tr>

@@ -52,9 +52,9 @@ export default function AccountSettings() {
     setErrorMessage('')
     try {
       const response = await resendVerificationRequest({ email: currentUser.email })
-      setSaveMessage(response.message || 'Verification email resent successfully.')
+      setSaveMessage(response.message || t('auth.verificationResent'))
     } catch (error) {
-      setErrorMessage(error.message || 'Failed to resend verification email.')
+      setErrorMessage(error.message || t('auth.verificationResendFailed'))
     } finally {
       setIsResending(false)
     }

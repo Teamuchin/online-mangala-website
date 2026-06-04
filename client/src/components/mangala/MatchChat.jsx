@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { getMatchChatRequest, postMatchChatRequest } from '../../app/matchApi.js';
 import { useAppData } from '../../app/useAppData.js';
+import { useGlobalHeader } from '../../app/useGlobalHeader.js';
 import styles from './MatchChat.module.css';
 
 export default function MatchChat({ matchId, isActive }) {
   const { currentUser } = useAppData();
+  const { t } = useGlobalHeader();
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,7 +92,7 @@ export default function MatchChat({ matchId, isActive }) {
     <div className={styles.chatContainer}>
       <div className={styles.chatWindow}>
         <div className={styles.chatHeader} onClick={toggleChat} role="button" tabIndex={0}>
-          <span>Match Chat {hasMessages ? `(${messages.length})` : ''}</span>
+          <span>{t('chat.matchChat')} {hasMessages ? `(${messages.length})` : ''}</span>
           <span className={styles.chatHeaderIcon}>{isOpen ? '▼' : '▲'}</span>
         </div>
         
@@ -99,8 +101,8 @@ export default function MatchChat({ matchId, isActive }) {
             <div className={styles.messagesContainer}>
               {!hasMessages && (
                 <div className={styles.noMessages}>
-                  No messages yet.<br />
-                  {isActive ? 'Say hi to your opponent!' : 'Match has ended.'}
+                  {t('chat.noMessagesYet')}<br />
+                  {isActive ? t('chat.sayHi') : t('chat.matchHasEnded')}
                 </div>
               )}
               {messages.map((msg) => {
@@ -123,7 +125,7 @@ export default function MatchChat({ matchId, isActive }) {
                 id="chat-input"
                 type="text"
                 className={styles.inputField}
-                placeholder={isActive ? "Type a message..." : "Match has ended"}
+                placeholder={isActive ? t('chat.typeMessage') : t('chat.matchHasEnded')}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 disabled={!isActive || isSubmitting}
@@ -134,7 +136,7 @@ export default function MatchChat({ matchId, isActive }) {
                 type="submit" 
                 className={styles.sendButton}
                 disabled={!inputText.trim() || !isActive || isSubmitting}
-                aria-label="Send"
+                aria-label={t('chat.send')}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M2.01 21L23 12L2.01 3L2 10l15 2-15 2z" fill="currentColor"/>

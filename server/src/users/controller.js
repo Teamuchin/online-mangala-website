@@ -3,6 +3,7 @@ const {
   findPublicUserByUsernameQuery,
   listPublicUsersByEloQuery,
 } = require('./queries');
+const { isUserOnline } = require('../socketManager');
 
 async function getUserByUsername(req, res) {
   try {
@@ -18,7 +19,13 @@ async function getUserByUsername(req, res) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    return res.status(200).json(result.rows[0]);
+    const user = result.rows[0];
+
+    if (user.username.toLowerCase().startsWith('guest-') && !isUserOnline(user.id)) {
+      return res.status(404).json({ message: 'User profile no longer available' });
+    }
+
+    return res.status(200).json(user);
   } catch (error) {
     console.error('Get user by username error:', error);
     return res.status(500).json({ message: 'Internal server error' });

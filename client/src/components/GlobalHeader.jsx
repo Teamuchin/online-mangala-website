@@ -98,7 +98,7 @@ export default function GlobalHeader() {
           ) : null}
         </div>
 
-        <nav className={styles.actions} aria-label="Global navigation">
+        <nav className={styles.actions} aria-label={t('common.globalNavigation')}>
           {isAuthenticated && !isGuestUser(currentUser) ? (
             <Link
               to={profileHref}

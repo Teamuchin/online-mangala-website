@@ -30,6 +30,11 @@ export const translations = {
       noSuchPlayer: 'Böyle bir oyuncu yok',
       draw: 'Berabere',
       or: 'VEYA',
+      action: 'İşlem',
+      watch: 'İzle',
+      resign: 'Çekil',
+      globalNavigation: 'Genel gezinme',
+      couldNotLoadMatch: 'Maç yüklenemedi.',
     },
     auth: {
       usernameOrEmail: 'Kullanıcı adı veya e-posta',
@@ -59,6 +64,8 @@ export const translations = {
       emailVerifiedSuccess: 'E-posta başarıyla doğrulandı!',
       emailVerifiedError: 'Doğrulama başarısız oldu. Bağlantı süresi dolmuş olabilir.',
       noToken: 'Doğrulama bağlantısı geçersiz.',
+      verificationResent: 'Doğrulama e-postası başarıyla yeniden gönderildi.',
+      verificationResendFailed: 'Doğrulama e-postası yeniden gönderilemedi.',
     },
     game: {
       youWin: 'Kazandınız',
@@ -240,6 +247,11 @@ export const translations = {
       messages: 'Mesajlar',
       noFriendsYet: 'Henüz arkadaşın yok.',
       typeMessage: 'Bir mesaj yaz...',
+      matchChat: 'Maç Sohbeti',
+      noMessagesYet: 'Henüz mesaj yok.',
+      sayHi: 'Rakibine merhaba de!',
+      matchHasEnded: 'Maç sona erdi.',
+      send: 'Gönder',
     },
   },
   en: {
@@ -271,6 +283,11 @@ export const translations = {
       noSuchPlayer: 'No such player',
       draw: 'Draw',
       or: 'OR',
+      action: 'Action',
+      watch: 'Watch',
+      resign: 'Resign',
+      globalNavigation: 'Global navigation',
+      couldNotLoadMatch: 'Could not load match.',
     },
     auth: {
       usernameOrEmail: 'Username or Email',
@@ -300,6 +317,8 @@ export const translations = {
       emailVerifiedSuccess: 'Email verified successfully!',
       emailVerifiedError: 'Verification failed. The link may be expired.',
       noToken: 'No verification token provided.',
+      verificationResent: 'Verification email resent successfully.',
+      verificationResendFailed: 'Failed to resend verification email.',
     },
     game: {
       youWin: 'You win',
@@ -480,7 +499,12 @@ export const translations = {
     chat: {
       messages: 'Messages',
       noFriendsYet: 'You have no friends yet.',
-      typeMessage: 'Aa',
+      typeMessage: 'Type a message...',
+      matchChat: 'Match Chat',
+      noMessagesYet: 'No messages yet.',
+      sayHi: 'Say hi to your opponent!',
+      matchHasEnded: 'Match has ended.',
+      send: 'Send',
     },
   },
 }

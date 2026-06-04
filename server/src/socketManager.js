@@ -162,7 +162,12 @@ function getIo() {
   return io;
 }
 
+function isUserOnline(userId) {
+  return userSockets.has(String(userId));
+}
+
 module.exports = {
   initSocketManager,
-  getIo
+  getIo,
+  isUserOnline
 };

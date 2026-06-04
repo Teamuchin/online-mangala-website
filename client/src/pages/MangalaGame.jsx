@@ -1014,7 +1014,7 @@ export default function MangalaGame() {
         }
 
         setBackendMatch(null)
-        setBackendMatchError(error.message || 'Could not load match.')
+        setBackendMatchError(error.message || t('common.couldNotLoadMatch'))
       } finally {
         if (!isCancelled && showLoading) {
           setIsLoadingBackendMatch(false)

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { getDisplayName, getRouteName } from '../../app/playerNames.js'
 import { formatTime } from './gameLogic'
+import { useGlobalHeader } from '../../app/useGlobalHeader.js'
 import styles from './MangalaGame.module.css'
 
 export default function PlayerPanel({
@@ -16,6 +17,7 @@ export default function PlayerPanel({
   showRating = true,
   showResign = true,
 }) {
+  const { t } = useGlobalHeader()
   const time = formatTime(player.timeLeft)
   const ratingChangeText =
     ratingChange === null ? null : `${ratingChange > 0 ? '+' : ''}${ratingChange}`
@@ -41,7 +43,7 @@ export default function PlayerPanel({
             onClick={() => onResign?.(resignSide)}
             disabled={resignDisabled}
           >
-            Resign
+            {t('common.resign')}
           </button>
         ) : (
           <div className={styles.playerHeaderSpacer} aria-hidden="true" />
