@@ -36,43 +36,43 @@ ON users (LOWER(username));
 `;
 
 const findUserByCredentialQuery = `
-SELECT id, username, email, password_hash, elo, is_bot, created_at
+SELECT id, username, email, password_hash, elo, is_bot, created_at, is_verified, pending_email
 FROM users
 WHERE LOWER(email) = LOWER($1) OR LOWER(username) = LOWER($1)
 LIMIT 1;
 `;
 
 const findUserByEmailQuery = `
-SELECT id, username, email, password_hash, elo, is_bot, created_at
+SELECT id, username, email, password_hash, elo, is_bot, created_at, is_verified, pending_email
 FROM users
 WHERE LOWER(email) = LOWER($1)
 LIMIT 1;
 `;
 
 const findUserByUsernameQuery = `
-SELECT id, username, email, password_hash, elo, is_bot, created_at
+SELECT id, username, email, password_hash, elo, is_bot, created_at, is_verified, pending_email
 FROM users
 WHERE LOWER(username) = LOWER($1)
 LIMIT 1;
 `;
 
 const findUserByIdQuery = `
-SELECT id, username, email, password_hash, elo, is_bot, created_at
+SELECT id, username, email, password_hash, elo, is_bot, created_at, is_verified, pending_email
 FROM users
 WHERE id = $1
 LIMIT 1;
 `;
 
 const createUserQuery = `
-INSERT INTO users (username, email, password_hash, elo, is_bot)
-VALUES ($1, $2, $3, 1200, FALSE)
-RETURNING id, username, email, elo, is_bot, created_at;
+INSERT INTO users (username, email, password_hash, elo, is_bot, verification_token, is_verified)
+VALUES ($1, $2, $3, 1200, FALSE, $4, $5)
+RETURNING id, username, email, elo, is_bot, created_at, is_verified, pending_email;
 `;
 
 const createBotUserQuery = `
-INSERT INTO users (username, email, password_hash, elo, is_bot)
-VALUES ($1, $2, $3, $4, TRUE)
-RETURNING id, username, email, elo, is_bot, created_at;
+INSERT INTO users (username, email, password_hash, elo, is_bot, is_verified)
+VALUES ($1, $2, $3, $4, TRUE, TRUE)
+RETURNING id, username, email, elo, is_bot, created_at, is_verified;
 `;
 
 const updateUserPasswordQuery = `
@@ -93,16 +93,49 @@ UPDATE users
 SET username = $2,
     email = $3,
     password_hash = $4,
-    is_bot = TRUE
+    is_bot = TRUE,
+    is_verified = TRUE
 WHERE id = $1
-RETURNING id, username, email, elo, is_bot, created_at;
+RETURNING id, username, email, elo, is_bot, created_at, is_verified;
 `;
 
 const updateUserEloQuery = `
 UPDATE users
 SET elo = $2
 WHERE id = $1
-RETURNING id, username, email, elo, is_bot, created_at;
+RETURNING id, username, email, elo, is_bot, created_at, is_verified, pending_email;
+`;
+
+const findUserByVerificationTokenQuery = `
+SELECT id, username, email, password_hash, elo, is_bot, created_at, is_verified, pending_email
+FROM users
+WHERE verification_token = $1
+LIMIT 1;
+`;
+
+const verifyUserEmailQuery = `
+UPDATE users
+SET is_verified = TRUE,
+    verification_token = NULL,
+    email = COALESCE(pending_email, email),
+    pending_email = NULL
+WHERE id = $1
+RETURNING id, username, email, elo, is_bot, created_at, is_verified, pending_email;
+`;
+
+const updateUserPendingEmailQuery = `
+UPDATE users
+SET pending_email = $2,
+    verification_token = $3
+WHERE id = $1
+RETURNING id, username, email, elo, is_bot, created_at, is_verified, pending_email;
+`;
+
+const updateVerificationTokenQuery = `
+UPDATE users
+SET verification_token = $2
+WHERE id = $1
+RETURNING id, username, email, elo, is_bot, created_at, is_verified, pending_email;
 `;
 
 module.exports = {
@@ -122,4 +155,8 @@ module.exports = {
   updateUserUsernameQuery,
   updateSeededBotUserQuery,
   updateUserEloQuery,
+  findUserByVerificationTokenQuery,
+  verifyUserEmailQuery,
+  updateUserPendingEmailQuery,
+  updateVerificationTokenQuery,
 };

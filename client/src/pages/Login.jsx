@@ -3,15 +3,18 @@ import AuthBrand from '../components/AuthBrand.jsx'
 import styles from './Login.module.css'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAppData } from '../app/useAppData.js'
-import { loginRequest, guestLoginRequest } from '../app/authApi.js'
+import { loginRequest, guestLoginRequest, resendVerificationRequest } from '../app/authApi.js'
 import { useGlobalHeader } from '../app/useGlobalHeader.js'
 
 export default function Login() {
   const navigate = useNavigate()
-  const { continueAsGuest, logIn } = useAppData()
+  const { logIn } = useAppData()
   const { t } = useGlobalHeader()
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [needsVerification, setNeedsVerification] = useState(false)
+  const [lastCredential, setLastCredential] = useState('')
+  const [resendMessage, setResendMessage] = useState('')
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -28,6 +31,9 @@ export default function Login() {
     try {
       setIsSubmitting(true)
       setErrorMessage('')
+      setNeedsVerification(false)
+      setResendMessage('')
+      setLastCredential(credential)
 
       const response = await loginRequest({
         email: credential,
@@ -39,7 +45,23 @@ export default function Login() {
 
       navigate('/')
     } catch (error) {
+      if (error.message === 'Please verify your email to log in.') {
+        setNeedsVerification(true)
+      }
       setErrorMessage(error.message || t('auth.loginFailed'))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleResendVerification = async () => {
+    try {
+      setIsSubmitting(true)
+      setResendMessage('')
+      const response = await resendVerificationRequest({ email: lastCredential })
+      setResendMessage(response.message || 'Verification email resent.')
+    } catch (error) {
+      setErrorMessage(error.message || 'Failed to resend verification.')
     } finally {
       setIsSubmitting(false)
     }
@@ -97,7 +119,13 @@ export default function Login() {
           />
         </div>
         {errorMessage ? <p className={styles.errorMessage}>{errorMessage}</p> : null}
-        <button type="submit" className={styles.submitbtn} disabled={isSubmitting}>
+        {needsVerification && (
+          <button type="button" className={styles.submitbtn} onClick={handleResendVerification} disabled={isSubmitting} style={{ backgroundColor: '#f0ad4e', marginTop: '10px' }}>
+            {t('auth.resendVerification')}
+          </button>
+        )}
+        {resendMessage && <p style={{ color: 'green', fontSize: '0.8rem', marginTop: '5px' }}>{resendMessage}</p>}
+        <button type="submit" className={styles.submitbtn} disabled={isSubmitting} style={{ marginTop: '10px' }}>
           {isSubmitting ? t('auth.loggingIn') : t('auth.logIn')}
         </button>
         <Link to="/register" className={styles.signupbtn}>

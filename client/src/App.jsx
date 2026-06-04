@@ -12,6 +12,7 @@ import LeaderboardPage from "./pages/LeaderboardPage.jsx"
 import MatchesPage from "./pages/MatchesPage.jsx"
 import Banner from "./pages/Banner.jsx"
 import LearnTrainPage from "./pages/LearnTrainPage.jsx"
+import VerifyEmail from "./pages/VerifyEmail.jsx"
 import { useAppData } from "./app/useAppData.js"
 import FriendChatWidget from "./components/FriendChatWidget.jsx"
 
@@ -26,6 +27,16 @@ function RequireAuthenticatedRoute() {
   return <Outlet />
 }
 
+function RequireUnauthenticatedRoute() {
+  const { isAuthenticated } = useAppData()
+
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />
+  }
+
+  return <Outlet />
+}
+
 function App() {
   const { currentUser } = useAppData()
 
@@ -33,8 +44,11 @@ function App() {
     <>
       <GlobalHeader />
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route element={<RequireUnauthenticatedRoute />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Route>
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route element={<RequireAuthenticatedRoute />}>
           <Route path="/" element={<Home />} />
           <Route path="/practice" element={<PracticeBoardPage />} />

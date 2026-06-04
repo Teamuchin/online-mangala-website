@@ -68,3 +68,11 @@ export function updateMeRequest(payload, token) {
 export function getMeRequest(token) {
   return request('/api/auth/me', undefined, { method: 'GET', token })
 }
+
+export function verifyEmailRequest(payload) {
+  return request('/api/auth/verify-email', payload)
+}
+
+export function resendVerificationRequest(payload) {
+  return request('/api/auth/resend-verification', payload)
+}

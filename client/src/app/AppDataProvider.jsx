@@ -64,6 +64,8 @@ function buildCurrentUserFromBackendUser(user, fallbackUser = staticAppData.init
     isBot: user.is_bot === true,
     memberSince: formatMemberSince(user.created_at),
     createdAt: user.created_at,
+    is_verified: user.is_verified,
+    pending_email: user.pending_email,
   }
 }
 

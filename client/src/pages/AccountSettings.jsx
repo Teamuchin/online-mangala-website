@@ -7,7 +7,7 @@ import {
 import { Navigate } from 'react-router-dom'
 import styles from './AccountSettings.module.css'
 import { useAppData } from '../app/useAppData.js'
-import { updateMeRequest } from '../app/authApi.js'
+import { updateMeRequest, resendVerificationRequest } from '../app/authApi.js'
 import { useGlobalHeader } from '../app/useGlobalHeader.js'
 
 const USERNAME_REGEX = /^[A-Za-z0-9_-]{3,15}$/
@@ -19,25 +19,45 @@ export default function AccountSettings() {
   const [saveMessage, setSaveMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isResending, setIsResending] = useState(false)
+  const [isDirty, setIsDirty] = useState(false)
   const guestMode = isGuestUser(currentUser)
   const usernameField = accountSettingsFields.find((field) => field.id === 'username')
+  const emailField = accountSettingsFields.find((field) => field.id === 'email') || { id: 'email', type: 'email', name: 'email', className: 'inputfield' }
   const passwordFields = accountSettingsFields.filter(
     (field) => field.id !== 'username' && field.id !== 'email',
   )
 
   useEffect(() => {
-    setFormState(buildAccountFormState(currentUser))
-  }, [currentUser])
+    if (!isDirty) {
+      setFormState(buildAccountFormState(currentUser))
+    }
+  }, [currentUser, isDirty])
 
   const handleFieldChange = (event) => {
     const { id, value } = event.target
     setSaveMessage('')
     setErrorMessage('')
+    setIsDirty(true)
 
     setFormState((currentFormState) => ({
       ...currentFormState,
       [id]: value,
     }))
+  }
+
+  const handleResendVerification = async () => {
+    setIsResending(true)
+    setSaveMessage('')
+    setErrorMessage('')
+    try {
+      const response = await resendVerificationRequest({ email: currentUser.email })
+      setSaveMessage(response.message || 'Verification email resent successfully.')
+    } catch (error) {
+      setErrorMessage(error.message || 'Failed to resend verification email.')
+    } finally {
+      setIsResending(false)
+    }
   }
 
   const handleSubmit = async (event) => {
@@ -85,6 +105,7 @@ export default function AccountSettings() {
         newPassword: '',
         confirmPassword: '',
       }))
+      setIsDirty(false)
       setSaveMessage(response.message || t('account.changesSaved'))
     } catch (error) {
       if (
@@ -129,10 +150,42 @@ export default function AccountSettings() {
                 />
               </label>
             )}
-            <div className={styles.readOnlyField}>
-              <span className={styles.readOnlyLabel}>{t('account.email')}</span>
-              <span className={styles.readOnlyValue}>{currentUser.email}</span>
-            </div>
+            <label className={styles.editableField} htmlFor={emailField.id}>
+              <span className={styles.readOnlyLabel}>
+                {t('account.email')}
+                {currentUser.is_verified ? (
+                  <span style={{ color: 'green', marginLeft: '8px', fontSize: '0.8rem' }}>✓ {t('account.verified')}</span>
+                ) : (
+                  <span style={{ color: 'red', marginLeft: '8px', fontSize: '0.8rem' }}>⚠ {t('account.unverified')}</span>
+                )}
+              </span>
+              <input
+                id={emailField.id}
+                value={formState.email}
+                type={emailField.type}
+                name={emailField.name}
+                placeholder={t('account.email')}
+                className={styles[emailField.className]}
+                onChange={handleFieldChange}
+                autoComplete="email"
+              />
+            </label>
+            {!currentUser.is_verified && (
+              <button
+                type="button"
+                className={styles.submitbtn}
+                style={{ marginTop: '10px', fontSize: '0.8rem', padding: '5px' }}
+                onClick={handleResendVerification}
+                disabled={isResending}
+              >
+                {isResending ? t('account.sending') : t('account.resendVerification')}
+              </button>
+            )}
+            {currentUser.pending_email && (
+              <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '5px' }}>
+                {t('account.pendingVerification')} {currentUser.pending_email}
+              </p>
+            )}
           </div>
           {passwordFields.map((field) => (
             <input

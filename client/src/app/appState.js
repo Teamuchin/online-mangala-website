@@ -48,6 +48,7 @@ export function buildAccountFormState(currentUser) {
 export function buildProfileUpdatesFromForm(formState) {
   return {
     username: String(formState.username || '').trim(),
+    email: String(formState.email || '').trim(),
   }
 }
 

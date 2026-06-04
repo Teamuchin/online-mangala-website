@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const db = require('../db');
 const {
   findUserByCredentialQuery,
@@ -9,7 +10,12 @@ const {
   createUserQuery,
   updateUserPasswordQuery,
   updateUserUsernameQuery,
+  findUserByVerificationTokenQuery,
+  verifyUserEmailQuery,
+  updateUserPendingEmailQuery,
+  updateVerificationTokenQuery,
 } = require('./queries');
+const { sendVerificationEmail, isValidEmailWithMX } = require('../utils/email');
 
 const SALT_ROUNDS = 10;
 const USERNAME_REGEX = /^[A-Za-z0-9_-]{3,15}$/;
@@ -28,10 +34,6 @@ function normalizeEmail(email = '') {
   return String(email).trim().toLowerCase();
 }
 
-function isValidEmail(email) {
-  return /\S+@\S+\.\S+/.test(email);
-}
-
 function sanitizeProfileUser(userRow) {
   return {
     id: userRow.id,
@@ -40,6 +42,8 @@ function sanitizeProfileUser(userRow) {
     elo: userRow.elo,
     is_bot: userRow.is_bot,
     created_at: userRow.created_at,
+    is_verified: userRow.is_verified,
+    pending_email: userRow.pending_email,
   };
 }
 
@@ -63,14 +67,15 @@ async function register(req, res) {
       });
     }
 
-    if (!isValidEmail(email)) {
-      return res.status(400).json({ message: 'Invalid email address' });
-    }
-
     if (password.length < PASSWORD_MIN_LENGTH || password.length > PASSWORD_MAX_LENGTH) {
       return res.status(400).json({
         message: `Password must be ${PASSWORD_MIN_LENGTH}-${PASSWORD_MAX_LENGTH} characters long`,
       });
+    }
+
+    const isValidMX = await isValidEmailWithMX(email);
+    if (!isValidMX) {
+      return res.status(400).json({ message: 'Invalid email address or domain cannot receive emails' });
     }
 
     const existingUserResult = await db.query(findUserByEmailQuery, [email]);
@@ -86,12 +91,24 @@ async function register(req, res) {
     }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-    const createUserResult = await db.query(createUserQuery, [username, email, passwordHash]);
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    // For normal registration, they are not verified initially
+    const createUserResult = await db.query(createUserQuery, [username, email, passwordHash, verificationToken, false]);
 
-    const user = createUserResult.rows[0];
+    const userRow = createUserResult.rows[0];
+    
+    // Send verification email
+    try {
+      await sendVerificationEmail(email, verificationToken);
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      // We still registered them, so proceed. They can resend later.
+    }
+
+    const user = sanitizeProfileUser(userRow);
     const token = signAuthToken(user);
 
-    return res.status(201).json({ message: 'User registered successfully', token, user });
+    return res.status(201).json({ message: 'User registered successfully. Please check your email to verify your account.', token, user });
   } catch (error) {
     console.error('Register error:', error);
 
@@ -146,6 +163,16 @@ async function login(req, res) {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
+    // Check if verification required (1 day grace period)
+    if (!userRow.is_verified) {
+      const oneDay = 24 * 60 * 60 * 1000;
+      const createdAt = new Date(userRow.created_at).getTime();
+      const now = Date.now();
+      if (now - createdAt > oneDay) {
+        return res.status(403).json({ message: 'Please verify your email to log in.' });
+      }
+    }
+
     const user = sanitizeProfileUser(userRow);
     const token = signAuthToken(user);
 
@@ -197,6 +224,13 @@ async function updateMe(req, res) {
       ? String(req.body.username || "").trim()
       : existingUser.username;
     const wantsUsernameChange = requestedUsername !== existingUser.username;
+
+    const hasEmailField = Object.prototype.hasOwnProperty.call(req.body || {}, "email");
+    const requestedEmail = hasEmailField
+      ? normalizeEmail(req.body.email)
+      : existingUser.email;
+    const wantsEmailChange = requestedEmail !== existingUser.email;
+
     const wantsPasswordChange = Boolean(newPassword || confirmPassword);
 
     if (hasUsernameField && !USERNAME_REGEX.test(requestedUsername)) {
@@ -211,6 +245,20 @@ async function updateMe(req, res) {
 
       if (usernameOwner && String(usernameOwner.id) !== userId) {
         return res.status(409).json({ message: "Username is already taken" });
+      }
+    }
+
+    if (wantsEmailChange) {
+      const isValidMX = await isValidEmailWithMX(requestedEmail);
+      if (!isValidMX) {
+        return res.status(400).json({ message: 'Invalid email address or domain cannot receive emails' });
+      }
+
+      const existingEmailResult = await db.query(findUserByEmailQuery, [requestedEmail]);
+      const emailOwner = existingEmailResult.rows[0];
+
+      if (emailOwner && String(emailOwner.id) !== userId) {
+        return res.status(409).json({ message: "Email is already taken" });
       }
     }
 
@@ -230,7 +278,7 @@ async function updateMe(req, res) {
       }
     }
 
-    if (!wantsUsernameChange && !wantsPasswordChange) {
+    if (!wantsUsernameChange && !wantsPasswordChange && !wantsEmailChange) {
       const user = sanitizeProfileUser(existingUser);
       const token = signAuthToken(user);
 
@@ -257,16 +305,29 @@ async function updateMe(req, res) {
         await client.query(updateUserPasswordQuery, [userId, newPasswordHash]);
       }
 
+      let emailMessage = '';
+      if (wantsEmailChange) {
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        await client.query(updateUserPendingEmailQuery, [userId, requestedEmail, verificationToken]);
+        try {
+          await sendVerificationEmail(requestedEmail, verificationToken);
+          emailMessage = ' Please check your new email to verify it.';
+        } catch (emailError) {
+          console.error('Failed to send verification email for email change:', emailError);
+        }
+      }
+
       const refreshedUserResult = await client.query(findUserByIdQuery, [userId]);
       await client.query("COMMIT");
 
       const user = sanitizeProfileUser(refreshedUserResult.rows[0]);
       const token = signAuthToken(user);
-      const message = wantsUsernameChange && wantsPasswordChange
-        ? "Account updated successfully"
-        : wantsUsernameChange
-          ? "Username updated successfully"
-          : "Password updated successfully";
+      
+      let message = "Account updated successfully.";
+      if (wantsEmailChange && !wantsUsernameChange && !wantsPasswordChange) {
+        message = "Email change requested.";
+      }
+      message += emailMessage;
 
       return res.status(200).json({
         message,
@@ -292,7 +353,7 @@ async function updateMe(req, res) {
         return res.status(409).json({ message: "Username is already taken" });
       }
 
-      return res.status(409).json({ message: "User already exists" });
+      return res.status(409).json({ message: "User or Email already exists" });
     }
 
     return res.status(500).json({ message: "Internal server error" });
@@ -332,7 +393,8 @@ async function guestLogin(req, res) {
     const randomPassword = Math.random().toString(36).slice(-10);
 
     const passwordHash = await bcrypt.hash(randomPassword, SALT_ROUNDS);
-    const createUserResult = await db.query(createUserQuery, [username, email, passwordHash]);
+    // Guest accounts are automatically verified and need no token
+    const createUserResult = await db.query(createUserQuery, [username, email, passwordHash, null, true]);
 
     const userRow = createUserResult.rows[0];
     const user = sanitizeProfileUser(userRow);
@@ -345,10 +407,72 @@ async function guestLogin(req, res) {
   }
 }
 
+async function verifyEmail(req, res) {
+  try {
+    const token = String(req.body?.token || '').trim();
+    if (!token) {
+      return res.status(400).json({ message: 'Token is required' });
+    }
+
+    const userResult = await db.query(findUserByVerificationTokenQuery, [token]);
+    if (userResult.rows.length === 0) {
+      return res.status(400).json({ message: 'Invalid or expired verification token' });
+    }
+
+    const userRow = userResult.rows[0];
+    const verifyResult = await db.query(verifyUserEmailQuery, [userRow.id]);
+    
+    return res.status(200).json({ 
+      message: 'Email verified successfully',
+      user: sanitizeProfileUser(verifyResult.rows[0])
+    });
+  } catch (error) {
+    console.error('Verify email error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+async function resendVerification(req, res) {
+  try {
+    const email = normalizeEmail(req.body?.email);
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const userResult = await db.query(findUserByEmailQuery, [email]);
+    if (userResult.rows.length === 0) {
+      // Do not reveal if email exists or not
+      return res.status(200).json({ message: 'If your email is registered, a verification link has been sent.' });
+    }
+
+    const userRow = userResult.rows[0];
+    if (userRow.is_verified && !userRow.pending_email) {
+      return res.status(400).json({ message: 'Email is already verified' });
+    }
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    await db.query(updateVerificationTokenQuery, [userRow.id, verificationToken]);
+
+    const targetEmail = userRow.pending_email || userRow.email;
+    try {
+      await sendVerificationEmail(targetEmail, verificationToken);
+    } catch (emailError) {
+      console.error('Failed to resend verification email:', emailError);
+    }
+
+    return res.status(200).json({ message: 'If your email is registered, a verification link has been sent.' });
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
 module.exports = {
   register,
   login,
   getMe,
   updateMe,
   guestLogin,
+  verifyEmail,
+  resendVerification,
 };
