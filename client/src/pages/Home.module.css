@@ -626,4 +626,7 @@
     grid-template-columns: 24px minmax(0, 1fr) 56px;
   }
 
+  .mainColumn {
+    grid-template-columns: 1fr;
+  }
 }

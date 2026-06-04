@@ -6,6 +6,11 @@ import { useGlobalHeader } from '../app/useGlobalHeader.js'
 import { getFriendsRequest, acceptFriendRequest, rejectFriendRequest } from '../app/friendsApi.js'
 import styles from './GlobalHeader.module.css'
 
+import langIcon from '../assets/lang.svg'
+import notificationIcon from '../assets/notification.svg'
+import settingsIcon from '../assets/settings.svg'
+import userIcon from '../assets/user.svg'
+
 export default function GlobalHeader() {
   const location = useLocation()
   const {
@@ -101,12 +106,12 @@ export default function GlobalHeader() {
               aria-label={t('header.openProfile')}
               onClick={(event) => event.currentTarget.blur()}
             >
-              <span className={styles.actionIcon} aria-hidden="true">◎</span>
+              <img src={userIcon} alt="" className={styles.actionIcon} width="18" height="18" aria-hidden="true" />
               <span className={styles.actionText}>{currentUser.username}</span>
             </Link>
           ) : (
             <Link to="/login" className={styles.actionLink}>
-              <span className={styles.actionIcon} aria-hidden="true">◎</span>
+              <img src={userIcon} alt="" className={styles.actionIcon} width="18" height="18" aria-hidden="true" />
               <span className={styles.actionText}>{t('header.account')}</span>
             </Link>
           )}
@@ -114,7 +119,7 @@ export default function GlobalHeader() {
           {isAuthenticated && !isGuestUser(currentUser) && (
             <div className={styles.menu}>
               <button type="button" className={styles.actionButton} aria-label={t('header.notifications')} style={{ position: 'relative' }}>
-                <span className={styles.actionIcon} aria-hidden="true">🔔</span>
+                <img src={notificationIcon} alt="" className={styles.actionIcon} width="18" height="18" aria-hidden="true" />
                 <span className={styles.actionText}>{t('header.notifications')}</span>
                 {requests.length > 0 && (
                   <span className={styles.notificationBadge}>{requests.length}</span>
@@ -140,9 +145,7 @@ export default function GlobalHeader() {
 
           <div className={styles.menu}>
             <button type="button" className={styles.actionButton} aria-label={t('header.language')}>
-              <span className={styles.actionIcon} aria-hidden="true">
-                A
-              </span>
+              <img src={langIcon} alt="" className={styles.actionIcon} width="18" height="18" aria-hidden="true" />
               <span className={styles.actionText}>{t('header.language')}</span>
             </button>
             <div className={styles.panel}>
@@ -167,7 +170,7 @@ export default function GlobalHeader() {
 
           <div className={styles.menu}>
             <button type="button" className={styles.actionButton} aria-label={t('header.settings')}>
-              <span className={styles.actionIcon} aria-hidden="true">⚙</span>
+              <img src={settingsIcon} alt="" className={styles.actionIcon} width="18" height="18" aria-hidden="true" />
               <span className={styles.actionText}>{t('header.settings')}</span>
             </button>
             <div className={styles.panel}>

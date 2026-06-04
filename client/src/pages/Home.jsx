@@ -673,7 +673,7 @@ export default function Home() {
                     <span>{t('home.player2')}</span>
                   </div>
                   <div className={styles.matchList}>
-                    {liveMatches.map((match) => (
+                    {liveMatches.slice(0, 5).map((match) => (
                       <Link key={match.gameId} to={match.url} className={styles.matchCard}>
                         <span className={styles.matchPlayerCell}>
                           <strong className={styles.matchPlayerName}>
@@ -694,6 +694,11 @@ export default function Home() {
                       </Link>
                     ))}
                   </div>
+                  {liveMatches.length > 5 && (
+                    <Link to="/matches" className={styles.showMoreLink} style={{ alignSelf: 'start' }}>
+                      {t('home.showMore')}
+                    </Link>
+                  )}
                 </div>
               ) : (
                 <div className={styles.emptyMatchesState}>

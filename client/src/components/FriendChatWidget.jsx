@@ -6,6 +6,7 @@ import { getMessagesRequest } from '../app/messagesApi';
 import { useGlobalHeader } from '../app/useGlobalHeader';
 import styles from './FriendChatWidget.module.css';
 import { isGuestUser } from '../app/appState';
+import closeIcon from '../assets/close.svg';
 
 function ChatWindow({ friend, onClose, token, currentUserId }) {
   const socket = useSocket();
@@ -70,7 +71,9 @@ function ChatWindow({ friend, onClose, token, currentUserId }) {
     <div className={styles.chatWindow}>
       <div className={styles.header} onClick={onClose}>
         <span>{friend.username}</span>
-        <button type="button" className={styles.iconButton}>✕</button>
+        <button type="button" className={styles.iconButton}>
+          <img src={closeIcon} alt="Close" width="16" height="16" />
+        </button>
       </div>
       
       <div className={styles.messageArea}>

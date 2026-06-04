@@ -136,12 +136,20 @@ export function useMangalaGame(initialConfig) {
         ? buildUnavailableGameState()
         : createInitialState(initialConfig),
   )
-  const [showVisualStones, setShowVisualStones] = useState(() =>
-    restoredUiSession ? restoredUiSession.showVisualStones : true,
-  )
-  const [animateMoves, setAnimateMoves] = useState(() =>
-    restoredUiSession ? restoredUiSession.animateMoves : false,
-  )
+  const [showVisualStones, setShowVisualStones] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem('mangala.showVisualStones')
+      if (stored !== null) return stored === 'true'
+    }
+    return restoredUiSession ? restoredUiSession.showVisualStones : true
+  })
+  const [animateMoves, setAnimateMoves] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem('mangala.animateMoves')
+      if (stored !== null) return stored === 'true'
+    }
+    return restoredUiSession ? restoredUiSession.animateMoves : true
+  })
   const [reviewIndex, setReviewIndex] = useState(() =>
     restoredUiSession ? restoredUiSession.reviewIndex : null,
   )
@@ -197,7 +205,7 @@ export function useMangalaGame(initialConfig) {
   }
 
   useEffect(() => {
-    if (useAuthoritativeBackendClock || game.gameStatus !== 'playing') {
+    if (useAuthoritativeBackendClock || game.gameStatus !== 'playing' || isPracticeBoard) {
       return undefined
     }
 
@@ -206,7 +214,7 @@ export function useMangalaGame(initialConfig) {
     }, 1000)
 
     return () => window.clearInterval(timerId)
-  }, [game.gameStatus, useAuthoritativeBackendClock])
+  }, [game.gameStatus, useAuthoritativeBackendClock, isPracticeBoard])
 
   useEffect(
     () => () => {
@@ -263,11 +271,23 @@ export function useMangalaGame(initialConfig) {
   }
 
   const handleStoneToggle = () => {
-    setShowVisualStones((currentValue) => !currentValue)
+    setShowVisualStones((currentValue) => {
+      const nextValue = !currentValue
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('mangala.showVisualStones', String(nextValue))
+      }
+      return nextValue
+    })
   }
 
   const handleAnimationToggle = () => {
-    setAnimateMoves((currentValue) => !currentValue)
+    setAnimateMoves((currentValue) => {
+      const nextValue = !currentValue
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('mangala.animateMoves', String(nextValue))
+      }
+      return nextValue
+    })
   }
 
   const markRatingApplied = () => {
