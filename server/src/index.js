@@ -1,4 +1,5 @@
 require('dotenv').config();
+const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const db = require('./db');
@@ -9,6 +10,8 @@ const userRoutes = require('./routes/users');
 const friendsRoutes = require('./routes/friends');
 const { ensureSeededBotUsers } = require('./auth/botSeed');
 const { initializeMatchTimeouts } = require('./matches/controller');
+const { initSocketManager } = require('./socketManager');
+const messagesRoutes = require('./routes/messages');
 
 const app = express();
 app.use(cors());
@@ -19,6 +22,7 @@ app.use('/api/matchmaking', matchmakingRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/friends', friendsRoutes);
+app.use('/api/messages', messagesRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {
@@ -42,7 +46,10 @@ async function startServer() {
     console.log('Match timeout scheduler is ready');
 
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => console.log(`Running on http://localhost:${PORT}`));
+    const server = http.createServer(app);
+    initSocketManager(server);
+    
+    server.listen(PORT, () => console.log(`Running on http://localhost:${PORT}`));
   } catch (error) {
     console.error('Failed to initialize server:', error);
     process.exit(1);

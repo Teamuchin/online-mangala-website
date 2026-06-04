@@ -12,6 +12,7 @@ import LeaderboardPage from "./pages/LeaderboardPage.jsx"
 import Banner from "./pages/Banner.jsx"
 import LearnTrainPage from "./pages/LearnTrainPage.jsx"
 import { useAppData } from "./app/useAppData.js"
+import FriendChatWidget from "./components/FriendChatWidget.jsx"
 
 function RequireAuthenticatedRoute() {
   const { isAuthenticated } = useAppData()
@@ -25,6 +26,8 @@ function RequireAuthenticatedRoute() {
 }
 
 function App() {
+  const { currentUser } = useAppData()
+
   return (
     <>
       <GlobalHeader />
@@ -44,6 +47,7 @@ function App() {
           <Route path="/learn" element={<LearnTrainPage />} />
         </Route>
       </Routes>
+      <FriendChatWidget key={currentUser?.id || 'guest'} />
     </>
   )
 }

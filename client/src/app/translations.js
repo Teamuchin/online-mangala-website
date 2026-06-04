@@ -225,6 +225,11 @@ export const translations = {
         'Oyunculardan birinin bölgesindeki taşlar bittiğinde oyun sona erer. Kendi bölgesinde ilk taşsız kalan oyuncu, rakibin bölgesinde kalan tüm taşları da kazanır. Bu nedenle oyun son ana kadar önemini korur.',
       source: 'Kaynak: mangala.com.tr',
     },
+    chat: {
+      messages: 'Mesajlar',
+      noFriendsYet: 'Henüz arkadaşın yok.',
+      typeMessage: 'Bir mesaj yaz...',
+    },
   },
   en: {
     header: {
@@ -449,6 +454,11 @@ export const translations = {
       rule4Text:
         'The game ends when one player’s side runs out of stones. The player whose side becomes empty first also collects all stones remaining on the opponent’s side. For this reason, the game remains intense until the very end.',
       source: 'Source: mangala.com.tr',
+    },
+    chat: {
+      messages: 'Messages',
+      noFriendsYet: 'You have no friends yet.',
+      typeMessage: 'Aa',
     },
   },
 }
