@@ -170,10 +170,6 @@
     padding: 22px 18px;
   }
 
-  .header {
-    flex-direction: column;
-  }
-
   .segmentedControl {
     flex-direction: column;
   }

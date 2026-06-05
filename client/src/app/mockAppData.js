@@ -1,4 +1,4 @@
-export const APP_BRAND_NAME = 'Mangala'
+export const APP_BRAND_NAME = 'MangalaOyna'
 
 const SEEDED_RATING_HISTORY = [
   {

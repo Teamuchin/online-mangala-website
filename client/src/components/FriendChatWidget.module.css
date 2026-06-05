@@ -216,3 +216,17 @@
   border-radius: 12px;
   padding: 2px 6px;
 }
+
+@media (max-width: 640px) {
+  .widgetContainer {
+    right: 10px;
+    gap: 0;
+  }
+
+  .chatWindow {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+  }
+}
