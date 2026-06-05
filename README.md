@@ -58,13 +58,3 @@ Daily workflow for schema changes
    `cd server && npm run migrate`
 4. Run the app and verify key flows.
 5. Commit both code changes and migration file together.
-
-Rules to avoid future compatibility conflicts
-
-- Never rename or alter DB columns directly in runtime server code.
-- Never edit the DB manually in one environment without a migration file.
-- Keep frontend + backend field names aligned with the migrated schema.
-- For breaking schema changes, deploy in two steps:
-  1. Add backward-compatible schema first.
-  2. Update app code.
-  3. Remove old schema in a later migration.
