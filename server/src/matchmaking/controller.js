@@ -115,6 +115,11 @@ async function readClosestBotUser(excludedUserId, targetRating) {
     FROM users
     WHERE is_bot = TRUE
       AND ($1::text IS NULL OR id::text <> $1::text)
+      AND NOT EXISTS (
+        SELECT 1 FROM matches
+        WHERE status = 'active'
+          AND (bottom_player_id = users.id OR top_player_id = users.id)
+      )
     ORDER BY ABS(elo - $2::int) ASC, RANDOM()
     LIMIT 1;
     `,
@@ -173,6 +178,11 @@ async function joinQueue(req, res) {
 
     if (!currentUser) {
       return res.status(404).json({ message: 'User not found' });
+    }
+
+    const activeMatch = await readActiveMatchByUserId(userId);
+    if (activeMatch) {
+      return res.status(409).json({ message: 'You already have an active match.' });
     }
 
     const existingEntry = getQueueEntry(userId);
