@@ -37,8 +37,8 @@ async function getTransporter() {
 async function sendVerificationEmail(to, token) {
   const mailTransporter = await getTransporter();
   
-  // Note: Replace this with your actual production frontend URL via env var later
-  const verificationUrl = `http://localhost:5173/verify-email?token=${token}`;
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const verificationUrl = `${frontendUrl}/verify-email?token=${token}`;
 
   const info = await mailTransporter.sendMail({
     from: '"Online Mangala" <noreply@onlinemangala.com>',

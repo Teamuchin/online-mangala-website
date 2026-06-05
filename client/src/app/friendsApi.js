@@ -1,7 +1,7 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 export async function getFriendsRequest(token) {
-  const response = await fetch(`${API_URL}/friends`, {
+  const response = await fetch(`${API_BASE_URL}/api/friends`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -14,7 +14,7 @@ export async function getFriendsRequest(token) {
 }
 
 export async function sendFriendRequest(token, username) {
-  const response = await fetch(`${API_URL}/friends/request`, {
+  const response = await fetch(`${API_BASE_URL}/api/friends/request`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -30,7 +30,7 @@ export async function sendFriendRequest(token, username) {
 }
 
 export async function acceptFriendRequest(token, username) {
-  const response = await fetch(`${API_URL}/friends/accept`, {
+  const response = await fetch(`${API_BASE_URL}/api/friends/accept`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -46,7 +46,7 @@ export async function acceptFriendRequest(token, username) {
 }
 
 export async function rejectFriendRequest(token, username) {
-  const response = await fetch(`${API_URL}/friends/reject`, {
+  const response = await fetch(`${API_BASE_URL}/api/friends/reject`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -62,7 +62,7 @@ export async function rejectFriendRequest(token, username) {
 }
 
 export async function removeFriendRequest(token, username) {
-  const response = await fetch(`${API_URL}/friends/remove`, {
+  const response = await fetch(`${API_BASE_URL}/api/friends/remove`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

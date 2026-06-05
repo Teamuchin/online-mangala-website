@@ -2,6 +2,7 @@ require('dotenv').config();
 const http = require('http');
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const db = require('./db');
 const authRoutes = require('./routes/auth');
 const matchmakingRoutes = require('./routes/matchmaking');
@@ -14,7 +15,12 @@ const { initSocketManager } = require('./socketManager');
 const messagesRoutes = require('./routes/messages');
 
 const app = express();
-app.use(cors());
+const ALLOWED_ORIGINS = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',')
+  : ['http://localhost:5173'];
+
+app.use(helmet());
+app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);

@@ -29,9 +29,13 @@ function normalizeToken(rawToken = '') {
   return token;
 }
 
+const ALLOWED_ORIGINS = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',')
+    : ['http://localhost:5173'];
+
 function initSocketManager(httpServer) {
   io = new Server(httpServer, {
-    cors: { origin: '*' }
+    cors: { origin: ALLOWED_ORIGINS, credentials: true }
   });
 
   io.use((socket, next) => {
