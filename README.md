@@ -68,7 +68,3 @@ Rules to avoid future compatibility conflicts
   1. Add backward-compatible schema first.
   2. Update app code.
   3. Remove old schema in a later migration.
-
-Useful note
-
-- Developer commands are collected in [docs/dev-commands.md](docs/dev-commands.md).
