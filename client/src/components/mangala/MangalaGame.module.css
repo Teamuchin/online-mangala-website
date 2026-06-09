@@ -658,6 +658,9 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: 10px;
     row-gap: 0;
+    width: 100%;
+    max-width: 710px;
+    margin: 0 auto;
   }
 
   .boardColumn {
@@ -725,7 +728,7 @@
     justify-items: stretch;
     width: 100%;
     min-height: 0;
-    max-width: 100%;
+    max-width: 710px;
     padding: 14px 10px;
     border-top-left-radius: 0;
     border-top-right-radius: 0;
