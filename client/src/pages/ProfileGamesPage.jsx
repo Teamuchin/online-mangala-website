@@ -164,6 +164,14 @@ export default function ProfileGamesPage() {
     }
   }, [t, username])
 
+  const allMatches = useMemo(() => {
+    if (!profile) {
+      return []
+    }
+
+    return backendMatches.map((match) => buildHistoryEntryFromBackendMatch(match, profile.id))
+  }, [backendMatches, profile])
+
   if (!username) {
     return isAuthenticated
       ? <Navigate to={`/member/${encodeURIComponent(currentUser.username)}/games`} replace />
@@ -193,14 +201,6 @@ export default function ProfileGamesPage() {
   }
 
   const profileGamesPath = `/member/${encodeURIComponent(profile.username)}/games`
-
-  const allMatches = useMemo(() => {
-    if (!profile) {
-      return []
-    }
-
-    return backendMatches.map((match) => buildHistoryEntryFromBackendMatch(match, profile.id))
-  }, [backendMatches, profile])
   const pageCount = getPageCount(allMatches.length)
   const rawPage = Number.parseInt(searchParams.get('page') ?? '1', 10)
   const currentPage = Number.isNaN(rawPage)
