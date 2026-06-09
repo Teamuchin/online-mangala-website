@@ -276,13 +276,15 @@
   .brandText {
     font-size: 1.2rem;
   }
+}
 
+@media (max-width: 940px) {
   .actionText {
     display: none;
   }
 }
 
-@media (max-width: 400px) {
+@media (max-width: 455px) {
   .brand {
     gap: 6px;
   }
