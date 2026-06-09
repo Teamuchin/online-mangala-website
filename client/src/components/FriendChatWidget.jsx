@@ -215,7 +215,12 @@ export default function FriendChatWidget() {
       
       <div className={`${styles.friendsListWindow} ${!isOpen ? styles.minimized : ''}`}>
         <div className={styles.header} onClick={toggleOpen}>
-          <span>{t('chat.messages')} {totalUnread > 0 && `(${totalUnread})`}</span>
+          <span className={styles.messageLabel}>
+            {t('chat.messages')} {totalUnread > 0 && `(${totalUnread})`}
+            {!isOpen && totalUnread > 0 && (
+              <span className={styles.launcherUnreadBadge}>{totalUnread}</span>
+            )}
+          </span>
           <span className={styles.iconButton}>{isOpen ? '▼' : '▲'}</span>
         </div>
         
