@@ -28,9 +28,9 @@ export default function ForgotPassword() {
       setSuccessMessage('')
 
       const response = await forgotPasswordRequest({ email })
-      setSuccessMessage(response.message || 'If your email is registered, a password reset link has been sent.')
+      setSuccessMessage(response.message || t('auth.forgotPasswordSuccess'))
     } catch (error) {
-      setErrorMessage(error.message || 'Failed to send password reset email')
+      setErrorMessage(error.message || t('auth.forgotPasswordError'))
     } finally {
       setIsSubmitting(false)
     }
@@ -45,23 +45,23 @@ export default function ForgotPassword() {
       />
       <form className={styles.formdiv} onSubmit={handleSubmit}>
         <p style={{ textAlign: 'center', marginBottom: '10px', color: 'rgba(75, 41, 19, 0.84)' }}>
-          Enter your email address and we'll send you a link to reset your password.
+          {t('auth.forgotPasswordDesc')}
         </p>
         <input
           id="email"
           defaultValue=""
           type="email"
           name="email"
-          placeholder="Email address"
+          placeholder={t('auth.email')}
           className={styles.textinput}
         />
         {errorMessage ? <p className={styles.errorMessage}>{errorMessage}</p> : null}
         {successMessage && <p style={{ color: 'green', fontSize: '0.95rem', margin: '5px 0', textAlign: 'center' }}>{successMessage}</p>}
-        <button type="submit" className={styles.submitbtn} disabled={isSubmitting} style={{ marginTop: '10px' }}>
-          {isSubmitting ? 'Sending...' : 'Send Reset Link'}
+        <button type="submit" className={styles.submitbtn} disabled={isSubmitting || !!successMessage} style={{ marginTop: '10px' }}>
+          {isSubmitting ? t('auth.sendingResetLink') : t('auth.sendResetLink')}
         </button>
         <Link to="/login" className={styles.signupbtn}>
-          Back to Login
+          {t('auth.backToLogin')}
         </Link>
       </form>
     </div>

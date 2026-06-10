@@ -120,7 +120,7 @@ export default function Login() {
         </div>
         <div style={{ textAlign: 'right', width: '100%' }}>
           <Link to="/forgot-password" style={{ fontSize: '0.9rem', color: '#7a431d', textDecoration: 'none', fontWeight: 600 }}>
-            Forgot Password?
+            {t('auth.forgotPasswordLink')}
           </Link>
         </div>
         {errorMessage ? <p className={styles.errorMessage}>{errorMessage}</p> : null}

@@ -25,6 +25,14 @@ const USERNAME_REGEX = /^[A-Za-z0-9_-]{3,15}$/;
 const PASSWORD_MIN_LENGTH = 6;
 const PASSWORD_MAX_LENGTH = 32;
 
+/**
+ * Hash a reset token with SHA-256 before storing or comparing.
+ * This prevents token theft from a database compromise.
+ */
+function hashToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
 function signAuthToken(user) {
   return jwt.sign(
     { userId: user.id, email: user.email, username: user.username },
@@ -484,13 +492,21 @@ async function forgotPassword(req, res) {
     }
 
     const userRow = userResult.rows[0];
+
+    // Bot accounts should not participate in the password reset flow
+    if (isBotUser(userRow)) {
+      return res.status(200).json({ message: 'If your email is registered, a password reset link has been sent.' });
+    }
+
     const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = hashToken(resetToken);
     // Set expiration to 1 hour from now
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
 
-    await db.query(setResetPasswordTokenQuery, [userRow.id, resetToken, expiresAt]);
+    await db.query(setResetPasswordTokenQuery, [userRow.id, hashedToken, expiresAt]);
 
     try {
+      // Send the unhashed token in the email — only the hash is stored in the DB
       await sendPasswordResetEmail(userRow.email, resetToken);
     } catch (emailError) {
       console.error('Failed to send password reset email:', emailError);
@@ -518,7 +534,10 @@ async function resetPassword(req, res) {
       });
     }
 
-    const userResult = await db.query(findUserByValidResetTokenQuery, [token]);
+    // Hash the incoming token to compare against the stored hash
+    const hashedToken = hashToken(token);
+
+    const userResult = await db.query(findUserByValidResetTokenQuery, [hashedToken]);
     if (userResult.rows.length === 0) {
       return res.status(400).json({ message: 'Invalid or expired password reset token' });
     }
