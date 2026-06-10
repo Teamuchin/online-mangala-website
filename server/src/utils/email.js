@@ -1,65 +1,40 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const dns = require('dns').promises;
 
-let transporter;
+let resend;
 
-async function getTransporter() {
-  if (transporter) return transporter;
+function getResendClient() {
+  if (resend) return resend;
 
-  // If using Ethereal for local testing and no env vars are set
-  if (!process.env.SMTP_HOST && process.env.NODE_ENV !== 'production') {
-    const testAccount = await nodemailer.createTestAccount();
-    transporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
-      },
-    });
-    console.log('Ethereal Email account created:', testAccount.user);
-  } else {
-    // Production / Configured SMTP
-    console.log('--- EMAIL DEBUG INFO ---');
-    console.log('SMTP_HOST:', process.env.SMTP_HOST || 'MISSING');
-    console.log('SMTP_PORT:', process.env.SMTP_PORT || 'MISSING');
-    console.log('SMTP_SECURE:', process.env.SMTP_SECURE || 'MISSING');
-    console.log('SMTP_USER:', process.env.SMTP_USER ? 'PROVIDED' : 'MISSING');
-    console.log('SMTP_PASS:', process.env.SMTP_PASS ? 'PROVIDED' : 'MISSING');
-    console.log('------------------------');
-    
-    transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey && process.env.NODE_ENV === 'production') {
+    console.error('CRITICAL: RESEND_API_KEY is missing in production!');
   }
-  return transporter;
+
+  resend = new Resend(apiKey);
+  return resend;
 }
 
 async function sendVerificationEmail(to, token) {
-  const mailTransporter = await getTransporter();
+  const client = getResendClient();
   
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   const verificationUrl = `${frontendUrl}/verify-email?token=${token}`;
 
-  const info = await mailTransporter.sendMail({
-    from: '"Online Mangala" <noreply@onlinemangala.com>',
+  const info = await client.emails.send({
+    from: 'onboarding@resend.dev',
     to,
     subject: 'Verify your email address',
     text: `Welcome to Online Mangala! Please verify your email by clicking the following link: ${verificationUrl}`,
     html: `<p>Welcome to Online Mangala!</p><p>Please verify your email by clicking the following link:</p><p><a href="${verificationUrl}">${verificationUrl}</a></p>`,
   });
 
-  if (!process.env.SMTP_HOST && process.env.NODE_ENV !== 'production') {
-    console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
+  if (info.error) {
+    console.error('Resend Error:', info.error);
+    throw new Error(info.error.message);
   }
-  return info;
+
+  return info.data;
 }
 
 async function isValidEmailWithMX(email) {
@@ -79,23 +54,25 @@ async function isValidEmailWithMX(email) {
 }
 
 async function sendPasswordResetEmail(to, token) {
-  const mailTransporter = await getTransporter();
+  const client = getResendClient();
   
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
 
-  const info = await mailTransporter.sendMail({
-    from: '"Online Mangala" <noreply@onlinemangala.com>',
+  const info = await client.emails.send({
+    from: 'onboarding@resend.dev',
     to,
     subject: 'Reset your password',
     text: `You requested a password reset. Please click the following link to reset your password: ${resetUrl}`,
     html: `<p>You requested a password reset.</p><p>Please click the following link to reset your password:</p><p><a href="${resetUrl}">${resetUrl}</a></p>`,
   });
 
-  if (!process.env.SMTP_HOST && process.env.NODE_ENV !== 'production') {
-    console.log('Password Reset Preview URL: %s', nodemailer.getTestMessageUrl(info));
+  if (info.error) {
+    console.error('Resend Error:', info.error);
+    throw new Error(info.error.message);
   }
-  return info;
+
+  return info.data;
 }
 
 module.exports = {

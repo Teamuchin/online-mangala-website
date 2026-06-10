@@ -22,15 +22,7 @@ services:
         value: https://mangala-client.onrender.com
       - key: CORS_ORIGINS
         value: https://mangala-client.onrender.com
-      - key: SMTP_HOST
-        sync: false
-      - key: SMTP_PORT
-        sync: false
-      - key: SMTP_SECURE
-        sync: false
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASS
+      - key: RESEND_API_KEY
         sync: false
 
   # ----------------------------------------
