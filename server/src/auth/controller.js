@@ -14,8 +14,11 @@ const {
   verifyUserEmailQuery,
   updateUserPendingEmailQuery,
   updateVerificationTokenQuery,
+  setResetPasswordTokenQuery,
+  findUserByValidResetTokenQuery,
+  updatePasswordAndClearTokenQuery,
 } = require('./queries');
-const { sendVerificationEmail, isValidEmailWithMX } = require('../utils/email');
+const { sendVerificationEmail, isValidEmailWithMX, sendPasswordResetEmail } = require('../utils/email');
 
 const SALT_ROUNDS = 10;
 const USERNAME_REGEX = /^[A-Za-z0-9_-]{3,15}$/;
@@ -467,6 +470,71 @@ async function resendVerification(req, res) {
   }
 }
 
+async function forgotPassword(req, res) {
+  try {
+    const email = normalizeEmail(req.body?.email);
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const userResult = await db.query(findUserByEmailQuery, [email]);
+    if (userResult.rows.length === 0) {
+      // Security best practice: don't reveal if the email exists or not
+      return res.status(200).json({ message: 'If your email is registered, a password reset link has been sent.' });
+    }
+
+    const userRow = userResult.rows[0];
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    // Set expiration to 1 hour from now
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+    await db.query(setResetPasswordTokenQuery, [userRow.id, resetToken, expiresAt]);
+
+    try {
+      await sendPasswordResetEmail(userRow.email, resetToken);
+    } catch (emailError) {
+      console.error('Failed to send password reset email:', emailError);
+    }
+
+    return res.status(200).json({ message: 'If your email is registered, a password reset link has been sent.' });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+async function resetPassword(req, res) {
+  try {
+    const token = String(req.body?.token || '').trim();
+    const newPassword = String(req.body?.newPassword || '');
+
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: 'Token and new password are required' });
+    }
+
+    if (newPassword.length < PASSWORD_MIN_LENGTH || newPassword.length > PASSWORD_MAX_LENGTH) {
+      return res.status(400).json({
+        message: `Password must be ${PASSWORD_MIN_LENGTH}-${PASSWORD_MAX_LENGTH} characters long`,
+      });
+    }
+
+    const userResult = await db.query(findUserByValidResetTokenQuery, [token]);
+    if (userResult.rows.length === 0) {
+      return res.status(400).json({ message: 'Invalid or expired password reset token' });
+    }
+
+    const userRow = userResult.rows[0];
+    const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    await db.query(updatePasswordAndClearTokenQuery, [userRow.id, passwordHash]);
+
+    return res.status(200).json({ message: 'Password has been reset successfully. You can now log in.' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
 module.exports = {
   register,
   login,
@@ -475,4 +543,6 @@ module.exports = {
   guestLogin,
   verifyEmail,
   resendVerification,
+  forgotPassword,
+  resetPassword,
 };

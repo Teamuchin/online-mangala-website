@@ -13,6 +13,8 @@ import MatchesPage from "./pages/MatchesPage.jsx"
 import Banner from "./pages/Banner.jsx"
 import LearnTrainPage from "./pages/LearnTrainPage.jsx"
 import VerifyEmail from "./pages/VerifyEmail.jsx"
+import ForgotPassword from "./pages/ForgotPassword.jsx"
+import ResetPassword from "./pages/ResetPassword.jsx"
 import { useAppData } from "./app/useAppData.js"
 import FriendChatWidget from "./components/FriendChatWidget.jsx"
 
@@ -47,6 +49,8 @@ function App() {
         <Route element={<RequireUnauthenticatedRoute />}>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
         </Route>
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route element={<RequireAuthenticatedRoute />}>

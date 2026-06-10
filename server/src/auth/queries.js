@@ -138,6 +138,30 @@ WHERE id = $1
 RETURNING id, username, email, elo, is_bot, created_at, is_verified, pending_email;
 `;
 
+const setResetPasswordTokenQuery = `
+UPDATE users
+SET reset_password_token = $2,
+    reset_password_expires_at = $3
+WHERE id = $1
+RETURNING id, email;
+`;
+
+const findUserByValidResetTokenQuery = `
+SELECT id, username, email, password_hash, elo, is_bot, created_at, is_verified, pending_email
+FROM users
+WHERE reset_password_token = $1 AND reset_password_expires_at > NOW()
+LIMIT 1;
+`;
+
+const updatePasswordAndClearTokenQuery = `
+UPDATE users
+SET password_hash = $2,
+    reset_password_token = NULL,
+    reset_password_expires_at = NULL
+WHERE id = $1
+RETURNING id, username, email;
+`;
+
 module.exports = {
   createUsersTableQuery,
   dropBioColumnQuery,
@@ -159,4 +183,7 @@ module.exports = {
   verifyUserEmailQuery,
   updateUserPendingEmailQuery,
   updateVerificationTokenQuery,
+  setResetPasswordTokenQuery,
+  findUserByValidResetTokenQuery,
+  updatePasswordAndClearTokenQuery,
 };

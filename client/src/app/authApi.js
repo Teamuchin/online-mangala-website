@@ -76,3 +76,11 @@ export function verifyEmailRequest(payload) {
 export function resendVerificationRequest(payload) {
   return request('/api/auth/resend-verification', payload)
 }
+
+export function forgotPasswordRequest(payload) {
+  return request('/api/auth/forgot-password', payload)
+}
+
+export function resetPasswordRequest(payload) {
+  return request('/api/auth/reset-password', payload)
+}
