@@ -1,0 +1,53 @@
+services:
+  # ----------------------------------------
+  # BACKEND: Node.js Express Server
+  # ----------------------------------------
+  - type: web
+    name: mangala-server
+    env: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mangala-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://mangala-client.onrender.com
+      - key: CORS_ORIGINS
+        value: https://mangala-client.onrender.com
+
+  # ----------------------------------------
+  # FRONTEND: Vite React Static Site
+  # ----------------------------------------
+  - type: web
+    name: mangala-client
+    env: static
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: mangala-server
+          envVarKey: RENDER_EXTERNAL_URL
+    routes:
+      # This handles React Router's client-side routing
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+databases:
+  # ----------------------------------------
+  # DATABASE: PostgreSQL
+  # ----------------------------------------
+  - name: mangala-db
+    databaseName: mangala_game_db
+    user: dev_user
+    plan: free
