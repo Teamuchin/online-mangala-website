@@ -22,7 +22,7 @@ async function sendVerificationEmail(to, token) {
   const verificationUrl = `${frontendUrl}/verify-email?token=${token}`;
 
   const info = await client.emails.send({
-    from: 'onboarding@resend.dev',
+    from: 'Online Mangala <noreply@mangalaoyna.com>',
     to,
     subject: 'Verify your email address',
     text: `Welcome to Online Mangala! Please verify your email by clicking the following link: ${verificationUrl}`,
@@ -60,7 +60,7 @@ async function sendPasswordResetEmail(to, token) {
   const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
 
   const info = await client.emails.send({
-    from: 'onboarding@resend.dev',
+    from: 'Online Mangala <noreply@mangalaoyna.com>',
     to,
     subject: 'Reset your password',
     text: `You requested a password reset. Please click the following link to reset your password: ${resetUrl}`,
