@@ -19,9 +19,9 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: FRONTEND_URL
-        value: https://mangala-client.onrender.com
+        value: https://mangalaoyna.com
       - key: CORS_ORIGINS
-        value: https://mangala-client.onrender.com
+        value: https://mangalaoyna.com,https://www.mangalaoyna.com
       - key: RESEND_API_KEY
         sync: false
 
