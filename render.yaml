@@ -4,7 +4,7 @@ services:
   # ----------------------------------------
   - type: web
     name: mangala-server
-    env: node
+    runtime: node
     rootDir: server
     buildCommand: npm install
     startCommand: npm start
@@ -27,7 +27,7 @@ services:
   # ----------------------------------------
   - type: web
     name: mangala-client
-    env: static
+    runtime: static
     rootDir: client
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
