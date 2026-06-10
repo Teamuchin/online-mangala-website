@@ -49,6 +49,4 @@ databases:
   # DATABASE: PostgreSQL
   # ----------------------------------------
   - name: mangala-db
-    databaseName: mangala_game_db
-    user: dev_user
     plan: free
