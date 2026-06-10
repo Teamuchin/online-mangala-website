@@ -21,6 +21,14 @@ async function getTransporter() {
     console.log('Ethereal Email account created:', testAccount.user);
   } else {
     // Production / Configured SMTP
+    console.log('--- EMAIL DEBUG INFO ---');
+    console.log('SMTP_HOST:', process.env.SMTP_HOST || 'MISSING');
+    console.log('SMTP_PORT:', process.env.SMTP_PORT || 'MISSING');
+    console.log('SMTP_SECURE:', process.env.SMTP_SECURE || 'MISSING');
+    console.log('SMTP_USER:', process.env.SMTP_USER ? 'PROVIDED' : 'MISSING');
+    console.log('SMTP_PASS:', process.env.SMTP_PASS ? 'PROVIDED' : 'MISSING');
+    console.log('------------------------');
+    
     transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT,
