@@ -58,7 +58,7 @@ export default function PlayerPanel({
             >
               {getDisplayName(player)}
             </Link>
-            {player.isBot && <span className={styles.playerBotBadge}>AI</span>}
+            {player.isBot && <span className={styles.playerBotBadge}>{t('profile.ai')}</span>}
           </h2>
         </div>
         {showRating ? (

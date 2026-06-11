@@ -23,34 +23,34 @@ import {
 
 const BOT_MOVE_DELAY_MS = 700
 
-function buildUnavailableGameState() {
+function buildUnavailableGameState(t = null) {
   const state = createInitialState()
 
   return {
     ...state,
     gameStatus: 'finished',
-    turnMessage: 'Game unavailable.',
+    turnMessage: t ? t('common.gameUnavailable') : 'Game unavailable.',
   }
 }
 
-function buildSimpleTurnMessage(gameState) {
+function buildSimpleTurnMessage(gameState, t = null) {
   if (gameState.gameStatus === 'finished') {
     if (gameState.winner === 'draw') {
-      return 'The match ends in a draw.'
+      return t ? t('game.matchEndsInDraw') : 'The match ends in a draw.'
     }
 
     if (gameState.winner && gameState.players[gameState.winner]) {
-      return `${gameState.players[gameState.winner].name} wins.`
+      return t ? t('game.wins', { name: gameState.players[gameState.winner].name }) : `${gameState.players[gameState.winner].name} wins.`
     }
   }
 
-  return `${gameState.players[gameState.currentPlayer].name} to move`
+  return t ? t('game.toMove', { name: gameState.players[gameState.currentPlayer].name }) : `${gameState.players[gameState.currentPlayer].name} to move`
 }
 
-function applySimpleTurnMessage(gameState) {
+function applySimpleTurnMessage(gameState, t = null) {
   return {
     ...gameState,
-    turnMessage: buildSimpleTurnMessage(gameState),
+    turnMessage: buildSimpleTurnMessage(gameState, t),
   }
 }
 
@@ -61,6 +61,7 @@ function scheduleAnimatedMove({
   pitIndex,
   moveResult,
   setGame,
+  t,
 }) {
   clearAnimationTimeouts()
 
@@ -84,7 +85,7 @@ function scheduleAnimatedMove({
 
   const finalizeTimeoutId = window.setTimeout(() => {
     setGame((liveGame) =>
-      finalizeMoveState(liveGame, currentGame, pitIndex, moveResult),
+      finalizeMoveState(liveGame, currentGame, pitIndex, moveResult, t),
     )
     clearAnimationTimeouts()
   }, (frames.length + 1) * MOVE_ANIMATION_DELAY_MS)
@@ -92,7 +93,7 @@ function scheduleAnimatedMove({
   animationTimeoutsRef.current.push(finalizeTimeoutId)
 }
 
-export function useMangalaGame(initialConfig) {
+export function useMangalaGame(initialConfig, t = null) {
   const isPracticeBoard = initialConfig?.matchMode === 'practice'
   const restoredSession =
     typeof window === 'undefined'
@@ -131,9 +132,9 @@ export function useMangalaGame(initialConfig) {
     shouldRestorePersistedSession
       ? useAuthoritativeBackendClock
         ? restoredSession.game
-        : syncGameClock(restoredSession.game)
+        : syncGameClock(restoredSession.game, Date.now(), t)
       : isUnavailable
-        ? buildUnavailableGameState()
+        ? buildUnavailableGameState(t)
         : createInitialState(initialConfig),
   )
   const [showVisualStones, setShowVisualStones] = useState(() => {
@@ -210,7 +211,7 @@ export function useMangalaGame(initialConfig) {
     }
 
     const timerId = window.setInterval(() => {
-      setGame((currentGame) => syncGameClock(currentGame))
+      setGame((currentGame) => syncGameClock(currentGame, Date.now(), t))
     }, 1000)
 
     return () => window.clearInterval(timerId)
@@ -336,13 +337,14 @@ export function useMangalaGame(initialConfig) {
           pitIndex,
           moveResult,
           setGame,
+          t,
         })
 
-        return buildAnimatingMoveState(currentGame, pitIndex)
+        return buildAnimatingMoveState(currentGame, pitIndex, t)
       }
 
-      const nextGame = finalizeMoveState(currentGame, currentGame, pitIndex, moveResult)
-      return isPracticeBoard ? applySimpleTurnMessage(nextGame) : nextGame
+      const nextGame = finalizeMoveState(currentGame, currentGame, pitIndex, moveResult, t)
+      return isPracticeBoard ? applySimpleTurnMessage(nextGame, t) : nextGame
     })
   }
 
@@ -400,8 +402,8 @@ export function useMangalaGame(initialConfig) {
         gameStatus: 'finished',
         winner,
         turnMessage: isPracticeBoard
-          ? `${currentGame.players[winner].name} wins.`
-          : `${currentGame.players[winner].name} wins by resignation.`,
+          ? (t ? t('game.wins', { name: currentGame.players[winner].name }) : `${currentGame.players[winner].name} wins.`)
+          : (t ? t('game.winsByResignation', { name: currentGame.players[winner].name }) : `${currentGame.players[winner].name} wins by resignation.`),
         moveInProgress: false,
       }
     })
@@ -449,13 +451,14 @@ export function useMangalaGame(initialConfig) {
             pitIndex,
             moveResult,
             setGame,
+            t,
           })
 
-          return buildAnimatingMoveState(currentGame, pitIndex)
+          return buildAnimatingMoveState(currentGame, pitIndex, t)
         }
 
-        const nextGame = finalizeMoveState(currentGame, currentGame, pitIndex, moveResult)
-        return isPracticeBoard ? applySimpleTurnMessage(nextGame) : nextGame
+        const nextGame = finalizeMoveState(currentGame, currentGame, pitIndex, moveResult, t)
+        return isPracticeBoard ? applySimpleTurnMessage(nextGame, t) : nextGame
       })
 
       botTurnTimeoutRef.current = null

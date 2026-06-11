@@ -6,7 +6,7 @@ import {
 } from './movePresentation.js'
 import { appendMatchRecord } from './matchRecord.js'
 
-export function syncGameClock(currentGame, now = Date.now()) {
+export function syncGameClock(currentGame, now = Date.now(), t = null) {
   if (currentGame.gameStatus !== 'playing') {
     return currentGame
   }
@@ -29,7 +29,7 @@ export function syncGameClock(currentGame, now = Date.now()) {
       ...currentGame,
       gameStatus: 'finished',
       winner,
-      turnMessage: `${currentGame.players[winner].name} wins on time.`,
+      turnMessage: t ? t('game.winsOnTime', { name: currentGame.players[winner].name }) : `${currentGame.players[winner].name} wins on time.`,
       lastTimerStartedAt: now,
       players: {
         ...currentGame.players,
@@ -54,7 +54,7 @@ export function syncGameClock(currentGame, now = Date.now()) {
   }
 }
 
-export function finalizeMoveState(liveGame, currentGame, pitIndex, moveResult) {
+export function finalizeMoveState(liveGame, currentGame, pitIndex, moveResult, t = null) {
   const matchRecord = appendMatchRecord(liveGame, currentGame, moveResult)
 
   return {
@@ -65,7 +65,7 @@ export function finalizeMoveState(liveGame, currentGame, pitIndex, moveResult) {
     moveInProgress: false,
     gameStatus: moveResult.gameStatus,
     winner: moveResult.winner,
-    turnMessage: buildTurnMessage(currentGame, moveResult),
+    turnMessage: buildTurnMessage(currentGame, moveResult, t),
     lastMove: buildResolvedLastMove(moveResult),
     moveHistory: [
       ...liveGame.moveHistory,
@@ -76,13 +76,13 @@ export function finalizeMoveState(liveGame, currentGame, pitIndex, moveResult) {
   }
 }
 
-export function buildAnimatingMoveState(currentGame, pitIndex) {
+export function buildAnimatingMoveState(currentGame, pitIndex, t = null) {
   return {
     ...currentGame,
     board: currentGame.board,
     selectedPit: pitIndex,
     moveInProgress: true,
-    turnMessage: `${currentGame.players[currentGame.currentPlayer].name} is sowing stones...`,
+    turnMessage: t ? t('game.sowingStones', { name: currentGame.players[currentGame.currentPlayer].name }) : `${currentGame.players[currentGame.currentPlayer].name} is sowing stones...`,
     lastMove: buildPreMoveLastMove(currentGame, pitIndex),
   }
 }

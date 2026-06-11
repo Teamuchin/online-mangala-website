@@ -440,12 +440,12 @@ function MangalaGameScreen({
             bottom: {
               ...seededPlayers.bottom,
               id: 'practice-player-1',
-              name: 'Player 1',
+              name: t('home.player1'),
             },
             top: {
               ...seededPlayers.top,
               id: 'practice-player-2',
-              name: 'Player 2',
+              name: t('home.player2'),
             },
           },
         }
@@ -494,7 +494,7 @@ function MangalaGameScreen({
               },
               top: {
                 id: 'bot-pending',
-                name: 'Bot opponent',
+                name: t('game.botOpponent'),
                 username: 'bot-opponent',
                 rating: seededPlayers.top.rating,
                 timeLeft: 300,
@@ -525,7 +525,7 @@ function MangalaGameScreen({
     handleReset,
     handleStoneToggle,
     markRatingApplied,
-  } = useMangalaGame(initialConfig)
+  } = useMangalaGame(initialConfig, t)
 
   const currentUserRole = !isAuthenticated
     ? 'spectator'

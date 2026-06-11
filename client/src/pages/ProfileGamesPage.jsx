@@ -290,7 +290,7 @@ export default function ProfileGamesPage() {
                                 {opponentDisplayName}
                               </Link>
                               {opponentProfile?.isBot && (
-                                <span className={styles.inlineBotBadge}>AI</span>
+                                <span className={styles.inlineBotBadge}>{t('profile.ai')}</span>
                               )}
                           {typeof match.opponentRating === 'number' && (
                             <span className={styles.opponentMeta}>

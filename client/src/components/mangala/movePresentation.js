@@ -1,22 +1,22 @@
-export function buildTurnMessage(currentGame, moveResult) {
+export function buildTurnMessage(currentGame, moveResult, t = null) {
   const activeName = currentGame.players[currentGame.currentPlayer].name
   const nextName = currentGame.players[moveResult.currentPlayer].name
 
   if (moveResult.gameStatus === 'finished') {
     return moveResult.winner === 'draw'
-      ? 'The match ends in a draw.'
-      : `${currentGame.players[moveResult.winner].name} collects more stones and wins.`
+      ? (t ? t('game.matchEndsInDraw') : 'The match ends in a draw.')
+      : (t ? t('game.collectsStonesAndWins', { name: currentGame.players[moveResult.winner].name }) : `${currentGame.players[moveResult.winner].name} collects more stones and wins.`)
   }
 
   if (moveResult.extraTurn) {
-    return `${activeName} landed in the store and plays again.`
+    return t ? t('game.playsAgain', { name: activeName }) : `${activeName} landed in the store and plays again.`
   }
 
   if (moveResult.captured > 0) {
-    return `${activeName} captured ${moveResult.captured} stones. ${nextName} is up next.`
+    return t ? t('game.capturedStones', { activeName, captured: moveResult.captured, nextName }) : `${activeName} captured ${moveResult.captured} stones. ${nextName} is up next.`
   }
 
-  return `${nextName} to move`
+  return t ? t('game.toMove', { name: nextName }) : `${nextName} to move`
 }
 
 export function buildAnimatedLastMove(moveResult, frameIndex) {
