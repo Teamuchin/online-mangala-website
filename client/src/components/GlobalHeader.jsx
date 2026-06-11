@@ -26,6 +26,7 @@ export default function GlobalHeader() {
   const isOnGamePage = location.pathname.startsWith('/game/')
   const showBackToGame = activeMatchSummary?.isActive && !isOnGamePage
   const profileHref = `/member/${encodeURIComponent(currentUser.username)}`
+  const needsVerification = isAuthenticated && !isGuestUser(currentUser) && currentUser && !currentUser.is_verified
 
   const [requests, setRequests] = useState([])
   
@@ -121,23 +122,32 @@ export default function GlobalHeader() {
               <button type="button" className={styles.actionButton} aria-label={t('header.notifications')} style={{ position: 'relative' }}>
                 <img src={notificationIcon} alt="" className={styles.actionIcon} width="18" height="18" aria-hidden="true" />
                 <span className={styles.actionText}>{t('header.notifications')}</span>
-                {requests.length > 0 && (
-                  <span className={styles.notificationBadge}>{requests.length}</span>
+                {(requests.length + (needsVerification ? 1 : 0)) > 0 && (
+                  <span className={styles.notificationBadge}>{requests.length + (needsVerification ? 1 : 0)}</span>
                 )}
               </button>
               <div className={styles.panel}>
-                {requests.length === 0 ? (
+                {(requests.length + (needsVerification ? 1 : 0)) === 0 ? (
                   <div className={styles.panelLink} style={{ cursor: 'default' }}>{t('header.noNewNotifications')}</div>
                 ) : (
-                  requests.map(req => (
-                    <div key={req.friendship_id} className={styles.requestItem}>
-                      <span className={styles.requestInfo}><strong>{req.username}</strong> {t('header.wantsToBeFriends')}</span>
-                      <div className={styles.requestActions}>
-                        <button type="button" className={styles.acceptButton} onClick={() => handleAcceptRequest(req.username)}>{t('header.accept')}</button>
-                        <button type="button" className={styles.rejectButton} onClick={() => handleRejectRequest(req.username)}>{t('header.reject')}</button>
+                  <>
+                    {needsVerification && (
+                      <div className={styles.requestItem} style={{ borderLeft: '4px solid #d62828', paddingLeft: '8px' }}>
+                        <span className={styles.requestInfo}>
+                          {t('header.verifyEmailWarning')}
+                        </span>
                       </div>
-                    </div>
-                  ))
+                    )}
+                    {requests.map(req => (
+                      <div key={req.friendship_id} className={styles.requestItem}>
+                        <span className={styles.requestInfo}><strong>{req.username}</strong> {t('header.wantsToBeFriends')}</span>
+                        <div className={styles.requestActions}>
+                          <button type="button" className={styles.acceptButton} onClick={() => handleAcceptRequest(req.username)}>{t('header.accept')}</button>
+                          <button type="button" className={styles.rejectButton} onClick={() => handleRejectRequest(req.username)}>{t('header.reject')}</button>
+                        </div>
+                      </div>
+                    ))}
+                  </>
                 )}
               </div>
             </div>

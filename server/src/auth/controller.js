@@ -180,7 +180,17 @@ async function login(req, res) {
       const createdAt = new Date(userRow.created_at).getTime();
       const now = Date.now();
       if (now - createdAt > oneDay) {
-        return res.status(403).json({ message: 'Please verify your email to log in.' });
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        await db.query(updateVerificationTokenQuery, [userRow.id, verificationToken]);
+        
+        const targetEmail = userRow.pending_email || userRow.email;
+        try {
+          await sendVerificationEmail(targetEmail, verificationToken);
+        } catch (emailError) {
+          console.error('Failed to resend verification email during expired login:', emailError);
+        }
+        
+        return res.status(403).json({ message: 'Your activation expired. A new activation email has been sent. Please verify your email to log in.' });
       }
     }
 

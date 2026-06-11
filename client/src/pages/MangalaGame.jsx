@@ -723,7 +723,7 @@ function MangalaGameScreen({
 
   return (
     <main className={styles.page}>
-      {((showExternalResultModal && externalResultModalText) ||
+      {(!liveDisplayedGame.moveInProgress && !isAnimatingBackendMoves) && ((showExternalResultModal && externalResultModalText) ||
         (shouldShowResultModal && !isResultModalDismissed)) && (
         <div className={styles.resultModalOverlay}>
           <div

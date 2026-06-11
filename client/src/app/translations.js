@@ -18,6 +18,7 @@ export const translations = {
       wantsToBeFriends: 'seninle arkadaş olmak istiyor!',
       accept: 'Kabul Et',
       reject: 'Reddet',
+      verifyEmailWarning: 'Lütfen e-posta adresinizi doğrulayın. Hesabınız 24 saat içinde doğrulanmazsa devre dışı bırakılacaktır.',
     },
     common: {
       close: 'Kapat',
@@ -293,6 +294,7 @@ export const translations = {
       wantsToBeFriends: 'wants to be friends!',
       accept: 'Accept',
       reject: 'Reject',
+      verifyEmailWarning: 'Please verify your email address. Your account will be deactivated if not verified within 24 hours of registration.',
     },
     common: {
       close: 'Close',
