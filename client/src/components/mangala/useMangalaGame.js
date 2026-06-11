@@ -225,6 +225,27 @@ export function useMangalaGame(initialConfig, t = null) {
     [],
   )
 
+  const backendMatchRevision = useAuthoritativeBackendClock
+    ? JSON.stringify({
+        board: initialConfig?.initialBoard,
+        moves: initialConfig?.initialMatchRecord?.moves,
+        status: initialConfig?.initialGameStatus,
+        currentPlayer: initialConfig?.initialCurrentPlayer,
+      })
+    : null
+
+  useEffect(() => {
+    if (backendMatchRevision && !isUnavailable) {
+      setGame((currentGame) => {
+        if (currentGame.moveInProgress) {
+          return currentGame
+        }
+        return createInitialState(initialConfig)
+      })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [backendMatchRevision])
+
   useEffect(() => {
     if (
       typeof window === 'undefined' ||

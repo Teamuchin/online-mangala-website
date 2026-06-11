@@ -61,7 +61,7 @@ export default function Board({
     buildBoardPresentation(lastMove)
 
   return (
-    <section className={styles.boardShell}>
+    <section className={`${styles.boardShell} ${gameStatus === 'playing' ? styles.activeBoard : ''}`}>
       <Store
         className={styles.leftStore}
         count={board[boardView.leftStore.index]}

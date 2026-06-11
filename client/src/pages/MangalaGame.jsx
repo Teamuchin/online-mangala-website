@@ -866,7 +866,6 @@ export default function MangalaGame() {
     !RESERVED_LOCAL_GAME_IDS.has(gameId)
       ? gameId
       : null)
-  const backendMatchRevision = buildBackendMatchSignature(backendMatch) ?? 'local'
   const { backendAnimationDisplay, isAnimatingBackendMoves } = useBackendMoveAnimationQueue({
     backendMatch,
     enabled: backendAnimationEnabled,
@@ -1099,7 +1098,7 @@ export default function MangalaGame() {
 
   return (
     <MangalaGameScreen
-      key={`${gameId}-${backendMatch?.id ?? 'local'}-${backendMatchRevision}`}
+      key={`${gameId}-${backendMatch?.id ?? 'local'}`}
       gameId={gameId}
       backendMatch={backendMatch}
       backendAnimationDisplay={backendAnimationDisplay}

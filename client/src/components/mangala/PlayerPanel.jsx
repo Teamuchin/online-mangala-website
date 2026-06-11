@@ -52,12 +52,18 @@ export default function PlayerPanel({
       <div className={styles.playerMeta}>
         <div className={styles.playerTitle}>
           <h2>
-            <Link
-              to={`/member/${encodeURIComponent(getRouteName(player))}`}
-              className={styles.playerNameLink}
-            >
-              {getDisplayName(player)}
-            </Link>
+            {(!player.id || player.isBot || String(player.id).startsWith('practice-') || ['p1', 'p2', 'guest-user', 'bot-pending'].includes(String(player.id))) ? (
+              <span className={styles.playerNameLink}>
+                {getDisplayName(player)}
+              </span>
+            ) : (
+              <Link
+                to={`/member/${encodeURIComponent(getRouteName(player))}`}
+                className={styles.playerNameLink}
+              >
+                {getDisplayName(player)}
+              </Link>
+            )}
             {player.isBot && <span className={styles.playerBotBadge}>{t('profile.ai')}</span>}
           </h2>
         </div>
