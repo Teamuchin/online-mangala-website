@@ -1,7 +1,12 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const leoProfanity = require('leo-profanity');
 const db = require('../db');
+
+// Initialize profanity filter with English and Turkish
+leoProfanity.loadDictionary('en');
+leoProfanity.add(leoProfanity.getDictionary('tr'));
 const {
   findUserByCredentialQuery,
   findUserByEmailQuery,
@@ -75,6 +80,12 @@ async function register(req, res) {
     if (!USERNAME_REGEX.test(username)) {
       return res.status(400).json({
         message: 'Username must be 3-15 characters and use only letters, numbers, underscores, or hyphens',
+      });
+    }
+
+    if (leoProfanity.check(username)) {
+      return res.status(400).json({
+        message: 'Username contains inappropriate language. Please choose another.',
       });
     }
 
@@ -257,6 +268,12 @@ async function updateMe(req, res) {
     if (hasUsernameField && !USERNAME_REGEX.test(requestedUsername)) {
       return res.status(400).json({
         message: "Username must be 3-15 characters and use only letters, numbers, underscores, or hyphens",
+      });
+    }
+
+    if (hasUsernameField && leoProfanity.check(requestedUsername)) {
+      return res.status(400).json({
+        message: "Username contains inappropriate language. Please choose another.",
       });
     }
 
