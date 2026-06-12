@@ -68,7 +68,8 @@ function sanitizeProfileUser(userRow) {
     is_verified: userRow.is_verified,
     pending_email: userRow.pending_email,
     needs_username_setup: userRow.needs_username_setup || false,
-    auth_provider: userRow.auth_provider || 'local',
+    has_password: !!userRow.password_hash,
+    is_google_linked: !!userRow.google_id,
   };
 }
 
@@ -247,13 +248,13 @@ async function updateMe(req, res) {
       return res.status(403).json({ message: "Bot accounts cannot manage account settings" });
     }
 
-    const isGoogleUser = existingUser.auth_provider === 'google';
+    const hasPassword = !!existingUser.password_hash;
 
-    if (!isGoogleUser && !currentPassword) {
+    if (hasPassword && !currentPassword) {
       return res.status(400).json({ message: "Enter your password first" });
     }
 
-    if (!isGoogleUser) {
+    if (hasPassword) {
       const isCurrentPasswordValid = await bcrypt.compare(
         currentPassword,
         existingUser.password_hash,

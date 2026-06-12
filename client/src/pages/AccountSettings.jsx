@@ -75,7 +75,7 @@ export default function AccountSettings() {
         return
       }
 
-      if (currentUser.auth_provider !== 'google' && !String(formState.currentPassword || '').trim()) {
+      if (currentUser.has_password && !String(formState.currentPassword || '').trim()) {
         setErrorMessage(t('account.enterPasswordFirst'))
         return
       }
@@ -168,9 +168,9 @@ export default function AccountSettings() {
                 className={styles[emailField.className]}
                 onChange={handleFieldChange}
                 autoComplete="email"
-                disabled={currentUser.auth_provider === 'google'}
+                disabled={currentUser.is_google_linked}
               />
-              {currentUser.auth_provider === 'google' && (
+              {currentUser.is_google_linked && (
                 <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '5px', textAlign: 'left' }}>
                   {t('account.emailManagedByGoogle')}
                 </p>
@@ -193,14 +193,14 @@ export default function AccountSettings() {
               </p>
             )}
           </div>
-          {currentUser.auth_provider === 'google' && (
+          {!currentUser.has_password && currentUser.is_google_linked && (
             <div style={{ marginTop: '20px', marginBottom: '10px', textAlign: 'left' }}>
               <p style={{ fontSize: '0.85rem', color: '#5d4037', fontStyle: 'italic', margin: 0 }}>
                 {t('account.googleSetPasswordInfo')}
               </p>
             </div>
           )}
-          {passwordFields.filter(f => !(currentUser.auth_provider === 'google' && f.id === 'currentPassword')).map((field) => (
+          {passwordFields.filter(f => !(!currentUser.has_password && f.id === 'currentPassword')).map((field) => (
             <input
               key={field.id}
               id={field.id}
