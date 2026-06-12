@@ -66,6 +66,9 @@ function buildCurrentUserFromBackendUser(user, fallbackUser = staticAppData.init
     createdAt: user.created_at,
     is_verified: user.is_verified,
     pending_email: user.pending_email,
+    has_password: user.has_password,
+    is_google_linked: user.is_google_linked,
+    needs_username_setup: user.needs_username_setup,
   }
 }
 
