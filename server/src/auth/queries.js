@@ -36,28 +36,28 @@ ON users (LOWER(username));
 `;
 
 const findUserByCredentialQuery = `
-SELECT id, username, email, password_hash, elo, is_bot, created_at, is_verified, pending_email, google_id
+SELECT id, username, email, password_hash, elo, is_bot, created_at, is_verified, pending_email, google_id, needs_username_setup
 FROM users
 WHERE LOWER(email) = LOWER($1) OR LOWER(username) = LOWER($1)
 LIMIT 1;
 `;
 
 const findUserByEmailQuery = `
-SELECT id, username, email, password_hash, elo, is_bot, created_at, is_verified, pending_email, google_id
+SELECT id, username, email, password_hash, elo, is_bot, created_at, is_verified, pending_email, google_id, needs_username_setup
 FROM users
 WHERE LOWER(email) = LOWER($1)
 LIMIT 1;
 `;
 
 const findUserByUsernameQuery = `
-SELECT id, username, email, password_hash, elo, is_bot, created_at, is_verified, pending_email, google_id
+SELECT id, username, email, password_hash, elo, is_bot, created_at, is_verified, pending_email, google_id, needs_username_setup
 FROM users
 WHERE LOWER(username) = LOWER($1)
 LIMIT 1;
 `;
 
 const findUserByIdQuery = `
-SELECT id, username, email, password_hash, elo, is_bot, created_at, is_verified, pending_email, auth_provider, google_id
+SELECT id, username, email, password_hash, elo, is_bot, created_at, is_verified, pending_email, auth_provider, google_id, needs_username_setup
 FROM users
 WHERE id = $1
 LIMIT 1;
