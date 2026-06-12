@@ -17,6 +17,7 @@ import ForgotPassword from "./pages/ForgotPassword.jsx"
 import ResetPassword from "./pages/ResetPassword.jsx"
 import { useAppData } from "./app/useAppData.js"
 import FriendChatWidget from "./components/FriendChatWidget.jsx"
+import CompleteProfileModal from "./components/CompleteProfileModal.jsx"
 
 function RequireAuthenticatedRoute() {
   const { isAuthenticated } = useAppData()
@@ -68,6 +69,8 @@ function App() {
         </Route>
       </Routes>
       <FriendChatWidget key={currentUser?.id || 'guest'} />
+      <CompleteProfileModal />
+      <CompleteProfileModal />
     </>
   )
 }

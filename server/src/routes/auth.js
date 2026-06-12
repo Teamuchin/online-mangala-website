@@ -1,5 +1,5 @@
 const express = require('express');
-const { getMe, login, register, updateMe, guestLogin, verifyEmail, resendVerification, forgotPassword, resetPassword } = require('../auth/controller');
+const { getMe, login, register, updateMe, guestLogin, verifyEmail, resendVerification, forgotPassword, resetPassword, googleAuth, completeProfile } = require('../auth/controller');
 const { requireAuth } = require('../auth/middleware');
 const { createRateLimiter } = require('../utils/rateLimiter');
 
@@ -20,6 +20,8 @@ const resetPasswordLimiter = createRateLimiter({
 
 router.post('/register', register);
 router.post('/login', login);
+router.post('/google', googleAuth);
+router.post('/complete-profile', requireAuth, completeProfile);
 router.post('/guest', guestLogin);
 router.post('/verify-email', verifyEmail);
 router.post('/resend-verification', resendVerification);

@@ -84,3 +84,11 @@ export function forgotPasswordRequest(payload) {
 export function resetPasswordRequest(payload) {
   return request('/api/auth/reset-password', payload)
 }
+
+export function googleAuthRequest(payload) {
+  return request('/api/auth/google', payload)
+}
+
+export function completeProfileRequest(payload, token) {
+  return request('/api/auth/complete-profile', payload, { token })
+}

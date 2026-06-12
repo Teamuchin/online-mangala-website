@@ -3,6 +3,9 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const leoProfanity = require('leo-profanity');
 const db = require('../db');
+const { OAuth2Client } = require('google-auth-library');
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Initialize profanity filter with English and Turkish
 leoProfanity.loadDictionary('en');
@@ -22,6 +25,10 @@ const {
   setResetPasswordTokenQuery,
   findUserByValidResetTokenQuery,
   updatePasswordAndClearTokenQuery,
+  findUserByGoogleIdQuery,
+  createGoogleUserQuery,
+  clearNeedsUsernameSetupQuery,
+  linkGoogleIdQuery,
 } = require('./queries');
 const { sendVerificationEmail, isValidEmailWithMX, sendPasswordResetEmail } = require('../utils/email');
 
@@ -60,6 +67,8 @@ function sanitizeProfileUser(userRow) {
     created_at: userRow.created_at,
     is_verified: userRow.is_verified,
     pending_email: userRow.pending_email,
+    needs_username_setup: userRow.needs_username_setup || false,
+    auth_provider: userRow.auth_provider || 'local',
   };
 }
 
@@ -238,17 +247,21 @@ async function updateMe(req, res) {
       return res.status(403).json({ message: "Bot accounts cannot manage account settings" });
     }
 
-    if (!currentPassword) {
+    const isGoogleUser = existingUser.auth_provider === 'google';
+
+    if (!isGoogleUser && !currentPassword) {
       return res.status(400).json({ message: "Enter your password first" });
     }
 
-    const isCurrentPasswordValid = await bcrypt.compare(
-      currentPassword,
-      existingUser.password_hash,
-    );
+    if (!isGoogleUser) {
+      const isCurrentPasswordValid = await bcrypt.compare(
+        currentPassword,
+        existingUser.password_hash,
+      );
 
-    if (!isCurrentPasswordValid) {
-      return res.status(401).json({ message: "Password is incorrect" });
+      if (!isCurrentPasswordValid) {
+        return res.status(401).json({ message: "Password is incorrect" });
+      }
     }
 
     const hasUsernameField = Object.prototype.hasOwnProperty.call(req.body || {}, "username");
@@ -581,6 +594,119 @@ async function resetPassword(req, res) {
   }
 }
 
+async function googleAuth(req, res) {
+  try {
+    const { credential } = req.body;
+    if (!credential) {
+      return res.status(400).json({ message: 'Google credential is required' });
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      return res.status(400).json({ message: 'Invalid Google credential' });
+    }
+
+    const googleId = payload.sub;
+    const email = normalizeEmail(payload.email);
+
+    // 1. Check if user exists by google_id
+    let userResult = await db.query(findUserByGoogleIdQuery, [googleId]);
+
+    // 2. If not found by google_id, check by email
+    if (userResult.rows.length === 0) {
+      const emailResult = await db.query(findUserByEmailQuery, [email]);
+      
+      if (emailResult.rows.length > 0) {
+        // Link google_id to existing account
+        const existingUser = emailResult.rows[0];
+        userResult = await db.query(linkGoogleIdQuery, [existingUser.id, googleId]);
+      } else {
+        // Create new account
+        // Generate a temporary username
+        const prefix = email.split('@')[0].replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 10);
+        let tempUsername = \`\${prefix}\${Math.floor(Math.random() * 10000)}\`;
+        
+        // Ensure username is valid
+        if (tempUsername.length < 3) tempUsername = tempUsername + '123';
+        
+        // Loop to find a unique username (very unlikely to loop more than once)
+        let isUnique = false;
+        while (!isUnique) {
+          const checkResult = await db.query(findUserByUsernameQuery, [tempUsername]);
+          if (checkResult.rows.length === 0) {
+            isUnique = true;
+          } else {
+            tempUsername = \`\${prefix}\${Math.floor(Math.random() * 10000)}\`;
+          }
+        }
+
+        userResult = await db.query(createGoogleUserQuery, [tempUsername, email, googleId]);
+      }
+    }
+
+    const userRow = userResult.rows[0];
+    const user = sanitizeProfileUser(userRow);
+    const token = signAuthToken(user);
+
+    return res.status(200).json({ message: 'Google login successful', token, user });
+
+  } catch (error) {
+    console.error('Google auth error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
+async function completeProfile(req, res) {
+  try {
+    const userId = String(req.auth?.userId || '').trim();
+    const username = String(req.body?.username || '').trim();
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    if (!username) {
+      return res.status(400).json({ message: 'Username is required' });
+    }
+
+    if (!USERNAME_REGEX.test(username)) {
+      return res.status(400).json({
+        message: 'Username must be 3-15 characters and use only letters, numbers, underscores, or hyphens',
+      });
+    }
+
+    if (leoProfanity.check(username)) {
+      return res.status(400).json({
+        message: 'Username contains inappropriate language. Please choose another.',
+      });
+    }
+
+    const existingUsernameResult = await db.query(findUserByUsernameQuery, [username]);
+    if (existingUsernameResult.rows.length > 0 && String(existingUsernameResult.rows[0].id) !== userId) {
+      return res.status(409).json({ message: 'Username is already taken' });
+    }
+
+    const result = await db.query(clearNeedsUsernameSetupQuery, [userId, username]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const user = sanitizeProfileUser(result.rows[0]);
+    const token = signAuthToken(user); // Optional: Re-issue token if username is in it
+
+    return res.status(200).json({ message: 'Profile completed successfully', user, token });
+
+  } catch (error) {
+    console.error('Complete profile error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+}
+
 module.exports = {
   register,
   login,
@@ -591,4 +717,6 @@ module.exports = {
   resendVerification,
   forgotPassword,
   resetPassword,
+  googleAuth,
+  completeProfile,
 };

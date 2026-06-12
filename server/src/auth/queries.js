@@ -57,7 +57,7 @@ LIMIT 1;
 `;
 
 const findUserByIdQuery = `
-SELECT id, username, email, password_hash, elo, is_bot, created_at, is_verified, pending_email
+SELECT id, username, email, password_hash, elo, is_bot, created_at, is_verified, pending_email, auth_provider
 FROM users
 WHERE id = $1
 LIMIT 1;
@@ -162,6 +162,35 @@ WHERE id = $1
 RETURNING id, username, email;
 `;
 
+const findUserByGoogleIdQuery = `
+SELECT id, username, email, password_hash, elo, is_bot, created_at, is_verified, pending_email, needs_username_setup
+FROM users
+WHERE google_id = $1
+LIMIT 1;
+`;
+
+const createGoogleUserQuery = `
+INSERT INTO users (username, email, password_hash, elo, is_bot, verification_token, is_verified, google_id, auth_provider, needs_username_setup)
+VALUES ($1, $2, NULL, 1200, FALSE, NULL, TRUE, $3, 'google', TRUE)
+RETURNING id, username, email, elo, is_bot, created_at, is_verified, pending_email, needs_username_setup;
+`;
+
+const clearNeedsUsernameSetupQuery = `
+UPDATE users
+SET needs_username_setup = FALSE,
+    username = $2
+WHERE id = $1
+RETURNING id, username, email, elo, is_bot, created_at, is_verified, pending_email, needs_username_setup;
+`;
+
+const linkGoogleIdQuery = `
+UPDATE users
+SET google_id = $2,
+    auth_provider = 'google'
+WHERE id = $1
+RETURNING id, username, email, elo, is_bot, created_at, is_verified, pending_email, needs_username_setup;
+`;
+
 module.exports = {
   createUsersTableQuery,
   dropBioColumnQuery,
@@ -186,4 +215,8 @@ module.exports = {
   setResetPasswordTokenQuery,
   findUserByValidResetTokenQuery,
   updatePasswordAndClearTokenQuery,
+  findUserByGoogleIdQuery,
+  createGoogleUserQuery,
+  clearNeedsUsernameSetupQuery,
+  linkGoogleIdQuery,
 };
