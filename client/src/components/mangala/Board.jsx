@@ -48,6 +48,7 @@ export default function Board({
   currentPlayer,
   selectedPit,
   gameStatus,
+  moveInProgress,
   players,
   showVisualStones,
   lastMove,
@@ -61,9 +62,9 @@ export default function Board({
     buildBoardPresentation(lastMove)
 
   return (
-    <section className={`${styles.boardShell} ${gameStatus === 'playing' ? styles.activeBoard : ''}`}>
+    <section className={styles.boardShell}>
       <Store
-        className={styles.leftStore}
+        className={`${styles.leftStore} ${gameStatus === 'playing' && !moveInProgress && currentPlayer === boardView.leftStore.ownerSide ? styles.activeBoardPart : ''}`}
         count={board[boardView.leftStore.index]}
         label={`${players[boardView.leftStore.ownerSide].name} Store`}
         showVisualStones={showVisualStones}
@@ -80,6 +81,7 @@ export default function Board({
             isFinalTarget={finalTarget === index}
             capturedCount={capturedCounts[index] ?? 0}
             sourceSilhouetteCount={sourceSilhouetteCounts[index] ?? 0}
+            isActiveBoardPart={gameStatus === 'playing' && !moveInProgress && currentPlayer === ownerSide}
             disabled={isPitDisabled({
               board,
               disableInteraction,
@@ -104,6 +106,7 @@ export default function Board({
             isFinalTarget={finalTarget === index}
             capturedCount={capturedCounts[index] ?? 0}
             sourceSilhouetteCount={sourceSilhouetteCounts[index] ?? 0}
+            isActiveBoardPart={gameStatus === 'playing' && !moveInProgress && currentPlayer === ownerSide}
             disabled={isPitDisabled({
               board,
               disableInteraction,
@@ -119,7 +122,7 @@ export default function Board({
         ))}
       </div>
       <Store
-        className={styles.rightStore}
+        className={`${styles.rightStore} ${gameStatus === 'playing' && !moveInProgress && currentPlayer === boardView.rightStore.ownerSide ? styles.activeBoardPart : ''}`}
         count={board[boardView.rightStore.index]}
         label={`${players[boardView.rightStore.ownerSide].name} Store`}
         showVisualStones={showVisualStones}

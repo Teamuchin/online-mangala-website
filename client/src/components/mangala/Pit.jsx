@@ -15,6 +15,7 @@ export default function Pit({
   isFinalTarget,
   capturedCount,
   sourceSilhouetteCount,
+  isActiveBoardPart,
   onClick,
   showVisualStones,
 }) {
@@ -36,7 +37,7 @@ export default function Pit({
   return (
     <button
       type="button"
-      className={`${styles.pit} ${isSelected ? styles.selectedPit : ''}`}
+      className={`${styles.pit} ${isSelected ? styles.selectedPit : ''} ${isActiveBoardPart ? styles.activeBoardPart : ''}`}
       onClick={onClick}
       disabled={disabled}
     >

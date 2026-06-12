@@ -761,7 +761,7 @@ function MangalaGameScreen({
               player={topDisplayPlayer}
               position="top"
               resignSide={visualTopSide}
-              isActive={liveDisplayedGame.currentPlayer === visualTopSide && liveDisplayedGame.gameStatus === 'playing'}
+              isActive={liveDisplayedGame.currentPlayer === visualTopSide && liveDisplayedGame.gameStatus === 'playing' && !liveDisplayedGame.moveInProgress}
               compact
               onResign={syncTargetMatchId && onSubmitAuthoritativeResign ? onSubmitAuthoritativeResign : handleResign}
               resignDisabled={resignDisabledForSide(visualTopSide)}
@@ -777,6 +777,7 @@ function MangalaGameScreen({
               currentPlayer={liveDisplayedGame.currentPlayer}
               selectedPit={liveDisplayedGame.selectedPit}
               gameStatus={liveDisplayedGame.gameStatus}
+              moveInProgress={liveDisplayedGame.moveInProgress}
               players={liveDisplayedGame.players}
               showVisualStones={showVisualStones}
               lastMove={liveDisplayedGame.lastMove}
@@ -820,7 +821,7 @@ function MangalaGameScreen({
               player={bottomDisplayPlayer}
               position="bottom"
               resignSide={visualBottomSide}
-              isActive={liveDisplayedGame.currentPlayer === visualBottomSide && liveDisplayedGame.gameStatus === 'playing'}
+              isActive={liveDisplayedGame.currentPlayer === visualBottomSide && liveDisplayedGame.gameStatus === 'playing' && !liveDisplayedGame.moveInProgress}
               compact
               onResign={syncTargetMatchId && onSubmitAuthoritativeResign ? onSubmitAuthoritativeResign : handleResign}
               resignDisabled={resignDisabledForSide(visualBottomSide)}
