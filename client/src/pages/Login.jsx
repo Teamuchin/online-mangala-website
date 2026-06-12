@@ -4,7 +4,7 @@ import styles from './Login.module.css'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAppData } from '../app/useAppData.js'
 import { loginRequest, guestLoginRequest, resendVerificationRequest, googleAuthRequest } from '../app/authApi.js'
-import { GoogleLogin } from '@react-oauth/google'
+import { useGoogleLogin } from '@react-oauth/google'
 import { useGlobalHeader } from '../app/useGlobalHeader.js'
 
 export default function Login() {
@@ -86,27 +86,28 @@ export default function Login() {
     }
   }
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    try {
-      setIsSubmitting(true)
-      setErrorMessage('')
-      
-      const response = await googleAuthRequest({ credential: credentialResponse.credential })
-      
-      window.localStorage.setItem('mangala.authToken', response.token)
-      logIn(response.user)
-      
-      navigate('/')
-    } catch (error) {
-      setErrorMessage(error.message || t('auth.loginFailed'))
-    } finally {
-      setIsSubmitting(false)
+  const loginWithGoogle = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setIsSubmitting(true)
+        setErrorMessage('')
+        
+        const response = await googleAuthRequest({ access_token: tokenResponse.access_token })
+        
+        window.localStorage.setItem('mangala.authToken', response.token)
+        logIn(response.user)
+        
+        navigate('/')
+      } catch (error) {
+        setErrorMessage(error.message || t('auth.loginFailed'))
+      } finally {
+        setIsSubmitting(false)
+      }
+    },
+    onError: () => {
+      setErrorMessage(t('auth.loginFailed') || 'Google login failed')
     }
-  }
-
-  const handleGoogleError = () => {
-    setErrorMessage(t('auth.loginFailed') || 'Google login failed')
-  }
+  })
 
   return (
     <div className={styles.container}>
@@ -162,14 +163,10 @@ export default function Login() {
         <button type="button" className={styles.signupbtn} onClick={handleGuestLogin}>
           {t('auth.playAsGuest')}
         </button>
-        <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            theme="filled_black"
-            text="signin_with"
-            shape="rectangular"
-          />
+        <div style={{ marginTop: '10px', width: '100%' }}>
+          <button type="button" className={styles.submitbtn} onClick={() => loginWithGoogle()} disabled={isSubmitting}>
+            {t('auth.continueWithGoogle') || 'Continue with Google'}
+          </button>
         </div>
       </form>
     </div>

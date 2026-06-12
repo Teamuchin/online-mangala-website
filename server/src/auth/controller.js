@@ -596,19 +596,22 @@ async function resetPassword(req, res) {
 
 async function googleAuth(req, res) {
   try {
-    const { credential } = req.body;
-    if (!credential) {
-      return res.status(400).json({ message: 'Google credential is required' });
+    const { access_token } = req.body;
+    if (!access_token) {
+      return res.status(400).json({ message: 'Google access token is required' });
     }
 
-    const ticket = await googleClient.verifyIdToken({
-      idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID,
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${access_token}` },
     });
 
-    const payload = ticket.getPayload();
+    if (!userInfoResponse.ok) {
+      return res.status(400).json({ message: 'Invalid Google token' });
+    }
+
+    const payload = await userInfoResponse.json();
     if (!payload || !payload.email) {
-      return res.status(400).json({ message: 'Invalid Google credential' });
+      return res.status(400).json({ message: 'Invalid Google profile data' });
     }
 
     const googleId = payload.sub;
@@ -629,7 +632,7 @@ async function googleAuth(req, res) {
         // Create new account
         // Generate a temporary username
         const prefix = email.split('@')[0].replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 10);
-        let tempUsername = \`\${prefix}\${Math.floor(Math.random() * 10000)}\`;
+        let tempUsername = `${prefix}${Math.floor(Math.random() * 10000)}`;
         
         // Ensure username is valid
         if (tempUsername.length < 3) tempUsername = tempUsername + '123';
@@ -641,7 +644,7 @@ async function googleAuth(req, res) {
           if (checkResult.rows.length === 0) {
             isUnique = true;
           } else {
-            tempUsername = \`\${prefix}\${Math.floor(Math.random() * 10000)}\`;
+            tempUsername = `${prefix}${Math.floor(Math.random() * 10000)}`;
           }
         }
 

@@ -4,7 +4,7 @@ import styles from './Register.module.css'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAppData } from '../app/useAppData.js'
 import { registerRequest, googleAuthRequest } from '../app/authApi.js'
-import { GoogleLogin } from '@react-oauth/google'
+import { useGoogleLogin } from '@react-oauth/google'
 import { useGlobalHeader } from '../app/useGlobalHeader.js'
 
 const USERNAME_REGEX = /^[A-Za-z0-9_-]{3,15}$/
@@ -72,27 +72,28 @@ export default function Register() {
     }
   }
 
-  const handleGoogleSuccess = async (credentialResponse) => {
-    try {
-      setIsSubmitting(true)
-      setErrorMessage('')
-      
-      const response = await googleAuthRequest({ credential: credentialResponse.credential })
-      
-      window.localStorage.setItem('mangala.authToken', response.token)
-      registerUser(response.user)
-      
-      navigate('/')
-    } catch (error) {
-      setErrorMessage(error.message || t('auth.registrationFailed'))
-    } finally {
-      setIsSubmitting(false)
+  const registerWithGoogle = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setIsSubmitting(true)
+        setErrorMessage('')
+        
+        const response = await googleAuthRequest({ access_token: tokenResponse.access_token })
+        
+        window.localStorage.setItem('mangala.authToken', response.token)
+        registerUser(response.user)
+        
+        navigate('/')
+      } catch (error) {
+        setErrorMessage(error.message || t('auth.registrationFailed'))
+      } finally {
+        setIsSubmitting(false)
+      }
+    },
+    onError: () => {
+      setErrorMessage(t('auth.registrationFailed') || 'Google registration failed')
     }
-  }
-
-  const handleGoogleError = () => {
-    setErrorMessage(t('auth.registrationFailed') || 'Google registration failed')
-  }
+  })
 
   return (
     <div className={styles.container}>
@@ -140,15 +141,9 @@ export default function Register() {
         </button>
       </form>
       <hr className={styles.horizline} data-content={t('common.or')} />
-      <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center', width: '100%', marginBottom: '10px' }}>
-        <GoogleLogin
-          onSuccess={handleGoogleSuccess}
-          onError={handleGoogleError}
-          theme="filled_black"
-          text="signup_with"
-          shape="rectangular"
-        />
-      </div>
+      <button type="button" className={styles.submitbtn} onClick={() => registerWithGoogle()} disabled={isSubmitting}>
+        {t('auth.continueWithGoogle') || 'Continue with Google'}
+      </button>
       <Link to="/login" className={styles.submitbtn}>
         {t('auth.backToLogin')}
       </Link>
