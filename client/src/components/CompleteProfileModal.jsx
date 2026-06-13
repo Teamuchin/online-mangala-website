@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAppData } from '../app/useAppData'
 import { useGlobalHeader } from '../app/useGlobalHeader'
 import { completeProfileRequest } from '../app/authApi'
@@ -10,6 +10,12 @@ export default function CompleteProfileModal() {
   const [username, setUsername] = useState(currentUser?.username || '')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (currentUser?.needs_username_setup && currentUser?.username) {
+      setUsername(currentUser.username)
+    }
+  }, [currentUser?.needs_username_setup, currentUser?.username])
 
   if (!currentUser || !currentUser.needs_username_setup) {
     return null
